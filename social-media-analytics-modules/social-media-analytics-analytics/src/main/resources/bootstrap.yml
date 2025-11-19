@@ -1,0 +1,62 @@
+# Tomcat
+server:
+  port: 9205
+
+# Spring
+spring:
+  application:
+    # 应用名称
+    name: analytics
+  profiles:
+    # 环境配置
+    active: dev
+  cloud:
+    nacos:
+      discovery:
+        # 服务注册地址
+        server-addr: ${nacos.url}
+        group: ${discovery.nacos.group}
+      config:
+        # 配置中心地址
+        server-addr: ${nacos.url}
+        group: ${nacos.group}
+        # 配置文件格式
+        file-extension: yml
+        # 共享配置
+        shared-configs:
+          - data-id: application-${spring.profiles.active}.${spring.cloud.nacos.config.file-extension}
+            group: ${nacos.group}
+#---
+## spring配置
+#spring:
+#  datasource:
+#    dynamic:
+#      datasource:
+#        ch:
+#          type: com.zaxxer.hikari.HikariDataSource
+#          driver-class-name: com.clickhouse.jdbc.ClickHouseDriver
+#          url: jdbc:clickhouse://127.0.0.1:18123/default
+#          username: default
+#          password: 123456
+
+
+
+# mybatis配置
+mybatis:
+  # 搜索指定包别名
+  typeAliasesPackage: com.chargehub.system
+  # 配置mapper的扫描，找到所有的mapper.xml映射文件
+  mapperLocations: classpath:mapper/**/*.xml
+
+# swagger配置
+swagger:
+  title: 系统模块接口文档
+  license: Powered By ruoyi
+
+
+
+
+
+logging:
+  level:
+    com.chargehub: debug

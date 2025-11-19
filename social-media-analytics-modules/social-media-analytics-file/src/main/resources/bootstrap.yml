@@ -1,0 +1,79 @@
+# Tomcat
+server:
+  port: 9204
+
+# Spring
+spring: 
+  application:
+    # 应用名称
+    name: file
+  profiles:
+    # 环境配置
+    active: dev
+  cloud:
+    nacos:
+      discovery:
+        # 服务注册地址
+        server-addr: ${nacos.url}
+        group: ${discovery.nacos.group}
+      config:
+        # 配置中心地址
+        server-addr: ${nacos.url}
+        group: ${nacos.group}
+        # 配置文件格式
+        file-extension: yml
+        # 共享配置
+        shared-configs:
+          - data-id: application-${spring.profiles.active}.${spring.cloud.nacos.config.file-extension}
+            group: ${nacos.group}
+
+  web:
+    resources:
+      static-locations:
+        - classpath:/META-INF/resources/
+        - classpath:/resources/
+        - classpath:/static/
+        - classpath:/public/
+        - file:/opt/resources/
+  servlet:
+    multipart:
+      max-file-size: 500MB
+      max-request-size: 500MB
+
+# 本地文件上传
+file:
+  domain: http://127.0.0.1:9024
+  path: D:/ruoyi/uploadPath
+  prefix: /statics
+
+# FastDFS配置
+fdfs:
+  domain: http://8.129.231.12
+  soTimeout: 3000
+  connectTimeout: 2000
+  trackerList: 8.129.231.12:22122
+
+# Minio配置
+minio:
+  url: http://8.129.231.12:9000
+  accessKey: minioadmin
+  secretKey: minioadmin
+  bucketName: test
+
+chargehub:
+  huaweiObs:
+    # endpoint: obs.cn-north-4.myhuaweicloud.com
+    # accessKeyId: M7CLZPW5I1YMFEZ4GDMD
+    # accessKeySecret: njLrR3DJUp8GynuSoAwmZxPn4Swg9BB4NJ8pOVRJ
+    # bucketName: wcx-chonghong-static
+    # staticDomain: wcx-chonghong-static-private.obs.cn-north-4.myhuaweicloud.com
+    # privateBucketName: wcx-chonghong-static-private
+    # privateStaticDomain: wcx-chonghong-static-private.obs.cn-north-4.myhuaweicloud.com
+
+    endpoint: obs.cn-north-4.myhuaweicloud.com
+    accessKeyId: IPNUUDHGOLNB14Q5KQSB
+    accessKeySecret: h9k7zRVmmogqz01uyOeqFbSlIi1KRthzVBZlpovM
+    bucketName: chxny-static-test
+    staticDomain: chxny-static-test.obs.cn-north-4.myhuaweicloud.com
+    privateBucketName: chxny-static-private-test
+    privateStaticDomain: chxny-static-private-test.obs.cn-north-4.myhuaweicloud.com

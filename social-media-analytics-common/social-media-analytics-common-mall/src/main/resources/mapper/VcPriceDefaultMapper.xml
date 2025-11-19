@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.vchaoxi.mapper.VcPriceDefaultMapper">
+    <resultMap id="priceDefaultMap" type="com.vchaoxi.vo.VcPriceDefaultVo">
+        <result column="id" jdbcType="INTEGER" property="id" />
+        <result column="goods_id" jdbcType="INTEGER" property="goodsId" />
+        <result column="lower_limit" jdbcType="INTEGER" property="lowerLimit" />
+        <result column="upper_limit" jdbcType="INTEGER" property="upperLimit" />
+        <result column="price" jdbcType="DECIMAL" property="price" />
+        <result column="time_unit" jdbcType="INTEGER" property="timeUnit" />
+    </resultMap>
+
+    <sql id="Base_Column_List" >
+        vc_price_default.id,
+        vc_price_default.goods_id,
+        vc_price_default.lower_limit,
+        vc_price_default.upper_limit,
+        vc_price_default.price,
+        vc_price_default.time_unit
+    </sql>
+
+    <select id="priceLimitSelect" resultMap="priceDefaultMap">
+        SELECT
+        <include refid="Base_Column_List">
+        </include>
+        FROM vc_price_default
+        WHERE vc_price_default.is_delete = 0 AND vc_price_default.goods_id = #{goodsId}
+    </select>
+
+</mapper>

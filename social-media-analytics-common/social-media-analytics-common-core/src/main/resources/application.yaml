@@ -1,0 +1,77 @@
+server:
+  shutdown: graceful
+spring:
+  servlet:
+    multipart:
+      max-file-size: 500MB
+      max-request-size: 500MB
+  lifecycle:
+    timeout-per-shutdown-phase: 300s
+  datasource:
+    druid:
+      stat-view-servlet:
+        enabled: true
+        loginUsername: admin
+        loginPassword: 123456
+    dynamic:
+      seata: false
+      datasource:
+        # 主库数据源
+        master:
+          driver-class-name: com.mysql.cj.jdbc.Driver
+          url: jdbc:mysql://127.0.0.1:3306/ry_prod?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
+          username: root
+          password: qwe618
+        slave:
+          driver-class-name: com.mysql.cj.jdbc.Driver
+          url: jdbc:mysql://127.0.0.1:33306/hlht?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
+          username: root
+          password: vchaoxi@8888
+
+
+  redis:
+    host: 47.98.159.124
+    port: 36379
+    password: 123456
+
+  autoconfigure:
+    exclude: com.alibaba.druid.spring.boot.autoconfigure.DruidDataSourceAutoConfigure
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
+
+rocketmq:
+  name-server: 1.94.247.196:9876
+  producer:
+    access-key: rocketmq2
+    secret-key: 12345678
+  consumer:
+    access-key: rocketmq2
+    secret-key: 12345678
+
+# feign 配置
+feign:
+  sentinel:
+    enabled: true
+  okhttp:
+    enabled: true
+  httpclient:
+    enabled: false
+  client:
+    config:
+      default:
+        connectTimeout: 60000
+        readTimeout: 60000
+
+hub:
+  auth-service: localhost:9201
+  system-service: localhost:9201
+  log-service: localhost:9201
+  file-service: localhost:9201
+  third-service: localhost:9201
+  job-service: localhost:9201
+
+vei:
+  payment:
+    wechat:
+      enabled: true

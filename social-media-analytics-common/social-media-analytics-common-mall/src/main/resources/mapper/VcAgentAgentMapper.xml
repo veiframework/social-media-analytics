@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.vchaoxi.mapper.VcAgentAgentMapper">
+
+
+    <resultMap id="BaseResultMap" type="com.vchaoxi.vo.AgentVo" >
+        <id column="id" property="id" jdbcType="INTEGER" />
+        <result column="name" property="name" jdbcType="VARCHAR" />
+        <result column="logo" property="logo" jdbcType="VARCHAR" />
+        <result column="brand" property="brand" jdbcType="VARCHAR" />
+        <result column="service_phone" property="servicePhone" jdbcType="VARCHAR" />
+        <result column="insert_time" property="insertTime" jdbcType="TIMESTAMP" />
+    </resultMap>
+
+    <sql id="Base_Column_List" >
+        id, name, logo, brand, insert_time,service_phone
+    </sql>
+
+
+
+
+    <select id="adminSelectList" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List">
+        </include>
+        FROM vc_agent_agent WHERE is_delete = 0
+        <if test="agentId != null">
+            AND id = #{agentId}
+        </if>
+        <if test="name != null and name != ''">
+            AND vc_agent_agent.name LIKE CONCAT("%",#{name},"%")
+        </if>
+        <if test="adminMobile != null and adminMobile != ''">
+            AND vc_agent_agent.id IN (
+            SELECT agent_id
+            FROM  vc_admin_admin
+            LEFT JOIN vc_admin_user_role ON vc_admin_admin.id = vc_admin_user_role.admin_id
+            WHERE vc_admin_admin.is_delete = 0 AND vc_admin_user_role.is_delete = 0 AND vc_admin_user_role.role_id = 2
+            AND vc_admin_admin.mobile LIKE CONCAT("%",#{adminMobile},"%")
+            )
+        </if>
+        ORDER BY id DESC
+    </select>
+
+
+
+<!--  查询全部代理商列表  -->
+    <select id="all" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List">
+        </include>
+        FROM vc_agent_agent WHERE is_delete = 0
+    </select>
+
+
+
+<!-- 查询代理商信息   -->
+    <select id="selectByAgentId" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List">
+        </include>
+        FROM vc_agent_agent WHERE is_delete = 0 AND id = #{agentId}
+    </select>
+</mapper>

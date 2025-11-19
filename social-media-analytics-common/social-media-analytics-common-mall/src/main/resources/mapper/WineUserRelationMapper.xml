@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.vchaoxi.mapper.WineUserRelationMapper">
+    <resultMap id="wineUserRelationVoMap" type="com.vchaoxi.vo.WineUserRelationVo">
+        <result column="id" jdbcType="INTEGER" property="id" />
+        <result column="parent_user_id" jdbcType="INTEGER" property="parentUserId" />
+        <result column="child_user_id" jdbcType="INTEGER" property="childUserId" />
+        <result column="created_at" jdbcType="INTEGER" property="createdAt" />
+    </resultMap>
+
+
+    <sql id="Base_Column_List" >
+        wine_user_relation.id,wine_user_relation.parent_user_id,
+        wine_user_relation.child_user_id,wine_user_relation.created_at
+    </sql>
+
+    <select id="userRelectionSelect" resultMap="wineUserRelationVoMap">
+        SELECT
+        wine_user_relation.id,
+        wine_user_relation.parent_user_id,
+        wine_user_relation.child_user_id,
+        wine_user_relation.created_at
+        FROM wine_user_relation
+        LEFT JOIN vc_user_user ON wine_user_relation.parent_user_id = vc_user_user.id
+        WHERE wine_user_relation.is_delete = 0
+        <if test="phone != null and phone != ''">
+            AND vc_user_user.`phone` LIKE CONCAT("%",#{phone},"%")
+        </if>
+        <if test="nickname != null and nickname != ''">
+            AND vc_user_user.`nickname` LIKE CONCAT("%",#{nickname},"%")
+        </if>
+        <if test="parentUserId != null">
+            AND wine_user_relation.parent_user_id = #{parentUserId}
+        </if>
+        <if test="childUserId != null">
+            AND wine_user_relation.child_user_id = #{childUserId}
+        </if>
+    </select>
+
+    <select id="myInviteSelect" resultMap="wineUserRelationVoMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM wine_user_relation
+        WHERE wine_user_relation.is_delete = 0
+        <if test="parentUserId != null">
+            AND wine_user_relation.parent_user_id = #{parentUserId}
+        </if>
+    </select>
+
+    <select id="selectInviteNum" parameterType="integer" resultType="integer">
+        SELECT COUNT(*)
+        FROM wine_user_relation
+        WHERE wine_user_relation.is_delete = 0
+        AND wine_user_relation.parent_user_id = #{userId}
+    </select>
+
+</mapper>

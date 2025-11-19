@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.vchaoxi.logistic.mapper.VcLogisticsDeliveryMapper">
+
+
+
+    <resultMap id="logisticsDeliveryVoMap" type="com.vchaoxi.logistic.vo.LogisticsDeliveryVo">
+        <result column="id" jdbcType="INTEGER" property="id" />
+        <result column="delivery_id" jdbcType="VARCHAR" property="deliveryId" />
+        <result column="delivery_name" jdbcType="VARCHAR" property="deliveryName" />
+        <result column="can_use_cash" jdbcType="INTEGER" property="canUseCash" />
+        <result column="can_get_quota" jdbcType="INTEGER" property="canGetQuota" />
+        <result column="service_type" jdbcType="VARCHAR" property="serviceType" />
+        <result column="cash_biz_id" jdbcType="VARCHAR" property="cashBizId" />
+    </resultMap>
+
+
+    <sql id="Base_Column_List" >
+        vc_logistics_delivery.id,vc_logistics_delivery.delivery_id,vc_logistics_delivery.delivery_name,vc_logistics_delivery.can_use_cash,vc_logistics_delivery.can_get_quota,vc_logistics_delivery.service_type,vc_logistics_delivery.cash_biz_id
+    </sql>
+
+
+<!--  查询支持的物流公司  -->
+    <select id="selectDelivery" resultMap="logisticsDeliveryVoMap">
+        SELECT
+        <include refid="Base_Column_List">
+        </include>
+        FROM vc_logistics_delivery
+        WHERE is_delete = 0
+    </select>
+</mapper>

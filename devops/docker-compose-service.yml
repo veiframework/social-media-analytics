@@ -1,0 +1,156 @@
+version: '3'
+##使用指定网络
+networks:
+  deploy_mynet:
+    external: true
+
+
+services:
+  gateway:
+    build:
+      context: ../
+      dockerfile: devops/Dockerfile
+      args:
+        APP_FILE_PATH: ${COMPOSE_PROJECT_NAME}-gateway/target/
+        APP_NAME: ${COMPOSE_PROJECT_NAME}-gateway
+    image: ${COMPOSE_PROJECT_NAME}-gateway:${TAG}
+    environment:
+      JAVA_OPTS: -server -Xmx200M -Xms200M -XX:+UseG1GC -XX:MaxGCPauseMillis=20 -XX:InitiatingHeapOccupancyPercent=35 -XX:+DisableExplicitGC -Djava.net.preferIPv4Stack=true -Djava.security.egd=file:/dev/./urandom
+    networks:
+      - deploy_mynet
+    ports:
+      - 8080:8080
+    volumes:
+      - ${DEPLOY_PATH}/logs/${COMPOSE_PROJECT_NAME}-gateway:/${COMPOSE_PROJECT_NAME}-gateway/logs/gateway
+      - /opt/resources:/opt/resources
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1       # 每次更新一个容器
+        delay: 10s           # 每次更新间隔时间
+        failure_action: rollback  # 更新失败时回滚
+        monitor: 5s          # 监控更新状态的时间窗口
+        max_failure_ratio: 0.3
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+
+
+  auth:
+    build:
+      context: ../
+      dockerfile: devops/Dockerfile
+      args:
+        APP_FILE_PATH: ${COMPOSE_PROJECT_NAME}-auth/target/
+        APP_NAME: ${COMPOSE_PROJECT_NAME}-auth
+    image: ${COMPOSE_PROJECT_NAME}-auth:${TAG}
+    networks:
+      - deploy_mynet
+    environment:
+      JAVA_OPTS: -server -Xmx200M -Xms200M -XX:+UseG1GC -XX:MaxGCPauseMillis=20 -XX:InitiatingHeapOccupancyPercent=35 -XX:+DisableExplicitGC -Djava.net.preferIPv4Stack=true -Djava.security.egd=file:/dev/./urandom
+    ports:
+      - 9200:9200
+    volumes:
+      - ${DEPLOY_PATH}/logs/${COMPOSE_PROJECT_NAME}-auth:/${COMPOSE_PROJECT_NAME}-auth/logs/auth
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1       # 每次更新一个容器
+        delay: 10s           # 每次更新间隔时间
+        failure_action: rollback  # 更新失败时回滚
+        monitor: 5s          # 监控更新状态的时间窗口
+        max_failure_ratio: 0.3
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+
+  admin:
+    build:
+      context: ../
+      dockerfile: devops/Dockerfile
+      args:
+        APP_FILE_PATH: ${COMPOSE_PROJECT_NAME}-modules/${COMPOSE_PROJECT_NAME}-admin/target/
+        APP_NAME: ${COMPOSE_PROJECT_NAME}-admin
+    image: ${COMPOSE_PROJECT_NAME}-admin:${TAG}
+    networks:
+      - deploy_mynet
+    environment:
+      JAVA_OPTS: -server -Xmx200M -Xms200M -XX:+UseG1GC -XX:MaxGCPauseMillis=20 -XX:InitiatingHeapOccupancyPercent=35 -XX:+DisableExplicitGC -Djava.net.preferIPv4Stack=true -Djava.security.egd=file:/dev/./urandom
+    ports:
+      - 9201:9201
+    volumes:
+      - ${DEPLOY_PATH}/logs/${COMPOSE_PROJECT_NAME}-admin:/${COMPOSE_PROJECT_NAME}-admin/logs/admin
+      - /opt/resources:/opt/resources
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1       # 每次更新一个容器
+        delay: 10s           # 每次更新间隔时间
+        failure_action: rollback  # 更新失败时回滚
+        monitor: 5s          # 监控更新状态的时间窗口
+        max_failure_ratio: 0.3
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+
+  thirdparty:
+    build:
+      context: ../
+      dockerfile: devops/Dockerfile
+      args:
+        APP_FILE_PATH: ${COMPOSE_PROJECT_NAME}-modules/${COMPOSE_PROJECT_NAME}-thirdparty/target/
+        APP_NAME: ${COMPOSE_PROJECT_NAME}-thirdparty
+    image: ${COMPOSE_PROJECT_NAME}-thirdparty:${TAG}
+    networks:
+      - deploy_mynet
+    environment:
+      JAVA_OPTS: -server -Xmx200M -Xms200M -XX:+UseG1GC -XX:MaxGCPauseMillis=20 -XX:InitiatingHeapOccupancyPercent=35 -XX:+DisableExplicitGC -Djava.net.preferIPv4Stack=true -Djava.security.egd=file:/dev/./urandom
+    ports:
+      - 9214:9214
+    volumes:
+      - ${DEPLOY_PATH}/logs/${COMPOSE_PROJECT_NAME}-thirdparty:/${COMPOSE_PROJECT_NAME}-thirdparty/logs/thirdparty
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1       # 每次更新一个容器
+        delay: 10s           # 每次更新间隔时间
+        failure_action: rollback  # 更新失败时回滚
+        monitor: 5s          # 监控更新状态的时间窗口
+        max_failure_ratio: 0.3
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+
+
+  log:
+    build:
+      context: ../
+      dockerfile: devops/Dockerfile
+      args:
+        APP_FILE_PATH: ${COMPOSE_PROJECT_NAME}-modules/${COMPOSE_PROJECT_NAME}-log/target/
+        APP_NAME: ${COMPOSE_PROJECT_NAME}-log
+    image: ${COMPOSE_PROJECT_NAME}-log:${TAG}
+    networks:
+      - deploy_mynet
+    environment:
+      JAVA_OPTS: -server -Xmx200M -Xms200M -XX:+UseG1GC -XX:MaxGCPauseMillis=20 -XX:InitiatingHeapOccupancyPercent=35 -XX:+DisableExplicitGC -Djava.net.preferIPv4Stack=true -Djava.security.egd=file:/dev/./urandom
+    ports:
+      - 9216:9216
+    volumes:
+      - ${DEPLOY_PATH}/logs/${COMPOSE_PROJECT_NAME}-log:/${COMPOSE_PROJECT_NAME}-log/logs/log
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1       # 每次更新一个容器
+        delay: 10s           # 每次更新间隔时间
+        failure_action: rollback  # 更新失败时回滚
+        monitor: 5s          # 监控更新状态的时间窗口
+        max_failure_ratio: 0.3
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3

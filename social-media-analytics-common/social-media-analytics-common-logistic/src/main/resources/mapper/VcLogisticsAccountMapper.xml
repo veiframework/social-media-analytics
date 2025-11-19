@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.vchaoxi.logistic.mapper.VcLogisticsAccountMapper">
+
+
+    <resultMap id="logisticsAccountVoMap" type="com.vchaoxi.logistic.vo.LogisticsAccountVo">
+        <result column="id" jdbcType="INTEGER" property="id" />
+        <result column="agent_id" jdbcType="INTEGER" property="agentId" />
+        <result column="shop_id" jdbcType="INTEGER" property="shopId" />
+        <result column="delivery_id" jdbcType="VARCHAR" property="deliveryId" />
+        <result column="delivery_name" jdbcType="VARCHAR" property="deliveryName" />
+        <result column="biz_id" jdbcType="VARCHAR" property="bizId" />
+        <result column="password" jdbcType="VARCHAR" property="password" />
+        <result column="remark_content" jdbcType="VARCHAR" property="remarkContent" />
+        <result column="status" jdbcType="INTEGER" property="status" />
+        <result column="quota_num" jdbcType="INTEGER" property="quotaNum" />
+        <result column="quota_update_time" jdbcType="TIMESTAMP" property="quotaUpdateTime" />
+        <result column="insert_time" jdbcType="TIMESTAMP" property="insertTime" />
+
+        <result column="shop_name" jdbcType="VARCHAR" property="shopName" />
+    </resultMap>
+
+
+    <sql id="Base_Column_List" >
+        vc_logistics_account.id,vc_logistics_account.agent_id,vc_logistics_account.shop_id,vc_logistics_account.delivery_id,
+        vc_logistics_account.delivery_name,vc_logistics_account.biz_id,vc_logistics_account.password,vc_logistics_account.remark_content,
+        vc_logistics_account.status,vc_logistics_account.quota_num,vc_logistics_account.quota_update_time,vc_logistics_account.insert_time
+    </sql>
+
+
+<!--  管理员查询物流账户  -->
+    <select id="adminSelectList" resultMap="logisticsAccountVoMap">
+        SELECT
+        <include refid="Base_Column_List">
+        </include>,vc_shop_shop.name AS shop_name
+        FROM vc_logistics_account
+        LEFT JOIN vc_shop_shop ON vc_logistics_account.shop_id = vc_shop_shop.id
+        WHERE vc_logistics_account.is_delete = 0 AND vc_logistics_account.status = 1
+        <if test="agentId != null">
+            AND vc_logistics_account.agent_id = #{agentId}
+        </if>
+        <if test="shopId != null">
+            AND vc_logistics_account.shop_id = #{shopId}
+        </if>
+        ORDER BY vc_logistics_account.id DESC
+    </select>
+
+
+
+<!--  根据商家查询物流账号  -->
+    <select id="selectByShopId" resultMap="logisticsAccountVoMap">
+        SELECT
+        <include refid="Base_Column_List">
+        </include>,vc_shop_shop.name AS shop_name
+        FROM vc_logistics_account
+        LEFT JOIN vc_shop_shop ON vc_logistics_account.shop_id = vc_shop_shop.id
+        WHERE vc_logistics_account.is_delete = 0 AND vc_logistics_account.status = 1
+        AND vc_logistics_account.shop_id = #{shopId}
+        ORDER BY vc_logistics_account.id DESC
+    </select>
+</mapper>

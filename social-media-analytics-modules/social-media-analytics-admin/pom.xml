@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <groupId>com.lumeng</groupId>
+        <artifactId>social-media-analytics-modules</artifactId>
+        <version>1.0.0</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>social-media-analytics-admin</artifactId>
+
+    <description>social-media-analytics-admin Web服务</description>
+
+
+    <dependencies>
+
+        <!-- SpringCloud Alibaba Nacos -->
+<!--        <dependency>-->
+<!--            <groupId>com.alibaba.cloud</groupId>-->
+<!--            <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>-->
+<!--        </dependency>-->
+
+<!--        &lt;!&ndash; SpringCloud Alibaba Nacos Config &ndash;&gt;-->
+<!--        <dependency>-->
+<!--            <groupId>com.alibaba.cloud</groupId>-->
+<!--            <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>-->
+<!--        </dependency>-->
+
+        <!-- SpringCloud Alibaba Sentinel -->
+        <dependency>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-sentinel</artifactId>
+        </dependency>
+
+        <!-- SpringBoot Actuator -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
+        </dependency>
+
+
+
+        <!-- RuoYi Common DataScope -->
+        <dependency>
+            <groupId>com.lumeng</groupId>
+            <artifactId>social-media-analytics-common-datascope</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.lumeng</groupId>
+            <artifactId>social-media-analytics-common-datasource</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.lumeng</groupId>
+            <artifactId>social-media-analytics-common-swagger</artifactId>
+        </dependency>
+
+
+
+
+
+        <!-- RuoYi Common Log -->
+        <dependency>
+            <groupId>com.lumeng</groupId>
+            <artifactId>social-media-analytics-common-log</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.lumeng</groupId>
+            <artifactId>social-media-analytics-common-job</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.lumeng</groupId>
+            <artifactId>social-media-analytics-common-mall</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.lumeng</groupId>
+            <artifactId>social-media-analytics-common-file</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.lumeng</groupId>
+            <artifactId>social-media-analytics-common-thirdparty</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.lumeng</groupId>
+            <artifactId>social-media-analytics-common-auth</artifactId>
+        </dependency>
+
+    </dependencies>
+
+    <build>
+        <finalName>${project.artifactId}</finalName>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+    </build>
+
+
+</project>

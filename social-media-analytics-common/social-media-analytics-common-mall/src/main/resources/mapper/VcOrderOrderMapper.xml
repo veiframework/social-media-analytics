@@ -1,0 +1,255 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.vchaoxi.mapper.VcOrderOrderMapper">
+    
+
+    <resultMap id="orderVoMap" type="com.vchaoxi.vo.OrderVo">
+        <result column="id" jdbcType="INTEGER" property="id" />
+        <result column="agent_id" jdbcType="INTEGER" property="agentId" />
+        <result column="shop_id" jdbcType="INTEGER" property="shopId" />
+        <result column="order_no" jdbcType="VARCHAR" property="orderNo" />
+        <result column="user_id" jdbcType="INTEGER" property="userId" />
+        <result column="mem_grade" jdbcType="INTEGER" property="memGrade" />
+        <result column="status" jdbcType="INTEGER" property="status" />
+        <result column="delivery_status" jdbcType="INTEGER" property="deliveryStatus" />
+        <result column="amount" jdbcType="DECIMAL" property="amount" />
+        <result column="pay_time" jdbcType="TIMESTAMP" property="payTime" />
+        <result column="pay_way" jdbcType="INTEGER" property="payWay" />
+        <result column="invoice_id" jdbcType="INTEGER" property="invoiceId" />
+        <result column="tracking_no" jdbcType="VARCHAR" property="trackingNo" />
+        <result column="receiver_address_id" jdbcType="INTEGER" property="receiverAddressId" />
+        <result column="insert_time" jdbcType="TIMESTAMP" property="insertTime" />
+        <result column="delivery_time" jdbcType="TIMESTAMP" property="deliveryTime" />
+        <result column="receiving_time" jdbcType="TIMESTAMP" property="receivingTime" />
+        <result column="reject_reason" property="rejectReason"/>
+        <result column="freight" property="freight"/>
+        <result column="picking_logistics" property="pickingLogistics"/>
+        <result column="delivery_logistics" property="deliveryLogistics"/>
+        <result column="order_type" property="orderType"/>
+        <result column="refund_reason" property="refundReason"/>
+        <result column="pick_time_range" property="pickTimeRange"/>
+        <result column="pick_tracking_no" property="pickTrackingNo"/>
+    </resultMap>
+
+
+    <sql id="Base_Column_List" >
+        vc_order_order.id,vc_order_order.agent_id,vc_order_order.shop_id,vc_order_order.order_no,
+        vc_order_order.user_id,
+        vc_order_order.mem_grade,
+        vc_order_order.status,
+        vc_order_order.delivery_status,
+        vc_order_order.amount,
+        vc_order_order.pay_time,
+        vc_order_order.pay_way,
+        vc_order_order.invoice_id,
+        vc_order_order.tracking_no,vc_order_order.receiver_address_id,
+        vc_order_order.insert_time,vc_order_order.delivery_time,vc_order_order.receiving_time,
+        vc_order_order.reject_reason,
+        vc_order_order.freight,
+        vc_order_order.picking_logistics,
+        vc_order_order.delivery_logistics,
+        vc_order_order.order_type,
+        vc_order_order.refund_reason,
+        vc_order_order.pick_time_range,
+        vc_order_order.pick_tracking_no
+    </sql>
+
+
+<!--  查询订单详情  -->
+    <select id="selectByOrderId" resultMap="orderVoMap">
+        SELECT
+        <include refid="Base_Column_List">
+        </include>
+        FROM vc_order_order
+        WHERE is_delete = 0 AND id = #{orderId}
+    </select>
+
+
+
+
+<!--   管理员查询订单列表 -->
+    <select id="adminSelect" resultMap="orderVoMap">
+        SELECT
+        <include refid="Base_Column_List">
+        </include>
+        FROM vc_order_order
+        WHERE vc_order_order.is_delete = 0
+        <if test="agentId != null">
+            AND vc_order_order.agent_id = #{agentId}
+        </if>
+        <if test="shopId != null">
+            AND vc_order_order.shop_id = #{shopId}
+        </if>
+        <if test="orderNo != null and orderNo != ''">
+            AND vc_order_order.order_no = #{orderNo}
+        </if>
+        <if test="status != null and status == 1">
+            AND vc_order_order.status = #{status}
+            AND vc_order_order.delivery_status = #{deliveryStatus}
+        </if>
+        <if test="status != null and status != 1">
+            AND vc_order_order.status = #{status}
+        </if>
+        <if test="payWay != null">
+            AND vc_order_order.pay_way = #{payWay}
+        </if>
+        <if test="invoiceStatus != null and invoiceStatus == 0">
+            AND vc_order_order.invoice_id IS NULL
+        </if>
+        <if test="invoiceStatus != null and invoiceStatus == 1">
+            AND vc_order_order.invoice_id IS NOT NULL
+        </if>
+        <if test="startTime != null and startTime != ''">
+            and vc_order_order.insert_time &gt;= #{startTime}
+        </if>
+        <if test="endTime != null and endTime != ''">
+            and vc_order_order.insert_time &lt;= #{endTime}
+        </if>
+        ORDER BY vc_order_order.id DESC
+    </select>
+
+    <!--   用户端查询订单列表 -->
+    <select id="userSelect" resultMap="orderVoMap">
+        SELECT
+        <include refid="Base_Column_List">
+        </include>
+        FROM vc_order_order
+        WHERE vc_order_order.is_delete = 0
+        <if test="userId != null">
+            AND vc_order_order.user_id = #{userId}
+        </if>
+        <if test="status != null">
+            AND vc_order_order.status = #{status}
+        </if>
+        ORDER BY vc_order_order.id DESC
+    </select>
+
+
+
+    <select id="userSelOrderStatus"  resultType="com.vchaoxi.vo.OrderStatusVo">
+        SELECT
+        IFNULL(SUM(CASE WHEN (vc_order_order.status = 0) THEN 1 ELSE 0 END), 0) AS pendingPayment,
+        IFNULL(SUM(CASE WHEN (vc_order_order.status = 1) THEN 1 ELSE 0 END), 0) AS pendingShipment,
+        IFNULL(SUM(CASE WHEN (vc_order_order.status = 3) THEN 1 ELSE 0 END), 0) AS pendingDelivery
+        FROM vc_order_order
+        WHERE vc_order_order.is_delete = 0
+        AND vc_order_order.user_id = #{userId}
+    </select>
+
+<!--    统计相关的查询-->
+
+    <!--    按照日查询统计数据-->
+    <select id="orderStatisticsByDay" resultType="com.vchaoxi.vo.OrderStatisticsVo">
+        SELECT
+        DATE(vc_order_order.insert_time) AS periodKey,
+        IFNULL(COUNT(*), 0) AS periodValue
+        FROM vc_order_order
+        WHERE vc_order_order.is_delete = 0
+        AND vc_order_order.status != 0
+        AND vc_order_order.status != 2
+        AND vc_order_order.status != 5
+        AND vc_order_order.status != 6
+        <if test="startTime != null and startTime != ''">
+            and vc_order_order.insert_time &gt;= #{startTime}
+        </if>
+        <if test="endTime != null and endTime != ''">
+            and vc_order_order.insert_time &lt;= #{endTime}
+        </if>
+        GROUP BY DATE(vc_order_order.insert_time)
+        ORDER BY periodKey
+    </select>
+
+    <!--    按照周查询统计数据-->
+    <select id="orderStatisticsByWeek"  resultType="com.vchaoxi.vo.OrderStatisticsVo">
+        SELECT
+        YEAR(vc_order_order.insert_time) AS yearKey,
+        WEEK(vc_order_order.insert_time,1) AS periodKey,
+        IFNULL(COUNT(*), 0) AS periodValue
+        FROM vc_order_order
+        WHERE vc_order_order.is_delete = 0
+        AND vc_order_order.status != 0
+        AND vc_order_order.status != 2
+        AND vc_order_order.status != 5
+        AND vc_order_order.status != 6
+        <if test="startTime != null and startTime != ''">
+            and vc_order_order.insert_time &gt;= #{startTime}
+        </if>
+        <if test="endTime != null and endTime != ''">
+            and vc_order_order.insert_time &lt;= #{endTime}
+        </if>
+        GROUP BY WEEK(vc_order_order.insert_time)
+        ORDER BY periodKey
+    </select>
+    <!--    按照月查询统计数据-->
+    <select id="orderStatisticsByMonth"  resultType="com.vchaoxi.vo.OrderStatisticsVo">
+        SELECT
+        YEAR(vc_order_order.insert_time) AS yearKey,
+        MONTH(vc_order_order.insert_time) AS periodKey,
+        IFNULL(COUNT(*), 0) AS periodValue
+        FROM vc_order_order
+        WHERE vc_order_order.is_delete = 0
+        AND vc_order_order.status != 0
+        AND vc_order_order.status != 2
+        AND vc_order_order.status != 5
+        AND vc_order_order.status != 6
+        <if test="startTime != null and startTime != ''">
+            and vc_order_order.insert_time &gt;= #{startTime}
+        </if>
+        <if test="endTime != null and endTime != ''">
+            and vc_order_order.insert_time &lt;= #{endTime}
+        </if>
+        GROUP BY YEAR(vc_order_order.insert_time), MONTH(vc_order_order.insert_time)
+        ORDER BY yearKey, periodKey
+    </select>
+    <!--    按照年查询统计数据-->
+    <select id="orderStatisticsByYear" resultType="com.vchaoxi.vo.OrderStatisticsVo">
+        SELECT
+        YEAR(vc_order_order.insert_time) AS periodKey,
+        IFNULL(COUNT(*), 0) AS periodValue
+        FROM vc_order_order
+        WHERE vc_order_order.is_delete = 0
+        AND vc_order_order.status != 0
+        AND vc_order_order.status != 2
+        AND vc_order_order.status != 5
+        AND vc_order_order.status != 6
+        <if test="startTime != null and startTime != ''">
+            and vc_order_order.insert_time &gt;= #{startTime}
+        </if>
+        <if test="endTime != null and endTime != ''">
+            and vc_order_order.insert_time &lt;= #{endTime}
+        </if>
+        GROUP BY YEAR(vc_order_order.insert_time)
+        ORDER BY periodKey
+    </select>
+
+<!--    用户购买量查询-->
+    <select id="userPuchaseStatics" resultType="com.vchaoxi.vo.UserPurchaseStaticsVo">
+        SELECT
+        vc_order_order.user_id AS userId,
+        vc_user_user.nickname AS userNick,
+        vc_user_user.phone AS userPhone,
+        SUM(vc_order_order.amount) AS totalOrderAmount,
+        IFNULL(COUNT(*), 0) AS orderNum
+        FROM vc_order_order
+        LEFT JOIN vc_user_user ON vc_user_user.id = vc_order_order.user_id
+        WHERE vc_order_order.is_delete = 0
+        AND vc_order_order.status != 0
+        AND vc_order_order.status != 2
+        AND vc_order_order.status != 5
+        AND vc_order_order.status != 6
+        <if test="startTime != null and startTime != ''">
+            and vc_order_order.insert_time &gt;= #{startTime}
+        </if>
+        <if test="endTime != null and endTime != ''">
+            and vc_order_order.insert_time &lt;= #{endTime}
+        </if>
+        GROUP BY vc_order_order.user_id
+        <if test="sortType != null and sortType == 1">
+            ORDER BY orderNum DESC
+        </if>
+        <if test="sortType != null and sortType == 2">
+            ORDER BY totalOrderAmount DESC
+        </if>
+    </select>
+
+</mapper>

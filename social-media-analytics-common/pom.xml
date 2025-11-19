@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?><project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <parent>
+    <groupId>com.lumeng</groupId>
+    <artifactId>social-media-analytics</artifactId>
+    <version>1.0.0</version>
+  </parent>
+  <modelVersion>4.0.0</modelVersion>
+  <artifactId>social-media-analytics-common</artifactId>
+  <packaging>pom</packaging>
+  <modules>
+    <module>social-media-analytics-common-log</module>
+    <module>social-media-analytics-common-core</module>
+    <module>social-media-analytics-common-redis</module>
+    <module>social-media-analytics-common-seata</module>
+    <module>social-media-analytics-common-swagger</module>
+    <module>social-media-analytics-common-security</module>
+    <module>social-media-analytics-common-datascope</module>
+    <module>social-media-analytics-common-datasource</module>
+    <module>social-media-analytics-common-knife4j</module>
+    <module>social-media-analytics-biz-sys</module>
+    <module>social-media-analytics-common-rabbitmq</module>
+    <module>social-media-analytics-common-rocketmq</module>
+    <module>social-media-analytics-common-fluxdb</module>
+    <module>social-media-analytics-common-pay</module>
+    <module>social-media-analytics-common-mall</module>
+    <module>social-media-analytics-common-file</module>
+    <module>social-media-analytics-common-job</module>
+    <module>social-media-analytics-common-thirdparty</module>
+    <module>social-media-analytics-common-auth</module>
+    <module>social-media-analytics-common-logistic</module>
+  </modules>
+</project>

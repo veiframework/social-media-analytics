@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>social-media-analytics-common</artifactId>
+        <groupId>com.lumeng</groupId>
+        <version>1.0.0</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>social-media-analytics-biz-sys</artifactId>
+
+    <description>social-media-analytics-biz-sys 业务 系统</description>
+
+
+    <dependencies>
+
+        <!-- SpringCloud Alibaba Nacos -->
+
+
+        <!-- SpringCloud Alibaba Sentinel -->
+        <dependency>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-sentinel</artifactId>
+        </dependency>
+
+        <!-- SpringBoot Actuator -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
+        <!-- Swagger UI -->
+        <dependency>
+            <groupId>io.springfox</groupId>
+            <artifactId>springfox-swagger-ui</artifactId>
+            <version>${swagger.fox.version}</version>
+        </dependency>
+
+        <!-- Mysql Connector -->
+        <dependency>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
+        </dependency>
+
+        <!-- RuoYi Common DataSource -->
+        <dependency>
+            <groupId>com.lumeng</groupId>
+            <artifactId>social-media-analytics-common-datasource</artifactId>
+        </dependency>
+
+        <!-- RuoYi Common DataScope -->
+        <dependency>
+            <groupId>com.lumeng</groupId>
+            <artifactId>social-media-analytics-common-datascope</artifactId>
+        </dependency>
+
+
+
+        <!-- RuoYi Common Swagger -->
+        <dependency>
+            <groupId>com.lumeng</groupId>
+            <artifactId>social-media-analytics-common-swagger</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.lumeng</groupId>
+            <artifactId>social-media-analytics-common-core</artifactId>
+        </dependency>
+
+    </dependencies>
+
+</project>

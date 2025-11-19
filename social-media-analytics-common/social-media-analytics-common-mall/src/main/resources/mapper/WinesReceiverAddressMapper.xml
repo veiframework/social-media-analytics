@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.vchaoxi.mapper.WinesReceiverAddressMapper">
+
+    <!--  根据用户查询用户收寄点地址拼接字符串  -->
+    <select id="selectStrByUserId" resultType="java.lang.String">
+        SELECT CONCAT(user_name,tel_number,province_code,city_code,county_code,detail_info)
+        FROM wines_receiver_address WHERE user_id = #{userId} AND is_delete = 0
+    </select>
+
+</mapper>

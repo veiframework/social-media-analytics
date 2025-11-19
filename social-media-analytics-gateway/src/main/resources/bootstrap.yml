@@ -1,0 +1,235 @@
+# Tomcat
+server:
+  port: 8080
+
+# Spring
+spring:
+  web:
+    resources:
+      static-locations:
+        - classpath:/META-INF/resources/
+        - classpath:/resources/
+        - classpath:/static/
+        - classpath:/public/
+        - file:/opt/resources/
+        - file:/opt/resources/dist/
+  application:
+    # 应用名称
+    name: gateway
+  profiles:
+    # 环境配置
+    active: dev
+  cloud:
+    nacos:
+      discovery:
+        # 服务注册地址
+        server-addr: ${nacos.url}
+        group: ${discovery.nacos.group}
+      config:
+        # 配置中心地址
+        server-addr: ${nacos.url}
+        group: ${nacos.group}
+        # 配置文件格式
+        file-extension: yml
+        # 共享配置
+        shared-configs:
+          - data-id: application-${spring.profiles.active}.${spring.cloud.nacos.config.file-extension}
+            group: ${nacos.group}
+    gateway:
+      httpclient:
+        connect-timeout: 60000
+        response-timeout: 60s
+      discovery:
+        locator:
+          lowerCaseServiceId: true
+          enabled: true
+      routes:
+        - id: redirect_v2_api_docs
+          uri: http://404
+          predicates:
+            - Path=/{segments:.*}/v2/api-docs
+          filters:
+            - RewritePath=/(?<segments>.*)/v2/api-docs, /
+
+        - id: redirect_index_to_html
+          uri: lb://gateway
+          predicates:
+            - Path=/index
+          filters:
+            - RewritePath=/index, /index.html
+
+        # 认证中心
+        - id: auth
+          uri: lb://authorize
+          predicates:
+            - Path=/auth/**
+          filters:
+            # 验证码处理
+            - CacheRequestFilter
+            - ValidateCodeFilter
+            - StripPrefix=1
+
+        # 认证中心
+        - id: auth2
+          uri: lb://authorize
+          predicates:
+            - Path=/auth-api/login/wechat
+          filters:
+            # 验证码处理
+            - CacheRequestFilter
+            - StripPrefix=1
+
+        # 认证中心
+        - id: auth
+          uri: lb://authorize
+          predicates:
+            - Path=/auth-api/**
+          filters:
+            # 验证码处理
+            - CacheRequestFilter
+            - ValidateCodeFilter
+            - StripPrefix=1
+
+        # 定时任务
+        - id: job
+          uri: lb://job
+          predicates:
+            - Path=/schedule/**
+          filters:
+            - StripPrefix=1
+
+        # web模块
+
+        - id: admin
+          uri: lb://admin
+          predicates:
+            - Path=/sys/**
+          filters:
+            - StripPrefix=1
+
+
+        - id: admin
+          uri: lb://admin
+          predicates:
+            - Path=/system/**
+          filters:
+            - StripPrefix=1
+
+        - id: admin
+          uri: lb://admin
+          predicates:
+            - Path=/admin-api/**
+          filters:
+            - StripPrefix=1
+
+        - id: admin
+          uri: lb://admin
+          predicates:
+            - Path=/charge-api/charge/**
+          filters:
+            - StripPrefix=2
+
+        # 文件服务
+        - id: file
+          uri: lb://file
+          predicates:
+            - Path=/file-api/**
+          filters:
+            - StripPrefix=1
+
+        # 报表和分析服务模块
+        - id: analytics
+          uri: lb://analytics
+          predicates:
+            - Path=/analytics-api/**
+          filters:
+            - StripPrefix=1
+
+
+
+        # 第三方服务模块
+        - id: thirdparty
+          uri: lb://thirdparty
+          predicates:
+            - Path=/thirdparty-api/**
+          filters:
+            - StripPrefix=1
+
+        # 日志管理服务模块
+        - id: log
+          uri: lb://log
+          predicates:
+            - Path=/log-api/**
+          filters:
+            - StripPrefix=1
+
+
+
+
+
+
+    sentinel:
+      # 取消控制台懒加载
+      eager: true
+      transport:
+        # 控制台地址
+        dashboard: 127.0.0.1:8718
+      # nacos配置持久化
+      datasource:
+        ds1:
+          nacos:
+            server-addr: ${nacos.url}
+            dataId: sentinel-gateway
+            groupId: ${nacos.group}
+            data-type: json
+            rule-type: gw-flow
+
+
+# 安全配置
+security:
+  # 验证码
+  captcha:
+    enabled: true
+    type: math
+  # 防止XSS攻击
+  xss:
+    enabled: true
+    excludeUrls:
+      - /system/notice
+
+  # 不校验白名单
+  ignore:
+    whites:
+      - /index
+      - /auth/logout
+      - /auth/login
+      - /auth/register
+      - /auth-api/login
+      - /auth-api/logout
+      - /auth-api/register
+      - /auth-api/login/wechat
+      - /admin-api/login
+      - /admin-api/logout
+      - /admin-api/register
+      - /admin-api/login/wechat
+
+
+
+management:
+  metrics:
+    export:
+      prometheus:
+        enabled: false
+  endpoint:
+    metrics:
+      enabled: false
+    prometheus:
+      enabled: false
+    env:
+      enabled: false
+  endpoints:
+    web:
+      exposure:
+        include:
+      base-path: '/lychxny1772899836014301186'
+    enabled-by-default: false

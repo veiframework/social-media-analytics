@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.vchaoxi.mapper.AgentGeneralConfigMapper">
+
+    <resultMap id="agentGeneralConfigVoMap" type="com.vchaoxi.vo.AgentGeneralConfigVo">
+        <result column="id" jdbcType="INTEGER" property="id"/>
+        <result column="offline_redemption_address" jdbcType="VARCHAR" property="offlineRedemptionAddress"/>
+        <result column="offline_redemption_contact" jdbcType="VARCHAR" property="offlineRedemptionContact"/>
+        <result column="offline_redemption_phone" jdbcType="VARCHAR" property="offlineRedemptionPhone"/>
+        <result column="insert_time" jdbcType="TIMESTAMP" property="insertTime"/>
+        <result column="update_time" jdbcType="TIMESTAMP" property="updateTime"/>
+        <result column="is_delete" jdbcType="INTEGER" property="isDelete"/>
+        <result column="delete_time" jdbcType="TIMESTAMP" property="deleteTime"/>
+    </resultMap>
+
+
+    <sql id="Base_Column_List">
+        vc_agent_general_config.id,vc_agent_general_config.offline_redemption_address,
+        vc_agent_general_config.offline_redemption_contact,vc_agent_general_config.offline_redemption_phone,
+        vc_agent_general_config.insert_time,vc_agent_general_config.update_time,vc_agent_general_config.is_delete,
+        vc_agent_general_config.delete_time
+    </sql>
+
+    <select id="getGeneralConfigList" resultMap="agentGeneralConfigVoMap">
+        SELECT
+        vc_agent_general_config.id,
+        vc_agent_general_config.offline_redemption_address,
+        vc_agent_general_config.offline_redemption_contact,
+        vc_agent_general_config.offline_redemption_phone,
+        vc_agent_general_config.insert_time
+        FROM vc_agent_general_config
+        WHERE vc_agent_general_config.is_delete = 0
+        <if test="address != null and address != ''">
+            AND vc_agent_general_config.offline_redemption_address LIKE CONCAT("%",#{address},"%")
+        </if>
+        <if test="name != null and name != ''">
+            AND vc_agent_general_config.offline_redemption_contact LIKE CONCAT("%",#{name},"%")
+        </if>
+        <if test="phone != null and phone != ''">
+            AND vc_agent_general_config.offline_redemption_phone LIKE CONCAT("%",#{phone},"%")
+        </if>
+        ORDER BY vc_agent_general_config.id DESC
+    </select>
+</mapper>

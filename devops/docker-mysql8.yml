@@ -1,0 +1,40 @@
+version: '3'
+##使用指定网络
+networks:
+  mynet:
+    driver: bridge
+    internal: false
+
+services:
+  mysql8:
+    privileged: true
+    restart: always
+    image: mysql:8.0
+    container_name: mysql8
+    networks:
+    - mynet
+    ports:
+    - 3308:3306
+    volumes:
+    - /home/boot2docker/mysql8/my.cnf:/etc/mysql/conf.d/mysql.cnf
+    - /home/boot2docker/mysql8/data:/var/lib/mysql
+
+    environment:
+      TZ: Asia/Shanghai
+      MYSQL_ROOT_PASSWORD: 123456
+
+#  wechatbot:
+#    privileged: true
+#    restart: always
+#    image: dannicool/docker-wechatbot-webhook
+#    container_name: wechatbot
+#    networks:
+#      - mynet
+#    ports:
+#      - 33001:3001
+#    environment:
+#      TZ: Asia/Shanghai
+#      MYSQL_ROOT_PASSWORD: 123456
+#      ACCEPT_RECVD_MSG_MYSELF: true
+#      LOGIN_API_TOKEN: 68804a700f9c8bb63e315390
+#      RECVD_MSG_API: http://mcp-server:9301/wechat-message

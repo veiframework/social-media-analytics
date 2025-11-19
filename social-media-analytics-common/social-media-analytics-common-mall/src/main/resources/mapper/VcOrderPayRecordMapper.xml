@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.vchaoxi.mapper.VcOrderPayRecordMapper">
+
+
+
+    <resultMap id="orderPayRecordVoMap" type="com.vchaoxi.vo.OrderPayRecordVo">
+        <result column="id" jdbcType="INTEGER" property="id" />
+        <result column="agent_id" jdbcType="INTEGER" property="agentId" />
+        <result column="shop_id" jdbcType="INTEGER" property="shopId" />
+        <result column="order_id" jdbcType="INTEGER" property="orderId" />
+        <result column="record_type" jdbcType="INTEGER" property="recordType" />
+        <result column="pay_way" jdbcType="INTEGER" property="payWay" />
+        <result column="status" jdbcType="INTEGER" property="status" />
+        <result column="amount" jdbcType="DECIMAL" property="amount" />
+        <result column="goods_num" jdbcType="INTEGER" property="goodsNum" />
+        <result column="remarks" jdbcType="VARCHAR" property="remarks" />
+        <result column="pay_time" jdbcType="TIMESTAMP" property="payTime" />
+        <result column="insert_time" jdbcType="TIMESTAMP" property="insertTime" />
+    </resultMap>
+
+
+    <sql id="Base_Column_List" >
+        vc_order_pay_record.id,vc_order_pay_record.agent_id,vc_order_pay_record.shop_id,vc_order_pay_record.order_id,
+        vc_order_pay_record.record_type,vc_order_pay_record.pay_way,vc_order_pay_record.status,vc_order_pay_record.amount,
+        vc_order_pay_record.goods_num,vc_order_pay_record.remarks,vc_order_pay_record.pay_time,vc_order_pay_record.insert_time
+    </sql>
+
+
+    <select id="selectByOrderId" resultMap="orderPayRecordVoMap">
+        SELECT
+        <include refid="Base_Column_List">
+        </include>
+        FROM vc_order_pay_record WHERE vc_order_pay_record.order_id = #{orderId} AND status = 2
+    </select>
+</mapper>

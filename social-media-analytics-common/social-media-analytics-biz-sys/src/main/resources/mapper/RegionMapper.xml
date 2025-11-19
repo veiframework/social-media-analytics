@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chargehub.biz.region.mapper.RegionMapper">
+
+
+    <select id="getCurrentRegion" resultType="com.chargehub.biz.region.domain.vo.RegionVo">
+        SELECT id,
+               tenant_id,
+               parent_id,
+               remark,
+               label,
+               `level`,
+               last_stage
+        from charge_region
+        where id in (
+            SELECT IF(cr.`level` = 2, id, parent_id)
+            FROM charge_region cr
+                     INNER JOIN (
+                SELECT ROUND((st_distance(point(longitde, latitude), point(#{longitude}, #{latitude})) * 111195) / 1000,
+                             2) AS distance,
+                       region_id
+                FROM charg_station
+                ORDER BY distance ASC
+                LIMIT 1
+            ) cs ON cr.id = cs.region_id
+        )
+    </select>
+</mapper>

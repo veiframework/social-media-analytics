@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.vchaoxi.mapper.VcGoodsTypeMapper">
+
+
+
+
+    <resultMap id="typeVoMap" type="com.vchaoxi.vo.TypeVo">
+        <result column="id" jdbcType="INTEGER" property="id" />
+        <result column="agent_id" jdbcType="INTEGER" property="agentId" />
+        <result column="shop_id" jdbcType="INTEGER" property="shopId" />
+        <result column="name" jdbcType="VARCHAR" property="name" />
+        <result column="status" jdbcType="INTEGER" property="status" />
+        <result column="serial" jdbcType="INTEGER" property="serial" />
+        <result column="parentName"   property="parentName" />
+        <result column="parent_id"   property="parentId" />
+    </resultMap>
+
+
+    <sql id="Base_Column_List" >
+        vc_goods_type.id,vc_goods_type.agent_id,vc_goods_type.shop_id,vc_goods_type.name,vc_goods_type.status,vc_goods_type.serial,vc_goods_type.parent_id
+    </sql>
+
+
+<!--  根据类型id查询类型  -->
+    <select id="selectByTypeId" resultMap="typeVoMap">
+        SELECT
+        <include refid="Base_Column_List">
+        </include>
+        FROM vc_goods_type WHERE id = #{id}
+    </select>
+
+
+
+
+    <!--    管理员查询商品分类列表 -->
+    <select id="adminSelect" resultMap="typeVoMap">
+        SELECT <include refid="Base_Column_List"/>,vc_shop_shop.name AS shop_name,parentName
+        FROM vc_goods_type
+        LEFT JOIN vc_shop_shop ON vc_shop_shop.id = vc_goods_type.shop_id
+        LEFT JOIN (select id as parentId, name as parentName from vc_goods_type) t on vc_goods_type.parent_id = t.parentId
+        WHERE vc_goods_type.is_delete = 0
+        <if test="name != null and name != ''">
+            AND vc_goods_type.name LIKE CONCAT("%",#{name},"%")
+        </if>
+        <if test="shopId != null">
+            AND vc_goods_type.shop_id = #{shopId}
+        </if>
+        <if test="agentId != null">
+            AND vc_goods_type.agent_id = #{agentId}
+        </if>
+        <if test="parentId != null">
+            <choose>
+                <when test="parentId == -2">
+                    AND parent_id > -1
+                </when>
+                <otherwise>
+                    AND parent_id = #{parentId}
+                </otherwise>
+            </choose>
+        </if>
+        ORDER BY vc_goods_type.serial
+    </select>
+
+
+
+<!--    -->
+    <select id="selectByShopId" resultMap="typeVoMap">
+        SELECT <include refid="Base_Column_List"/>,parentName
+        FROM vc_goods_type
+        LEFT JOIN (select id as parentId, name as parentName from vc_goods_type) t on vc_goods_type.parent_id = t.parentId
+        WHERE is_delete = 0
+        AND status = 1
+        <if test="shopId != null and shopId!=''">
+            AND shop_id = #{shopId}
+        </if>
+        <if test="parentId != null">
+            <choose>
+                <when test="parentId == -2">
+                    AND parent_id > -1
+                </when>
+                <otherwise>
+                    AND parent_id = #{parentId}
+                </otherwise>
+            </choose>
+        </if>
+        ORDER BY serial
+    </select>
+
+
+
+
+<!--    -->
+    <select id="selectTypeNameByShopId" resultType="java.util.Map">
+        SELECT vc_goods_type.id, vc_goods_type.name,vc_goods_type.serial
+        FROM vc_goods_type WHERE is_delete = 0 AND shop_id = #{shopId}
+        AND status = 1
+        ORDER BY serial
+    </select>
+</mapper>

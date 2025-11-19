@@ -1,0 +1,41 @@
+# Tomcat
+server:
+  port: 9200
+
+# Spring
+spring:
+  application:
+    # 应用名称
+    name: authorize
+  profiles:
+    # 环境配置
+    active: dev
+  cloud:
+    nacos:
+      discovery:
+        # 服务注册地址
+        server-addr: ${nacos.url}
+        group: ${discovery.nacos.group}
+      config:
+        # 配置中心地址
+        server-addr: ${nacos.url}
+        group: ${nacos.group}
+        # 配置文件格式
+        file-extension: yml
+        # 共享配置
+        shared-configs:
+          - data-id: application-${spring.profiles.active}.${spring.cloud.nacos.config.file-extension}
+            group: ${nacos.group}
+
+
+# swagger配置
+swagger:
+  title: auth模块接口文档
+  license: Powered By vchaoxi
+
+
+
+# 授权相关
+auth:
+  # 手机号获取方式  1用户手动输入  2通过微信（支付宝）授权获取   3手动输入加微信（支付宝）授权获取
+  phoneNoWay: 1

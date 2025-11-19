@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.vchaoxi.mapper.VcShopShopMapper">
+
+    <resultMap id="vcShopShopVoMap" type="com.vchaoxi.vo.VcShopShopVo">
+        <result column="id" jdbcType="INTEGER" property="id" />
+        <result column="agent_id" jdbcType="INTEGER" property="agentId" />
+        <result column="name" jdbcType="VARCHAR" property="name" />
+        <result column="logo" jdbcType="VARCHAR" property="logo" />
+        <result column="brand" jdbcType="VARCHAR" property="brand" />
+        <result column="qr_code" jdbcType="VARCHAR" property="qrCode" />
+        <result column="contacts" jdbcType="VARCHAR" property="contacts" />
+        <result column="business_hours" jdbcType="VARCHAR" property="businessHours" />
+        <result column="service_phone" jdbcType="VARCHAR" property="servicePhone" />
+        <result column="promoter_id" jdbcType="INTEGER" property="promoterId" />
+        <result column="insert_time" jdbcType="TIMESTAMP" property="insertTime" />
+    </resultMap>
+
+
+    <sql id="Base_Column_List" >
+        vc_shop_shop.id,vc_shop_shop.agent_id,vc_shop_shop.name,vc_shop_shop.logo,vc_shop_shop.brand,vc_shop_shop.qr_code,
+        vc_shop_shop.contacts,vc_shop_shop.business_hours,vc_shop_shop.service_phone,vc_shop_shop.promoter_id,vc_shop_shop.insert_time
+    </sql>
+
+
+
+
+
+    <!--  查询商家列表  -->
+    <select id="erpSelectList" resultType="com.vchaoxi.vo.VcShopShopVo">
+        SELECT <include refid="Base_Column_List"/>,vc_shop_wx.custom AS custom,vc_shop_wx.custom_edit AS customEdit
+        FROM vc_shop_shop
+        LEFT JOIN vc_shop_wx ON vc_shop_shop.id = vc_shop_wx.shop_id
+        WHERE vc_shop_shop.is_delete = 0
+        <if test="shopName != null and shopName != ''">
+            AND vc_shop_shop.name LIKE CONCAT("%",#{shopName},"%")
+        </if>
+        <if test="agentId != null">
+            AND vc_shop_shop.agent_id = #{agentId}
+        </if>
+        ORDER BY vc_shop_shop.id DESC
+    </select>
+
+
+
+
+    <!--   通过id查询商家详情 -->
+    <select id="erpSelectById" resultMap="vcShopShopVoMap">
+        SELECT
+        <include refid="Base_Column_List">
+        </include>
+        FROM vc_shop_shop WHERE is_delete = 0 AND id = #{id}
+    </select>
+
+
+
+
+    <select id="selectShopIdsByAgentId" resultType="java.lang.Integer">
+        SELECT id FROM vc_shop_shop WHERE is_delete = 0 AND agent_id = #{agentId}
+    </select>
+
+
+
+<!--  查询全部的商家列表  -->
+    <select id="selectAllShop" resultMap="vcShopShopVoMap">
+        SELECT
+        <include refid="Base_Column_List">
+        </include>
+        FROM vc_shop_shop
+        WHERE is_delete = 0
+        <if test="agentId != null">
+            AND vc_shop_shop.agent_id = #{agentId}
+        </if>
+        ORDER BY vc_shop_shop.id DESC
+    </select>
+</mapper>

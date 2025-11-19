@@ -1,0 +1,3 @@
+com.chargehub.common.datascope.aspect.DataScopeAspect
+com.chargehub.common.datascope.controller.Z9PurviewController
+com.chargehub.common.datascope.service.Z9PurviewServiceImpl

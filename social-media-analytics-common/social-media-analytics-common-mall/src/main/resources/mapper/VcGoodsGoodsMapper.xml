@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.vchaoxi.mapper.VcGoodsGoodsMapper">
+
+
+
+
+    <resultMap id="goodsVoMap" type="com.vchaoxi.vo.GoodsVo">
+        <result column="id" jdbcType="INTEGER" property="id" />
+        <result column="agent_id" jdbcType="INTEGER" property="agentId" />
+        <result column="shop_id" jdbcType="INTEGER" property="shopId" />
+        <result column="type" jdbcType="INTEGER" property="type" />
+        <result column="name" jdbcType="VARCHAR" property="name" />
+        <result column="goods_no" jdbcType="VARCHAR" property="goodsNo" />
+        <result column="status" jdbcType="INTEGER" property="status" />
+        <result column="img" jdbcType="VARCHAR" property="img" />
+        <result column="gallery" jdbcType="VARCHAR" property="gallery" />
+        <result column="amount" jdbcType="DECIMAL" property="amount" />
+        <result column="mem_amount" jdbcType="DECIMAL" property="memAmount" />
+        <result column="vip_amount" jdbcType="DECIMAL" property="vipAmount" />
+        <result column="sales_number" jdbcType="DECIMAL" property="salesNumber" />
+        <result column="serial" jdbcType="INTEGER" property="serial" />
+        <result column="box_sizes" jdbcType="VARCHAR" property="boxSizes" />
+        <result column="unit" jdbcType="VARCHAR" property="unit" />
+        <result column="brief" jdbcType="VARCHAR" property="brief" />
+        <result column="details" jdbcType="VARCHAR" property="details" />
+        <result column="is_banner" jdbcType="VARCHAR" property="isBanner" />
+        <result column="insert_time" jdbcType="TIMESTAMP" property="insertTime" />
+        <result column="update_time" jdbcType="TIMESTAMP" property="updateTime" />
+        <result column="freight"  property="freight" />
+    </resultMap>
+
+
+    <sql id="Base_Column_List" >
+        vc_goods_goods.id,vc_goods_goods.agent_id,vc_goods_goods.shop_id,vc_goods_goods.type,
+        vc_goods_goods.name,
+        vc_goods_goods.goods_no,
+        vc_goods_goods.status,vc_goods_goods.img,vc_goods_goods.gallery,
+        vc_goods_goods.amount,
+        vc_goods_goods.mem_amount,
+        vc_goods_goods.vip_amount,
+        vc_goods_goods.sales_number,
+        vc_goods_goods.serial,vc_goods_goods.box_sizes,
+        vc_goods_goods.unit,
+        vc_goods_goods.brief,
+        vc_goods_goods.details,
+        vc_goods_goods.is_banner,
+        vc_goods_goods.is_promotion,
+        vc_goods_goods.insert_time,vc_goods_goods.update_time,vc_goods_goods.freight
+    </sql>
+
+    <select id="goodsSearchWithSort" resultType="com.vchaoxi.vo.GoodsVo">
+        SELECT
+        <include refid="Base_Column_List">
+        </include>
+        FROM vc_goods_goods
+        WHERE vc_goods_goods.is_delete = 0 AND vc_goods_goods.status = 1
+        <if test="goodsName != null and goodsName != ''">
+            AND vc_goods_goods.`name` LIKE CONCAT("%",#{goodsName},"%")
+        </if>
+        <if test="type != null">
+            AND vc_goods_goods.`type` = #{type}
+        </if>
+        <if test="parentId != null">
+            AND vc_goods_goods.`type` in (select id from vc_goods_type where parent_id = #{parentId})
+        </if>
+        <if test="sortType != null and sortType == 1">
+            ORDER BY vc_goods_goods.sales_number DESC
+        </if>
+        <if test="sortType != null and sortType == 2 and memGrade == 1">
+            ORDER BY vc_goods_goods.amount ASC
+        </if>
+        <if test="sortType != null and sortType == 2 and memGrade == 2">
+            ORDER BY vc_goods_goods.mem_amount ASC
+        </if>
+        <if test="sortType != null and sortType == 2 and memGrade == 3">
+            ORDER BY vc_goods_goods.vip_amount ASC
+        </if>
+        <if test="sortType != null and sortType == 3 and memGrade == 1">
+            ORDER BY vc_goods_goods.amount DESC
+        </if>
+        <if test="sortType != null and sortType == 3 and memGrade == 2">
+            ORDER BY vc_goods_goods.mem_amount DESC
+        </if>
+        <if test="sortType != null and sortType == 3 and memGrade == 3">
+            ORDER BY vc_goods_goods.vip_amount DESC
+        </if>
+    </select>
+
+    <select id="adminSelect" resultType="com.vchaoxi.vo.GoodsVo">
+        SELECT
+        <include refid="Base_Column_List">
+        </include>
+        FROM vc_goods_goods
+        WHERE vc_goods_goods.is_delete = 0
+        <if test="name != null and name != ''">
+            AND vc_goods_goods.`name` LIKE CONCAT("%",#{name},"%")
+        </if>
+        <if test="goodsNo != null and goodsNo != ''">
+            AND vc_goods_goods.`goods_no` LIKE CONCAT("%",#{goodsNo},"%")
+        </if>
+        <if test="type != null">
+            AND vc_goods_goods.type = #{type}
+        </if>
+        <if test="parentId != null">
+            AND vc_goods_goods.`type` in (select id from vc_goods_type where parent_id = #{parentId})
+        </if>
+        <if test="shopId != null">
+            AND vc_goods_goods.shop_id = #{shopId}
+        </if>
+        <if test="agentId != null">
+            AND vc_goods_goods.agent_id = #{agentId}
+        </if>
+        <if test="status != null">
+            AND vc_goods_goods.status = #{status}
+        </if>
+        ORDER BY vc_goods_goods.id DESC
+    </select>
+
+
+
+<!--   根据商品id查询商品信息 -->
+    <select id="selectByGoodId" resultMap="goodsVoMap">
+        SELECT
+        <include refid="Base_Column_List">
+        </include>
+        FROM vc_goods_goods
+        WHERE vc_goods_goods.is_delete = 0 AND id = #{id}
+    </select>
+
+    <select id="selectByTypeId" resultType="java.util.Map">
+        SELECT vc_goods_goods.id, vc_goods_goods.`name`,
+                vc_goods_goods.goods_no,
+               vc_goods_goods.img, vc_goods_goods.amount,vc_goods_goods.serial
+        FROM vc_goods_goods
+        WHERE is_delete = 0 AND vc_goods_goods.`type` = #{typeId} AND status = 1
+        ORDER BY vc_goods_goods.serial
+    </select>
+
+
+
+
+<!--用户查询商品列表-->
+    <select id="userGoodsList" resultMap="goodsVoMap">
+        SELECT
+        <include refid="Base_Column_List"/>,
+        vc_goods_type.name AS typeName
+        FROM vc_goods_goods
+        LEFT JOIN vc_goods_type ON vc_goods_type.id = vc_goods_goods.type
+        WHERE vc_goods_goods.is_delete = 0 AND vc_goods_goods.status = 1
+        <if test="type != null">
+            AND type = #{type}
+        </if>
+        <if test="parentType!=null">
+            and type in (select id from vc_goods_type where parent_id = #{parentType})
+        </if>
+        ORDER BY serial
+    </select>
+</mapper>

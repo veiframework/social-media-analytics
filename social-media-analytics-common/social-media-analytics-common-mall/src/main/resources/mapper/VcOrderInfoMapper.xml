@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.vchaoxi.mapper.VcOrderInfoMapper">
+
+
+
+
+    <resultMap id="orderInfoVoMap" type="com.vchaoxi.vo.OrderInfoVo">
+        <result column="id" jdbcType="INTEGER" property="id" />
+        <result column="agent_id" jdbcType="INTEGER" property="agentId" />
+        <result column="shop_id" jdbcType="INTEGER" property="shopId" />
+        <result column="order_id" jdbcType="INTEGER" property="orderId" />
+        <result column="order_no" jdbcType="VARCHAR" property="orderNo" />
+        <result column="user_id" jdbcType="INTEGER" property="userId" />
+        <result column="goods_id" jdbcType="INTEGER" property="goodsId" />
+        <result column="goods_name" jdbcType="VARCHAR" property="goodsName" />
+        <result column="goods_no" jdbcType="VARCHAR" property="goodsNo" />
+        <result column="specification_id" jdbcType="INTEGER" property="specificationId" />
+        <result column="specifications" jdbcType="VARCHAR" property="specifications" />
+        <result column="goods_img" jdbcType="VARCHAR" property="goodsImg" />
+        <result column="goods_type_id" jdbcType="INTEGER" property="goodsTypeId" />
+        <result column="goods_type_name" jdbcType="VARCHAR" property="goodsTypeName" />
+        <result column="status" jdbcType="INTEGER" property="status" />
+        <result column="amount" jdbcType="DECIMAL" property="amount" />
+        <result column="goods_num" jdbcType="INTEGER" property="goodsNum" />
+        <result column="unit_price" jdbcType="DECIMAL" property="unitPrice" />
+        <result column="pay_time" jdbcType="TIMESTAMP" property="payTime" />
+        <result column="insert_time" jdbcType="TIMESTAMP" property="insertTime" />
+        <result column="user_images" property="userImages" />
+        <association property="goodsGroup" column="goods_type_id" select="com.vchaoxi.mapper.VcOrderInfoMapper.getGroup"/>
+    </resultMap>
+
+    <select id="getGroup" resultType="java.lang.String">
+        select `name` from vc_goods_type where id = (select parent_id from vc_goods_type where id = #{goodsTypeId})
+    </select>
+
+    <sql id="Base_Column_List" >
+        vc_order_info.id,vc_order_info.agent_id,vc_order_info.shop_id,vc_order_info.order_id,vc_order_info.order_no,vc_order_info.user_id,vc_order_info.goods_id,
+        vc_order_info.goods_name,
+        vc_order_info.goods_no,
+        vc_order_info.specification_id,
+        vc_order_info.specifications,
+        vc_order_info.goods_img,
+        vc_order_info.goods_type_id,vc_order_info.goods_type_name,vc_order_info.status,vc_order_info.amount,
+        vc_order_info.goods_num,
+        vc_order_info.unit_price,
+        vc_order_info.pay_time,vc_order_info.insert_time,
+        vc_order_info.user_images
+    </sql>
+
+
+<!--  根据订单id查询订单详情列表  -->
+    <select id="selectByOrderId" resultMap="orderInfoVoMap">
+        SELECT
+        <include refid="Base_Column_List">
+        </include>
+        FROM vc_order_info WHERE is_delete = 0 AND order_id = #{orderId}
+    </select>
+
+
+
+<!--  根据订单详情id查询订单信息  -->
+    <select id="selectByOrderInfoId" resultMap="orderInfoVoMap">
+        SELECT
+        <include refid="Base_Column_List">
+        </include>
+        FROM vc_order_info WHERE is_delete = 0 AND id = #{orderInfoId}
+    </select>
+
+
+<!--    产品销量统计-->
+    <!--    按日查询统计数据-->
+    <select id="salesVolumeStatistics" resultType="com.vchaoxi.vo.SalesVolumeStatisticsVo">
+        SELECT
+        vc_order_info.goods_no AS goodsNo,
+        vc_order_info.goods_name AS goodsName,
+        SUM(vc_order_info.amount) AS amount,
+        SUM(vc_order_info.goods_num) AS goodsNum
+        FROM vc_order_info
+        WHERE vc_order_info.is_delete = 0
+        AND vc_order_info.status != 0
+        AND vc_order_info.status != 2
+        AND vc_order_info.status != 5
+        AND vc_order_info.status != 6
+        <if test="startTime != null and startTime != ''">
+            and vc_order_info.insert_time &gt;= #{startTime}
+        </if>
+        <if test="endTime != null and endTime != ''">
+            and vc_order_info.insert_time &lt;= #{endTime}
+        </if>
+        GROUP BY vc_order_info.goods_no
+        <if test="sortType != null and sortType == 1">
+            ORDER BY goodsNum DESC
+        </if>
+        <if test="sortType != null and sortType == 2">
+            ORDER BY amount DESC
+        </if>
+    </select>
+
+    <select id="totalSalesStatistics" resultType="java.math.BigDecimal">
+        SELECT
+        SUM(vc_order_info.amount) AS amount
+        FROM vc_order_info
+        WHERE vc_order_info.is_delete = 0
+        AND vc_order_info.status != 0
+        AND vc_order_info.status != 2
+        AND vc_order_info.status != 5
+        AND vc_order_info.status != 6
+        <if test="startTime != null and startTime != ''">
+            and vc_order_info.insert_time &gt;= #{startTime}
+        </if>
+        <if test="endTime != null and endTime != ''">
+            and vc_order_info.insert_time &lt;= #{endTime}
+        </if>
+    </select>
+
+</mapper>

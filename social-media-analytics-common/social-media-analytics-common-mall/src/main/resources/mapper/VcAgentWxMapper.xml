@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.vchaoxi.mapper.VcAgentWxMapper">
+
+
+
+
+    <resultMap id="BaseResultMap" type="com.vchaoxi.vo.AgentWxVo" >
+        <id column="id" property="id" jdbcType="INTEGER" />
+        <result column="agent_id" property="agentId" jdbcType="INTEGER" />
+        <result column="mp_appid" property="mpAppid" jdbcType="VARCHAR" />
+        <result column="mp_app_secret" property="mpAppSecret" jdbcType="VARCHAR" />
+        <result column="mp_token" property="mpToken" jdbcType="VARCHAR" />
+        <result column="mp_aes_key" property="mpAesKey" jdbcType="VARCHAR" />
+        <result column="mp_qr" property="mpQr" jdbcType="VARCHAR" />
+        <result column="mp_main_body" property="mpMainBody" jdbcType="VARCHAR" />
+        <result column="mch_id" property="mchId" jdbcType="VARCHAR" />
+        <result column="mch_key" property="mchKey" jdbcType="VARCHAR" />
+        <result column="mch_cert_name" property="mchCertName" jdbcType="VARCHAR" />
+        <result column="mp_name" property="mpName" jdbcType="VARCHAR" />
+        <result column="custom" property="custom" jdbcType="INTEGER" />
+
+        <result column="ma_appid" property="maAppid" jdbcType="VARCHAR" />
+        <result column="ma_secret" property="maSecret" jdbcType="VARCHAR" />
+        <result column="ma_name" property="maName" jdbcType="VARCHAR" />
+        <result column="ma_qr" property="maQr" jdbcType="VARCHAR" />
+    </resultMap>
+
+    <sql id="Base_Column_List" >
+        id, agent_id, mp_appid, mp_app_secret, mp_token, mp_aes_key, mp_qr, mp_main_body,
+    mch_id, mch_key, mch_cert_name, mp_name, custom,ma_appid,ma_secret,ma_name,ma_qr
+    </sql>
+
+<!--    -->
+    <select id="selectByAgentId" resultType="com.vchaoxi.vo.AgentWxVo">
+        SELECT
+        <include refid="Base_Column_List">
+        </include>
+        FROM vc_agent_wx WHERE is_delete = 0 AND agent_id = #{agentId}
+    </select>
+</mapper>

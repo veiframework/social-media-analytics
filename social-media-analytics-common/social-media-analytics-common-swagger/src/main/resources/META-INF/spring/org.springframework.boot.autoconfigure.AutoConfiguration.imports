@@ -1,0 +1,3 @@
+# com.chargehub.common.swagger.config.SwaggerAutoConfiguration
+# com.chargehub.common.swagger.config.SwaggerWebConfiguration
+# com.chargehub.common.swagger.config.SwaggerBeanPostProcessor

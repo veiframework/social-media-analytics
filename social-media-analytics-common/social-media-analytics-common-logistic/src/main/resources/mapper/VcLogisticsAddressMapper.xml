@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.vchaoxi.logistic.mapper.VcLogisticsAddressMapper">
+
+
+
+
+    <resultMap id="logisticsAddressVoMap" type="com.vchaoxi.logistic.vo.LogisticsAddressVo">
+        <result column="id" jdbcType="INTEGER" property="id" />
+        <result column="agent_id" jdbcType="INTEGER" property="agentId" />
+        <result column="shop_id" jdbcType="INTEGER" property="shopId" />
+        <result column="name" jdbcType="VARCHAR" property="name" />
+        <result column="tel" jdbcType="VARCHAR" property="tel" />
+        <result column="mobile" jdbcType="VARCHAR" property="mobile" />
+        <result column="company" jdbcType="VARCHAR" property="company" />
+        <result column="post_code" jdbcType="VARCHAR" property="postCode" />
+        <result column="country" jdbcType="VARCHAR" property="country" />
+        <result column="province" jdbcType="VARCHAR" property="province" />
+        <result column="province_code" jdbcType="INTEGER" property="provinceCode" />
+        <result column="city" jdbcType="VARCHAR" property="city" />
+        <result column="city_code" jdbcType="INTEGER" property="cityCode" />
+        <result column="area" jdbcType="VARCHAR" property="area" />
+        <result column="area_code" jdbcType="INTEGER" property="areaCode" />
+        <result column="address" jdbcType="VARCHAR" property="address" />
+        <result column="is_default" jdbcType="INTEGER" property="isDefault" />
+        <result column="insert_time" jdbcType="TIMESTAMP" property="insertTime" />
+        <result column="shop_name" jdbcType="VARCHAR" property="shopName" />
+    </resultMap>
+
+
+    <sql id="Base_Column_List" >
+        vc_logistics_address.id,vc_logistics_address.agent_id,vc_logistics_address.shop_id,vc_logistics_address.name,
+        vc_logistics_address.tel,vc_logistics_address.mobile,vc_logistics_address.company,vc_logistics_address.post_code,
+        vc_logistics_address.country,vc_logistics_address.province,vc_logistics_address.city,vc_logistics_address.area,
+        vc_logistics_address.address,vc_logistics_address.is_default,vc_logistics_address.insert_time,
+        vc_logistics_address.province_code,vc_logistics_address.city_code,vc_logistics_address.area_code
+    </sql>
+
+
+
+
+    <select id="adminSelectList" resultMap="logisticsAddressVoMap">
+        SELECT
+        <include refid="Base_Column_List">
+        </include>,vc_shop_shop.name AS shop_name
+        FROM vc_logistics_address
+        LEFT JOIN vc_shop_shop ON vc_shop_shop.id = vc_logistics_address.shop_id
+        WHERE vc_logistics_address.is_delete = 0
+        <if test="agentId != null">
+            AND vc_logistics_address.agent_id = #{agentId}
+        </if>
+        <if test="shopId != null">
+            AND vc_logistics_address.shop_id = #{shopId}
+        </if>
+        ORDER BY vc_logistics_address.id DESC
+    </select>
+
+
+
+
+<!--  根据商家查询物流地址  -->
+    <select id="selectByShopId" resultMap="logisticsAddressVoMap">
+        SELECT
+        <include refid="Base_Column_List">
+        </include>,vc_shop_shop.name AS shop_name
+        FROM vc_logistics_address
+        LEFT JOIN vc_shop_shop ON vc_shop_shop.id = vc_logistics_address.shop_id
+        WHERE vc_logistics_address.is_delete = 0 AND vc_logistics_address.shop_id = #{shopId}
+        ORDER BY vc_logistics_address.is_default DESC
+    </select>
+
+
+
+<!--  查询商家默认地址  -->
+    <select id="selectShopDefault" resultMap="logisticsAddressVoMap">
+        SELECT
+        <include refid="Base_Column_List">
+        </include>,vc_shop_shop.name AS shop_name
+        FROM vc_logistics_address
+        LEFT JOIN vc_shop_shop ON vc_shop_shop.id = vc_logistics_address.shop_id
+        WHERE vc_logistics_address.is_delete = 0 AND vc_logistics_address.shop_id = #{shopId}
+         AND vc_logistics_address.is_default = 1
+    </select>
+</mapper>

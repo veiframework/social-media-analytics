@@ -1,0 +1,4 @@
+com.chargehub.admin.api.factory.RemoteUserFallbackFactory
+com.chargehub.admin.api.factory.RemoteLogsFallbackFactory
+com.chargehub.admin.api.factory.RemoteFileFallbackFactory
+com.chargehub.admin.api.factory.RemoteAppUserServiceFallbackFactory

@@ -1,0 +1,53 @@
+package com.chargehub.payment.wechat;
+
+
+import cn.hutool.core.io.FileUtil;
+import com.chargehub.common.core.utils.sign.Base64;
+import com.chargehub.payment.bean.BasePaymentProperties;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
+import java.io.Serializable;
+
+/**
+ * @author Zhanghaowei
+ * @date 2025/04/03 15:41
+ */
+@EqualsAndHashCode(callSuper = true)
+@Data
+public class WechatPaymentProperties extends BasePaymentProperties implements Serializable {
+    private static final long serialVersionUID = -2418788272337344099L;
+
+
+    private String appId = "wxd51c2961f2e5f35b";
+
+    private String mpAppId = "wxdd4baefae958c7d2";
+
+    private String mchId = "1685208926";
+
+    private String mchKey = "nXnyej0k5Dp18cWFPS9D50WNH78f65kr";
+
+    private String keyContent = "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";
+
+
+    /**
+     * 子商户appid
+     */
+    private String subAppId;
+
+    /**
+     * 子商户id
+     */
+    private String subMchId;
+
+
+    public String getNotifyUrl(String id, String businessTypeCode) {
+        return this.buildNotifyUrl(this.getNotifyUrl(), "wechat", id, businessTypeCode);
+    }
+
+    public String getRefundNotifyUrl(String id, String businessTypeCode) {
+        return this.buildNotifyUrl(this.getRefundNotifyUrl(), "wechat", id, businessTypeCode);
+    }
+
+
+}

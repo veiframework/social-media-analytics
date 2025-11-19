@@ -1,0 +1,16 @@
+com.chargehub.thirdparty.api.factory.RemoteAlipayMaFallbackFactory
+com.chargehub.thirdparty.api.factory.RemoteInvoiceFallbackFactory
+com.chargehub.thirdparty.api.factory.RemoteWxMaFallbackFactory
+com.chargehub.thirdparty.api.factory.RemoteWxMpFallbackFactory
+com.chargehub.thirdparty.api.factory.RemoteWxOpenFallbackFactory
+com.chargehub.thirdparty.api.factory.RemoteAliMapChargeServiceFallbackFactory
+com.chargehub.thirdparty.api.config.ChargehubAmapProperties
+com.chargehub.thirdparty.api.domain.dto.amap.AliMapChargeCrypto
+com.chargehub.thirdparty.api.factory.RemoteAliMapPushServiceFallbackFactory
+com.chargehub.thirdparty.api.factory.RemoteDividePushServiceFallbackFactory
+com.chargehub.thirdparty.api.factory.RemoteDivideServiceFallbackFactory
+com.chargehub.thirdparty.api.factory.RemoteBaiduMpBizServiceFallbackFactory
+com.chargehub.thirdparty.api.factory.RemoteBaiduMpServiceFallbackFactory
+com.chargehub.thirdparty.api.config.ChWoProperties
+com.chargehub.thirdparty.api.RemoteExternalEqtWoService.RemoteEqtWoServiceFallback
+com.chargehub.thirdparty.api.factory.RemoteWxLogisticsServiceFallbackFactory

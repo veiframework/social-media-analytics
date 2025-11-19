@@ -1,0 +1,56 @@
+# Tomcat
+server:
+  port: 9203
+
+# Spring
+spring: 
+  application:
+    # 应用名称
+    name: job
+  profiles:
+    # 环境配置
+    active: dev
+  cloud:
+    nacos:
+      discovery:
+        # 服务注册地址
+        server-addr: ${nacos.url}
+        group: ${discovery.nacos.group}
+      config:
+        # 配置中心地址
+        server-addr: ${nacos.url}
+        group: ${nacos.group}
+        # 配置文件格式
+        file-extension: yml
+        # 共享配置
+        shared-configs:
+          - data-id: application-${spring.profiles.active}.${spring.cloud.nacos.config.file-extension}
+            group: ${nacos.group}
+
+
+
+  quartz:
+    properties:
+      org:
+        quartz:
+          threadPool:
+            class: org.quartz.simpl.SimpleThreadPool
+            threadCount: 100
+            threadPriority: 5
+            threadsInheritContextClassLoaderOfInitializingThread: true
+
+# mybatis配置
+mybatis:
+  # 搜索指定包别名
+  typeAliasesPackage: com.chargehub.job.domain
+  # 配置mapper的扫描，找到所有的mapper.xml映射文件
+  mapperLocations: classpath:mapper/**/*.xml
+
+mybatis-plus:
+  type-aliases-package: "com.chargehub.job.domain"
+
+
+# swagger配置
+swagger:
+  title: 定时任务接口文档
+  license: Powered By ruoyi
