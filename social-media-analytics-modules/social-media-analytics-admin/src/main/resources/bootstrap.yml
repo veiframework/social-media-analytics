@@ -129,6 +129,11 @@ minio:
 
 hub:
   standalone: true
+  social-media-data-api:
+    token: oJMgD/I5zGmlg0+tKo+48j7VBH6Nf5VvxTT1lGysaMaw0FaGeWWjVWOhEQ==
+    host: https://api.tikhub.io
+
+
 
 security:
   # 验证码
@@ -268,7 +273,9 @@ stop:
     url: http://yybackstageapi.luoyangparking.com/wechat-api/chargeApi/chargeReduction
     code: YIYANG_PARK
 
-
+z9:
+  crud:
+    debug: true
 
 divide:
   url: http://paytest.luoyangparking.com

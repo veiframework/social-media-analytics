@@ -30,4 +30,14 @@ public class HubProperties {
 
     private String logService = "admin";
 
+    private SocialMediaDataApi socialMediaDataApi = new SocialMediaDataApi();
+
+    @Data
+    public static class SocialMediaDataApi {
+
+        private String host;
+
+        private String token;
+    }
+
 }

@@ -24,28 +24,28 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 public class MallConfiguration {
 
 
-    @ConditionalOnProperty(prefix = "mall.order.task", value = "enabled", havingValue = "true", matchIfMissing = true)
+    @ConditionalOnProperty(prefix = "mall.order.task", value = "enabled", havingValue = "true")
     @Bean
     public MallOrderTask mallOrderTask() {
         log.info("enable mall order task");
         return new MallOrderTask();
     }
 
-    @ConditionalOnProperty(prefix = "mall.member.task", value = "enabled", havingValue = "true", matchIfMissing = true)
+    @ConditionalOnProperty(prefix = "mall.member.task", value = "enabled", havingValue = "true")
     @Bean
     public MallMemberTask mallMemberTask() {
         log.info("enable mall member task");
         return new MallMemberTask();
     }
 
-    @ConditionalOnProperty(prefix = "mall.order.payment-handler", value = "enabled", havingValue = "true", matchIfMissing = true)
+    @ConditionalOnProperty(prefix = "mall.order.payment-handler", value = "enabled", havingValue = "true")
     @Bean
     public MallPaymentHandler mallPaymentHandler() {
         log.info("enable mall order payment handler");
         return new MallPaymentHandler();
     }
 
-    @ConditionalOnProperty(prefix = "mall.member.payment-handler", value = "enabled", havingValue = "true", matchIfMissing = true)
+    @ConditionalOnProperty(prefix = "mall.member.payment-handler", value = "enabled", havingValue = "true")
     @Bean
     public MallMemberPaymentHandler mallMemberPaymentHandler() {
         log.info("enable mall member payment handler");

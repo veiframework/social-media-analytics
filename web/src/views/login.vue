@@ -139,7 +139,7 @@ getCookie();
 	flex-direction: column;
 	justify-content: center;
 	height: 100%;
-	background-image: url("../assets/images/login-background.jpg");
+	background-image: url("../assets/images/home-login-bg.jpg");
 	background-size: cover;
 }
 
