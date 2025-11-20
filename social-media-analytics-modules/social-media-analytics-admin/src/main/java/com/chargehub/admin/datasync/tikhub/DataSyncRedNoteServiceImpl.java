@@ -29,20 +29,18 @@ import java.util.stream.Collectors;
  * @since : 1.0
  */
 @Service
-public class DataSyncDouYinServiceImpl implements DataSyncService {
+public class DataSyncRedNoteServiceImpl implements DataSyncService {
 
     @Autowired
     private HubProperties hubProperties;
 
-
-    private static final String GET_USER_PROFILE = "/api/v1/douyin/web/handler_user_profile";
-    private static final String GET_USER_WORKS = "/api/v1/douyin/app/v3/fetch_user_post_videos";
-    private static final String GET_WORK_STATISTIC = "/api/v1/douyin/app/v3/fetch_multi_video_statistics";
+    private static final String GET_USER_PROFILE = "/api/v1/xiaohongshu/app/get_user_info";
+    private static final String GET_USER_WORKS = "/api/v1/xiaohongshu/app/get_user_notes";
 
 
     @Override
     public SocialMediaPlatformEnum platform() {
-        return SocialMediaPlatformEnum.DOU_YIN;
+        return SocialMediaPlatformEnum.RED_NOTE;
     }
 
     @Override
@@ -51,13 +49,12 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
         String token = socialMediaDataApi.getToken();
         String host = socialMediaDataApi.getHost();
         try (HttpResponse execute = HttpUtil.createGet(host + GET_USER_PROFILE).bearerAuth(token)
-                .form("sec_user_id", secUserId)
+                .form("user_id", secUserId)
                 .execute()) {
             String body = execute.body();
             JsonNode jsonNode = JacksonUtil.toObj(body);
-            JsonNode path = jsonNode.at("/data/user");
-            String nickname = path.get("nickname").asText();
-            String uniqueId = path.get("unique_id").asText();
+            String nickname = jsonNode.at("/data/data/nickname").asText();
+            String uniqueId = jsonNode.at("/data/data/red_id").asText();
             SocialMediaUserInfo socialMediaUserInfo = new SocialMediaUserInfo();
             socialMediaUserInfo.setNickname(nickname);
             socialMediaUserInfo.setUid(uniqueId);
@@ -74,42 +71,26 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
         String token = socialMediaDataApi.getToken();
         String host = socialMediaDataApi.getHost();
         String secUid = socialMediaAccount.getSecUid();
-        Long realCursor = cursor == null ? 0 : Long.parseLong(cursor);
         try (HttpResponse execute = HttpUtil.createGet(host + GET_USER_WORKS).bearerAuth(token)
-                .form("sec_user_id", secUid)
-                .form("max_cursor", realCursor)
-                .form("count", count)
-                .form("filter_type", 0)
+                .form("user_id", secUid)
+                .form("cursor", cursor)
                 .execute()) {
             String body = execute.body();
             JsonNode jsonNode = JacksonUtil.toObj(body);
-            boolean hasMore = jsonNode.at("/data/has_more").asInt() == 1;
-            Long nextCursor = jsonNode.at("/data/max_cursor").asLong(-1);
-            JsonNode path = jsonNode.at("/data/aweme_list");
+            boolean hasMore = jsonNode.at("/data/data/has_more").asBoolean();
+            JsonNode path = jsonNode.at("/data/data/notes");
+            String nextCursor = path.isEmpty() ? "-1" : path.get(path.size() - 1).get("cursor").asText();
             for (JsonNode node : path) {
                 this.buildWork(socialMediaAccount, node, socialMediaWorkMap);
             }
+
             socialMediaWorkResult.setHasMore(hasMore);
-            socialMediaWorkResult.setNextCursor(nextCursor + "");
+            socialMediaWorkResult.setNextCursor(nextCursor);
             if (MapUtils.isEmpty(socialMediaWorkMap)) {
                 return (SocialMediaWorkResult<T>) socialMediaWorkResult;
             }
         }
-        String awemeIds = String.join(",", socialMediaWorkMap.keySet());
-        try (HttpResponse multiWorksExecute = HttpUtil.createGet(host + GET_WORK_STATISTIC).bearerAuth(token).form("aweme_ids", awemeIds).execute()) {
-            String result = multiWorksExecute.body();
-            JsonNode multiWorkNode = JacksonUtil.toObj(result);
-            JsonNode statisticsNode = multiWorkNode.at("/data/statistics_list");
-            for (JsonNode node : statisticsNode) {
-                String workUid = node.get("aweme_id").asText("");
-                int playNum = node.get("play_count").asInt(0);
-                SocialMediaWork socialMediaWork = socialMediaWorkMap.get(workUid);
-                if (socialMediaWork == null) {
-                    continue;
-                }
-                socialMediaWork.setPlayNum(playNum);
-            }
-        }
+
         List<SocialMediaWork> socialMediaWorks = socialMediaWorkMap.values().stream().map(i -> {
             String md5 = i.generateStatisticMd5();
             i.setStatisticMd5(md5);
@@ -123,18 +104,19 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
         String userId = socialMediaAccount.getUserId();
         String accountId = socialMediaAccount.getId();
         Date postTime = DateUtil.date(node.get("create_time").asLong(0) * 1000L);
-        String shareUrl = node.at("/share_info/share_url").asText("");
-        //内容类型 (0=普通视频, 68=图文)
-        String workType = node.get("aweme_type").asInt() == 0 ? WorkTypeEnum.NORMAL_VIDEO.getType() : WorkTypeEnum.RICH_TEXT.getType();
+        String shareUrl = "";
+        //内容类型 （normal=图文笔记，video=视频笔记）
+        String workType = node.get("type").asText().equals("normal") ? WorkTypeEnum.RICH_TEXT.getType() : WorkTypeEnum.NORMAL_VIDEO.getType();
         //媒体类型 (2=图片, 4=视频)
-        String mediaType = node.get("media_type").asInt() == 4 ? MediaTypeEnum.VIDEO.getType() : MediaTypeEnum.PICTURE.getType();
-        int thumbNum = node.at("/statistics/digg_count").asInt(0);
-        int collectNum = node.at("/statistics/collect_count").asInt(0);
-        int shareNum = node.at("/statistics/share_count").asInt(0);
-        int commentNum = node.at("/statistics/comment_count").asInt(0);
-        int likeNum = node.at("/statistics/admire_count").asInt(0);
-        String desc = node.get("desc").asText("");
-        String workUid = node.get("aweme_id").asText("");
+        String mediaType = workType.equals(WorkTypeEnum.RICH_TEXT.getType()) ? MediaTypeEnum.PICTURE.getType() : MediaTypeEnum.VIDEO.getType();
+        int thumbNum = node.get("likes").asInt(0);
+        int collectNum = node.get("collected_count").asInt(0);
+        int shareNum = node.get("share_count").asInt(0);
+        int commentNum = node.get("comments_count").asInt(0);
+        // 基于3.3%互动率估算,目前无法从 view_count获取浏览量
+        int playNum = (thumbNum + collectNum + shareNum + commentNum) * 30;
+        String desc = node.get("title").asText("");
+        String workUid = node.get("id").asText("");
         String platformId = socialMediaAccount.getPlatformId();
         String tenantId = socialMediaAccount.getTenantId();
         SocialMediaWork socialMediaWork = new SocialMediaWork();
@@ -152,8 +134,8 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
         socialMediaWork.setCollectNum(collectNum);
         socialMediaWork.setShareNum(shareNum);
         socialMediaWork.setCommentNum(commentNum);
-        socialMediaWork.setLikeNum(likeNum);
-        socialMediaWork.setPlayNum(0);
+        socialMediaWork.setLikeNum(thumbNum);
+        socialMediaWork.setPlayNum(playNum);
         socialMediaWorkMap.put(workUid, socialMediaWork);
     }
 

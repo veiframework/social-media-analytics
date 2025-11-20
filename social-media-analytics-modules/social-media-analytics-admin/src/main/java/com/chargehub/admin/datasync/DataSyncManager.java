@@ -32,7 +32,7 @@ public class DataSyncManager {
         return dataSyncService.getSocialMediaUserInfo(secUserId);
     }
 
-    public <T> SocialMediaWorkResult<T> getWorks(SocialMediaAccountVo socialMediaAccount, Integer cursor, Integer count) {
+    public <T> SocialMediaWorkResult<T> getWorks(SocialMediaAccountVo socialMediaAccount, String cursor, Integer count) {
         String platformId = socialMediaAccount.getPlatformId();
         SocialMediaPlatformEnum platform = SocialMediaPlatformEnum.getByDomain(platformId);
         DataSyncService dataSyncService = SERVICES.get(platform);

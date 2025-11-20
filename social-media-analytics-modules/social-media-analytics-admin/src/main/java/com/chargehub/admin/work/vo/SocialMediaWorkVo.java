@@ -42,7 +42,7 @@ public class SocialMediaWorkVo implements Serializable, Z9CrudVo {
 
     @NotBlank
     @Excel(name = "第三方账号", width = 15, dict = "social_media_account,nickname,id", addressList = true)
-    @Dict(dictType = "social_media_platform")
+    @Dict(dictTable = "social_media_account", nameColumn = "nickname", valueColumn = "id")
     @ApiModelProperty("第三方账号id")
     private String accountId;
 

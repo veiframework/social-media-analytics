@@ -1,5 +1,27 @@
 <template>
   <div class="dashboard-container">
+
+
+    <!-- 社交媒体账号统计表格 -->
+    <CustomTable
+        :data="tableData"
+        :option="option"
+        @search="handleSearch"
+        :pageNum="pageNum"
+        @refresh="getData"
+        :total="total"
+        @headerchange="handleHeader"
+        @menuChange="handleMenu"
+        :pageSize="pageSize"
+        @currentChange="handleChange"
+        @selectData="selectData"
+    >
+      <template #table-top></template>
+      <template #table-custom="{ row, prop, index }">
+        <!-- 由于使用了 dicData，不再需要自定义模板 -->
+      </template>
+    </CustomTable>
+
     <!-- 平台数据统计卡片 -->
     <div class="platform-cards">
       <el-skeleton :rows="3" animated v-if="platformLoading">
@@ -54,26 +76,6 @@
         </div>
       </div>
     </div>
-
-    <!-- 社交媒体账号统计表格 -->
-    <CustomTable
-        :data="tableData"
-        :option="option"
-        @search="handleSearch"
-        :pageNum="pageNum"
-        @refresh="getData"
-        :total="total"
-        @headerchange="handleHeader"
-        @menuChange="handleMenu"
-        :pageSize="pageSize"
-        @currentChange="handleChange"
-        @selectData="selectData"
-    >
-      <template #table-top></template>
-      <template #table-custom="{ row, prop, index }">
-        <!-- 由于使用了 dicData，不再需要自定义模板 -->
-      </template>
-    </CustomTable>
   </div>
 </template>
 
@@ -110,7 +112,9 @@ const getDict = async () => {
     const platformRes = await getDicts('social_media_platform')
     platformDict.value = platformRes.data.map(i => ({
       label: i.dictLabel,
-      value: i.dictValue
+      value: i.dictValue,
+      elTagType: i.listClass
+
     })) || []
   } catch (error) {
     console.error('获取字典数据失败:', error)
@@ -387,10 +391,10 @@ init()
 
 <style scoped>
 .dashboard-container {
-  padding: 20px;
 }
 
 .platform-cards {
+  padding-top: 20px;
   display: flex;
   flex-wrap: wrap;
   gap: 20px;

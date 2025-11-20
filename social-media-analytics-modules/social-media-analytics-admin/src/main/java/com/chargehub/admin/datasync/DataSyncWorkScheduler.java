@@ -90,7 +90,7 @@ public class DataSyncWorkScheduler {
         try {
 
             boolean moreData = true;
-            Integer nextCursor = null;
+            String nextCursor = null;
             while (moreData) {
                 SocialMediaWorkResult<SocialMediaWork> result = this.dataSyncManager.getWorks(socialMediaAccountVo, nextCursor, 10);
                 moreData = result.isHasMore();

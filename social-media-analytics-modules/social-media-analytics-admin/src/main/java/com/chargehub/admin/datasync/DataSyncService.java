@@ -15,6 +15,6 @@ public interface DataSyncService {
 
     SocialMediaUserInfo getSocialMediaUserInfo(String secUserId);
 
-    <T> SocialMediaWorkResult<T> getWorks(SocialMediaAccountVo socialMediaAccount, Integer cursor, Integer count);
+    <T> SocialMediaWorkResult<T> getWorks(SocialMediaAccountVo socialMediaAccount, String cursor, Integer count);
 
 }

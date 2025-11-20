@@ -131,6 +131,7 @@ public class SocialMediaWork implements Serializable, Z9CrudEntity {
         if (!this.getPlayNum().equals(newWork.getPlayNum())) {
             updateWork.setPlayNum(newWork.getPlayNum());
         }
+        updateWork.setStatisticMd5(newWork.getStatisticMd5());
         return updateWork;
     }
 

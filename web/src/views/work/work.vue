@@ -254,6 +254,15 @@ const option = reactive({
       sortable: false,
       isShow: true,
       showOverflowTooltip: true
+    },{
+      type: 'text',
+      label: '昵称',
+      prop: 'accountId_dictText',
+      width: 200,
+      fixed: false,
+      sortable: false,
+      isShow: true,
+      showOverflowTooltip: true
     },
     {
       type: 'tag',

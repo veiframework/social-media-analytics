@@ -17,6 +17,6 @@ public class SocialMediaWorkResult<T> {
 
     private boolean hasMore;
 
-    private Integer nextCursor;
+    private String nextCursor;
 
 }

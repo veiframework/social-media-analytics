@@ -31,7 +31,7 @@ public class Pagination {
     private Set<String> descFields;
 
     @ApiModelProperty(value = "是否计算总数")
-    private boolean searchCount;
+    private boolean searchCount = true;
 
     public <T> Page<T> page() {
         long number0 = getNumber();
