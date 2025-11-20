@@ -5,6 +5,8 @@ import com.chargehub.admin.work.domain.SocialMediaWork;
 import com.chargehub.common.datasource.mybatis.Pagination;
 import com.chargehub.common.security.template.annotation.CrudQueryField;
 import com.chargehub.common.security.template.dto.Z9CrudQueryDto;
+import com.chargehub.common.security.template.enums.Z9QueryTypeEnum;
+import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -32,6 +34,10 @@ public class SocialMediaWorkQueryDto extends Pagination implements Serializable,
 
     @CrudQueryField
     private String platformId;
+
+    @CrudQueryField(queryType = Z9QueryTypeEnum.LIKE)
+    @ApiModelProperty("描述")
+    private String desc;
 
     @Override
     public Page<SocialMediaWork> buildPageObj() {

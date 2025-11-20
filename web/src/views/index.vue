@@ -10,7 +10,7 @@
             <el-col :xs="24" :sm="11">
                 <div class="text-left vertical-center">
                     <h2>欢迎进入</h2>
-                    <h2>赛事管理系统</h2>
+                    <h2>管理系统</h2>
                     <p>开启您的使用之旅吧~</p>
                 </div>
             </el-col>

@@ -30,6 +30,9 @@ public class Pagination {
     @ApiModelProperty(value = "降序字段")
     private Set<String> descFields;
 
+    @ApiModelProperty(value = "是否计算总数")
+    private boolean searchCount;
+
     public <T> Page<T> page() {
         long number0 = getNumber();
         long size0 = getSize();
@@ -39,7 +42,7 @@ public class Pagination {
         if (pageSize != null) {
             size0 = getPageSize();
         }
-        return new Page<>(number0, size0);
+        return new Page<>(number0, size0, searchCount);
     }
 
 
@@ -89,5 +92,13 @@ public class Pagination {
 
     public void setDescFields(Set<String> descFields) {
         this.descFields = descFields;
+    }
+
+    public boolean isSearchCount() {
+        return searchCount;
+    }
+
+    public void setSearchCount(boolean searchCount) {
+        this.searchCount = searchCount;
     }
 }

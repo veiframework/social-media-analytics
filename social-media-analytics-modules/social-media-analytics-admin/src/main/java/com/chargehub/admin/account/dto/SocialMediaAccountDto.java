@@ -26,7 +26,6 @@ public class SocialMediaAccountDto implements Serializable, Z9CrudDto<SocialMedi
 
     private String id;
 
-    @NotBlank
     @ApiModelProperty("用户id")
     private String userId;
 

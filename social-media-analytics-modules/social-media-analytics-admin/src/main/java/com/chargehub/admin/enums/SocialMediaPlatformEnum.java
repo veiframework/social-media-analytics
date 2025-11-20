@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.util.Assert;
 
 import java.net.URI;
 import java.util.Arrays;
@@ -35,6 +36,12 @@ public enum SocialMediaPlatformEnum {
     SocialMediaPlatformEnum(String domain, Function<URI, String> secUserId) {
         this.domain = domain;
         this.secUserId = secUserId;
+    }
+
+    public static SocialMediaPlatformEnum getByDomain(String domain) {
+        SocialMediaPlatformEnum socialMediaPlatformEnum = Arrays.stream(values()).filter(i -> i.domain.equals(domain)).findFirst().orElse(null);
+        Assert.notNull(socialMediaPlatformEnum, "不支持的社交平台类型");
+        return socialMediaPlatformEnum;
     }
 
     public static SecUser parseSecUserId(String shareLink) {

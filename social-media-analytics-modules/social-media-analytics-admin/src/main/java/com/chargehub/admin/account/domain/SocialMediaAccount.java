@@ -62,7 +62,6 @@ public class SocialMediaAccount implements Serializable, Z9CrudEntity {
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private String updater;
 
-    @TableLogic
     private Integer deleted;
 
 

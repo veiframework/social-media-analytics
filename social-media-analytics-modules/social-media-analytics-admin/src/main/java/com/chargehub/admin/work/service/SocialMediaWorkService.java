@@ -3,6 +3,7 @@ package com.chargehub.admin.work.service;
 import cn.afterturn.easypoi.handler.inter.IExcelDictHandler;
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.toolkit.Db;
 import com.chargehub.admin.api.model.LoginUser;
 import com.chargehub.admin.groupuser.dto.GroupUserQueryDto;
 import com.chargehub.admin.groupuser.service.GroupUserService;
@@ -20,8 +21,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -42,6 +43,18 @@ public class SocialMediaWorkService extends AbstractZ9CrudServiceImpl<SocialMedi
         super(baseMapper);
     }
 
+    public Map<String, SocialMediaWork> getByWorkUidList(Collection<String> workUidList) {
+        if (CollectionUtils.isEmpty(workUidList)) {
+            return new HashMap<>();
+        }
+        return this.baseMapper.lambdaQuery().in(SocialMediaWork::getWorkUid, workUidList)
+                .list().stream()
+                .collect(Collectors.toMap(SocialMediaWork::getWorkUid, Function.identity()));
+    }
+
+    public void saveOrUpdateBatch(Collection<SocialMediaWork> works) {
+        Db.saveOrUpdateBatch(works);
+    }
 
     @SuppressWarnings("unchecked")
     public IPage<SocialMediaWorkVo> getPurviewPage(SocialMediaWorkQueryDto queryDto, LoginUser loginUser) {

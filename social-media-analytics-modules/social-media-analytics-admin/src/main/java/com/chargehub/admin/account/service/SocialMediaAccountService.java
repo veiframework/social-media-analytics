@@ -11,8 +11,11 @@ import com.chargehub.admin.datasync.DataSyncManager;
 import com.chargehub.admin.datasync.domain.SocialMediaUserInfo;
 import com.chargehub.admin.enums.SocialMediaPlatformEnum;
 import com.chargehub.common.security.service.ChargeExcelDictHandler;
+import com.chargehub.common.security.template.dto.Z9CrudDto;
 import com.chargehub.common.security.template.dto.Z9CrudQueryDto;
 import com.chargehub.common.security.template.service.AbstractZ9CrudServiceImpl;
+import com.chargehub.common.security.utils.SecurityUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,6 +39,15 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
         super(baseMapper);
     }
 
+    @Override
+    public void create(Z9CrudDto<SocialMediaAccount> dto) {
+        Long userId = SecurityUtils.getUserId();
+        SocialMediaAccountDto socialMediaAccountDto = (SocialMediaAccountDto) dto;
+        if (StringUtils.isBlank(socialMediaAccountDto.getUserId())) {
+            socialMediaAccountDto.setUserId(userId + "");
+        }
+        super.create(dto);
+    }
 
     public void createByShareLink(SocialMediaAccountShareLinkDto dto) {
         String shareLink = dto.getShareLink();

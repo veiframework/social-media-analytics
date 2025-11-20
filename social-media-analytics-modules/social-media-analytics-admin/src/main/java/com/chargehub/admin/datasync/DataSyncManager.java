@@ -1,6 +1,8 @@
 package com.chargehub.admin.datasync;
 
+import com.chargehub.admin.account.vo.SocialMediaAccountVo;
 import com.chargehub.admin.datasync.domain.SocialMediaUserInfo;
+import com.chargehub.admin.datasync.domain.SocialMediaWorkResult;
 import com.chargehub.admin.enums.SocialMediaPlatformEnum;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -28,6 +30,14 @@ public class DataSyncManager {
         DataSyncService dataSyncService = SERVICES.get(platform);
         Assert.notNull(dataSyncService, "不支持的数据同步平台");
         return dataSyncService.getSocialMediaUserInfo(secUserId);
+    }
+
+    public <T> SocialMediaWorkResult<T> getWorks(SocialMediaAccountVo socialMediaAccount, Integer cursor, Integer count) {
+        String platformId = socialMediaAccount.getPlatformId();
+        SocialMediaPlatformEnum platform = SocialMediaPlatformEnum.getByDomain(platformId);
+        DataSyncService dataSyncService = SERVICES.get(platform);
+        Assert.notNull(dataSyncService, "不支持的数据同步平台");
+        return dataSyncService.getWorks(socialMediaAccount, cursor, count);
     }
 
 }

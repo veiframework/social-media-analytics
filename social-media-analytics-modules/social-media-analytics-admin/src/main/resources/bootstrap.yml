@@ -130,8 +130,9 @@ minio:
 hub:
   standalone: true
   social-media-data-api:
-    token: oJMgD/I5zGmlg0+tKo+48j7VBH6Nf5VvxTT1lGysaMaw0FaGeWWjVWOhEQ==
-    host: https://api.tikhub.io
+    tikhub:
+      token: oJMgD/I5zGmlg0+tKo+48j7VBH6Nf5VvxTT1lGysaMaw0FaGeWWjVWOhEQ==
+      host: https://api.tikhub.io
 
 
 

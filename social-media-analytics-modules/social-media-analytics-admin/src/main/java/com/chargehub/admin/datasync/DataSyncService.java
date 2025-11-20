@@ -1,6 +1,8 @@
 package com.chargehub.admin.datasync;
 
+import com.chargehub.admin.account.vo.SocialMediaAccountVo;
 import com.chargehub.admin.datasync.domain.SocialMediaUserInfo;
+import com.chargehub.admin.datasync.domain.SocialMediaWorkResult;
 import com.chargehub.admin.enums.SocialMediaPlatformEnum;
 
 /**
@@ -13,6 +15,6 @@ public interface DataSyncService {
 
     SocialMediaUserInfo getSocialMediaUserInfo(String secUserId);
 
-
+    <T> SocialMediaWorkResult<T> getWorks(SocialMediaAccountVo socialMediaAccount, Integer cursor, Integer count);
 
 }

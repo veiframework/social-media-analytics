@@ -27,6 +27,10 @@ public class SocialMediaWorkDto implements Serializable, Z9CrudDto<SocialMediaWo
 
     private String id;
 
+    @Excel(name = "描述", width = 15)
+    @ApiModelProperty("描述")
+    private String desc;
+
     @ApiModelProperty("租户id")
     private String tenantId;
 
@@ -55,7 +59,8 @@ public class SocialMediaWorkDto implements Serializable, Z9CrudDto<SocialMediaWo
     @ApiModelProperty("第三方作品id")
     private String workUid;
 
-    @Excel(name = "平台", width = 15, dict = "work_type", addressList = true)
+    @Dict(dictType = "work_type")
+    @Excel(name = "作品类型", width = 15, dict = "work_type", addressList = true)
     @ApiModelProperty("作品类型")
     private String type;
 
@@ -89,6 +94,14 @@ public class SocialMediaWorkDto implements Serializable, Z9CrudDto<SocialMediaWo
     @Excel(name = "发布时间", width = 15)
     @ApiModelProperty("发布时间")
     private Date postTime;
+
+    @Dict(dictType = "media_type")
+    @Excel(name = "媒体类型", width = 15, dict = "media_type", addressList = true)
+    @ApiModelProperty("媒体类型")
+    private String mediaType;
+
+    @ApiModelProperty("数据统计的md5")
+    private String statisticMd5;
 
     private Date createTime;
 

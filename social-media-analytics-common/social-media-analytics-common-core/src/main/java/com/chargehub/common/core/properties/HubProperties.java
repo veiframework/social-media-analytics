@@ -4,6 +4,9 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * @author Zhanghaowei
  * @date 2025/06/07 15:01
@@ -30,7 +33,7 @@ public class HubProperties {
 
     private String logService = "admin";
 
-    private SocialMediaDataApi socialMediaDataApi = new SocialMediaDataApi();
+    private Map<String, SocialMediaDataApi> socialMediaDataApi = new HashMap<>();
 
     @Data
     public static class SocialMediaDataApi {

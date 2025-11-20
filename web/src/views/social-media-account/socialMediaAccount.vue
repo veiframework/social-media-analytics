@@ -49,7 +49,7 @@ import {
   addSocialMediaAccount,
   updateSocialMediaAccount,
   delSocialMediaAccount,
-  delBatchSocialMediaAccount,
+  syncWork,
   createByShareLink
 } from '@/api/social-media-account'
 import CustomTable from "@/components/CustomTable"
@@ -153,6 +153,9 @@ const handleMenu = async (val) => {
     case 'delete':
       await handleDelete(row.id)
       break
+    case 'syncWork':
+      await handleSyncWork(row.id)
+      break
   }
 }
 
@@ -192,6 +195,29 @@ const handleDelete = async (id) => {
     if (error !== 'cancel') {
       console.error('删除失败:', error)
       ElMessage.error('删除失败')
+    }
+  }
+}
+
+const handleSyncWork = async (accountId) => {
+  try {
+    await ElMessageBox.confirm('确定要同步作品吗？', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+
+    const response = await syncWork(accountId)
+    if (response.code === 200) {
+      ElMessage.success('同步作品需要时间，请稍后前往《作品管理》查看~')
+      getData()
+    } else {
+      ElMessage.error(response.msg || '同步失败')
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('同步失败:', error)
+      ElMessage.error('同步失败')
     }
   }
 }
@@ -278,7 +304,7 @@ const option = reactive({
       fixed: false,
       sortable: false,
       isShow: true
-    },{
+    }, {
       type: 'text',
       label: '员工',
       prop: 'userId_dictText',
