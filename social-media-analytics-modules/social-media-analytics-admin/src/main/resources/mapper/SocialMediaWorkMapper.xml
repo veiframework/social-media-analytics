@@ -10,8 +10,9 @@
                IFNULL(SUM(play_num), 0)    AS play_num,
                account_id
         FROM social_media_work
-        WHERE account_id in (${accountIds})
+        WHERE user_id in (${userId})
         GROUP BY account_id
+        ORDER BY play_num DESC
     </select>
 
     <select id="groupByUserIdAndPlatform" resultType="com.chargehub.admin.work.domain.SocialMediaWork">

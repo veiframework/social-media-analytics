@@ -115,7 +115,7 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
         int commentNum = node.get("comments_count").asInt(0);
         // 基于3.3%互动率估算,目前无法从 view_count获取浏览量
         int playNum = (thumbNum + collectNum + shareNum + commentNum) * 30;
-        String desc = node.get("title").asText("");
+        String desc = node.get("display_title").asText("");
         String workUid = node.get("id").asText("");
         String platformId = socialMediaAccount.getPlatformId();
         String tenantId = socialMediaAccount.getTenantId();

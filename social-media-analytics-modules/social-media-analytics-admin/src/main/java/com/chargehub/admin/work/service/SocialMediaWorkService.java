@@ -4,8 +4,6 @@ import cn.afterturn.easypoi.handler.inter.IExcelDictHandler;
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.toolkit.Db;
-import com.chargehub.admin.api.model.LoginUser;
-import com.chargehub.admin.groupuser.service.GroupUserService;
 import com.chargehub.admin.work.domain.SocialMediaWork;
 import com.chargehub.admin.work.dto.SocialMediaWorkDto;
 import com.chargehub.admin.work.dto.SocialMediaWorkQueryDto;
@@ -15,6 +13,7 @@ import com.chargehub.common.security.service.ChargeExcelDictHandler;
 import com.chargehub.common.security.template.dto.Z9CrudQueryDto;
 import com.chargehub.common.security.template.service.AbstractZ9CrudServiceImpl;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,8 +33,6 @@ public class SocialMediaWorkService extends AbstractZ9CrudServiceImpl<SocialMedi
     @Autowired
     private ChargeExcelDictHandler chargeExcelDictHandler;
 
-    @Autowired
-    private GroupUserService groupUserService;
 
     protected SocialMediaWorkService(SocialMediaWorkMapper baseMapper) {
         super(baseMapper);
@@ -50,20 +47,20 @@ public class SocialMediaWorkService extends AbstractZ9CrudServiceImpl<SocialMedi
                 .collect(Collectors.toMap(SocialMediaWork::getWorkUid, Function.identity()));
     }
 
-    public List<SocialMediaWorkVo> groupByUserIdAndPlatform(LoginUser loginUser) {
-        Set<String> userIds = new HashSet<>();
-        this.groupUserService.checkPurview(userIds, loginUser);
-        String collect = userIds.stream().map(i -> "'" + i + "'").collect(Collectors.joining(","));
-        List<SocialMediaWork> socialMediaWorks = this.baseMapper.groupByUserIdAndPlatform(collect);
+    public List<SocialMediaWorkVo> groupByUserIdAndPlatform(String userIds) {
+        if (StringUtils.isBlank(userIds)) {
+            return new ArrayList<>();
+        }
+        List<SocialMediaWork> socialMediaWorks = this.baseMapper.groupByUserIdAndPlatform(userIds);
         return BeanUtil.copyToList(socialMediaWorks, SocialMediaWorkVo.class);
     }
 
 
-    public Map<String, SocialMediaWork> groupByAccountId(Collection<String> accountIds) {
-        if (CollectionUtils.isEmpty(accountIds)) {
+    public Map<String, SocialMediaWork> groupByAccountId(Collection<String> userIds) {
+        if (CollectionUtils.isEmpty(userIds)) {
             return new HashMap<>();
         }
-        String collect = accountIds.stream().map(i -> "'" + i + "'").collect(Collectors.joining(","));
+        String collect = userIds.stream().map(i -> "'" + i + "'").collect(Collectors.joining(","));
         List<SocialMediaWork> socialMediaWorks = this.baseMapper.groupByAccountId(collect);
         if (CollectionUtils.isEmpty(socialMediaWorks)) {
             return new HashMap<>();
@@ -75,8 +72,7 @@ public class SocialMediaWorkService extends AbstractZ9CrudServiceImpl<SocialMedi
         Db.saveOrUpdateBatch(works);
     }
 
-    public IPage<SocialMediaWorkVo> getPurviewPage(SocialMediaWorkQueryDto queryDto, LoginUser loginUser) {
-        this.groupUserService.checkPurview(queryDto.getUserId(), loginUser);
+    public IPage<SocialMediaWorkVo> getPurviewPage(SocialMediaWorkQueryDto queryDto) {
         return this.baseMapper.doGetPage(queryDto).convert(i -> BeanUtil.copyProperties(i, voClass()));
     }
 

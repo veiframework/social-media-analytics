@@ -1,20 +1,21 @@
 package com.chargehub.admin.work.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.chargehub.admin.api.model.LoginUser;
+import com.chargehub.admin.groupuser.service.GroupUserService;
 import com.chargehub.admin.work.dto.SocialMediaWorkQueryDto;
 import com.chargehub.admin.work.service.SocialMediaWorkService;
 import com.chargehub.admin.work.vo.SocialMediaWorkVo;
 import com.chargehub.common.security.annotation.RequiresPermissions;
 import com.chargehub.common.security.annotation.UnifyResult;
 import com.chargehub.common.security.template.domain.Z9CrudExportResult;
-import com.chargehub.common.security.utils.SecurityUtils;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Set;
 
 /**
  * @author : zhanghaowei
@@ -27,14 +28,17 @@ public class SocialMediaWorkController {
     @Autowired
     private SocialMediaWorkService socialMediaWorkService;
 
+    @Autowired
+    private GroupUserService groupUserService;
 
     @RequiresPermissions("work:page")
     @ApiOperation("分页")
     @Operation(summary = "分页")
     @GetMapping("/social-media/work")
     public IPage<SocialMediaWorkVo> getPage(SocialMediaWorkQueryDto queryDto) {
-        LoginUser loginUser = SecurityUtils.getLoginUser();
-        return this.socialMediaWorkService.getPurviewPage(queryDto, loginUser);
+        Set<String> userIds = this.groupUserService.checkPurview();
+        queryDto.setUserId(userIds);
+        return this.socialMediaWorkService.getPurviewPage(queryDto);
     }
 
 

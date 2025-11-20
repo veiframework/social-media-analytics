@@ -4,6 +4,7 @@ import cn.afterturn.easypoi.handler.inter.IExcelDictHandler;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.bean.copier.CopyOptions;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.chargehub.admin.account.domain.SocialMediaAccount;
 import com.chargehub.admin.account.dto.SocialMediaAccountDto;
 import com.chargehub.admin.account.dto.SocialMediaAccountQueryDto;
@@ -22,15 +23,17 @@ import com.chargehub.common.security.template.dto.Z9CrudQueryDto;
 import com.chargehub.common.security.template.service.AbstractZ9CrudServiceImpl;
 import com.chargehub.common.security.utils.SecurityUtils;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Set;
 
 /**
  * @author : zhanghaowei
@@ -56,13 +59,19 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
 
 
     public IPage<SocialMediaAccountStatisticVo> getAccountStatistic(SocialMediaAccountQueryDto queryDto) {
+        Set<String> userId = queryDto.getUserId();
+        Map<String, SocialMediaWork> socialMediaWorkMap = socialMediaWorkService.groupByAccountId(userId);
+        if (MapUtils.isEmpty(socialMediaWorkMap)) {
+            return new Page<>();
+        }
+        Set<String> accountIds = socialMediaWorkMap.keySet();
+        queryDto.setUserId(null);
+        queryDto.setId(accountIds);
         IPage<SocialMediaAccountStatisticVo> page = this.baseMapper.doGetPage(queryDto).convert(i -> BeanUtil.copyProperties(i, SocialMediaAccountStatisticVo.class));
         List<SocialMediaAccountStatisticVo> records = page.getRecords();
         if (CollectionUtils.isEmpty(records)) {
             return page;
         }
-        List<String> accountIds = records.stream().map(SocialMediaAccountStatisticVo::getId).collect(Collectors.toList());
-        Map<String, SocialMediaWork> socialMediaWorkMap = socialMediaWorkService.groupByAccountId(accountIds);
         for (SocialMediaAccountStatisticVo statisticVo : records) {
             String accountId = statisticVo.getId();
             SocialMediaWork socialMediaWork = socialMediaWorkMap.get(accountId);
@@ -71,6 +80,7 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
             }
             BeanUtil.copyProperties(socialMediaWork, statisticVo, CopyOptions.create().setIgnoreNullValue(true));
         }
+        records.sort(Comparator.comparing(SocialMediaAccountStatisticVo::getPlayNum).reversed());
         return page;
     }
 

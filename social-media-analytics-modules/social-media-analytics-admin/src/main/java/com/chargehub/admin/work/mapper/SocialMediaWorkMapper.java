@@ -14,7 +14,7 @@ import java.util.List;
 public interface SocialMediaWorkMapper extends Z9MpCrudMapper<SocialMediaWork> {
 
 
-    List<SocialMediaWork> groupByAccountId(String accountIds);
+    List<SocialMediaWork> groupByAccountId(String userIds);
 
 
     List<SocialMediaWork> groupByUserIdAndPlatform(String userIds);

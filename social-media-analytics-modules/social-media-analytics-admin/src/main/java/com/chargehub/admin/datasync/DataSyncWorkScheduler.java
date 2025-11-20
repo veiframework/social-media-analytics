@@ -24,6 +24,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * @author : zhanghaowei
@@ -65,7 +66,7 @@ public class DataSyncWorkScheduler {
             while (hasMore) {
                 SocialMediaAccountQueryDto socialMediaAccountQueryDto = new SocialMediaAccountQueryDto(pageNum, 10L, false);
                 if (StringUtils.isNotBlank(accountId)) {
-                    socialMediaAccountQueryDto.setId(accountId);
+                    socialMediaAccountQueryDto.setId(Stream.of(accountId).collect(Collectors.toSet()));
                 }
                 IPage<SocialMediaAccountVo> page = (IPage<SocialMediaAccountVo>) socialMediaAccountService.getPage(socialMediaAccountQueryDto);
                 List<SocialMediaAccountVo> records = page.getRecords();

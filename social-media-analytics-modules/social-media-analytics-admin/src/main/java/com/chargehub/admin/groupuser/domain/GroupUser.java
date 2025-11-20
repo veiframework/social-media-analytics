@@ -25,6 +25,9 @@ public class GroupUser implements Serializable, Z9CrudEntity {
     @ApiModelProperty("父用户id")
     private String parentUserId;
 
+    @ApiModelProperty("id路径")
+    private String idPath;
+
     @Override
     public String getUniqueId() {
         return id;

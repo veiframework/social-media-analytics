@@ -29,5 +29,8 @@ public class GroupUserDto implements Serializable, Z9CrudDto<GroupUser> {
     @ApiModelProperty("父用户id")
     private String parentUserId;
 
+    @ApiModelProperty("id路径")
+    private String idPath;
+
 
 }

@@ -25,4 +25,6 @@ public class GroupUserVo implements Z9CrudVo, Serializable {
     @ApiModelProperty("父用户id")
     private String parentUserId;
 
+    @ApiModelProperty("id路径")
+    private String idPath;
 }

@@ -11,6 +11,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import java.io.Serializable;
+import java.util.Set;
 
 /**
  * @author : zhanghaowei
@@ -21,12 +22,16 @@ import java.io.Serializable;
 public class SocialMediaAccountQueryDto extends Pagination implements Z9CrudQueryDto<SocialMediaAccount>, Serializable {
     private static final long serialVersionUID = -4206120068017448896L;
 
-    @CrudQueryField
-    private String id;
+    @CrudQueryField(queryType = Z9QueryTypeEnum.IN)
+    private Set<String> id;
 
     @CrudQueryField(queryType = Z9QueryTypeEnum.LIKE)
     @ApiModelProperty("第三方用户昵称")
     private String nickname;
+
+    @CrudQueryField(queryType = Z9QueryTypeEnum.IN)
+    private Set<String> userId;
+
 
     public SocialMediaAccountQueryDto() {
     }

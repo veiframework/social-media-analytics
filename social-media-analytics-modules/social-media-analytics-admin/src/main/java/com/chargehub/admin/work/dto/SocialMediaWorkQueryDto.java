@@ -11,7 +11,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import java.io.Serializable;
-import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -23,8 +22,8 @@ import java.util.Set;
 public class SocialMediaWorkQueryDto extends Pagination implements Serializable, Z9CrudQueryDto<SocialMediaWork> {
     private static final long serialVersionUID = 992829188762599177L;
 
-    @CrudQueryField
-    private Set<String> userId = new HashSet<>();
+    @CrudQueryField(queryType = Z9QueryTypeEnum.IN)
+    private Set<String> userId;
 
     @CrudQueryField
     private String type;

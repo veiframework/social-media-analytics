@@ -12,11 +12,13 @@ import com.chargehub.admin.groupuser.vo.GroupUserVo;
 import com.chargehub.common.security.service.ChargeExcelDictHandler;
 import com.chargehub.common.security.template.dto.Z9CrudQueryDto;
 import com.chargehub.common.security.template.service.AbstractZ9CrudServiceImpl;
+import com.chargehub.common.security.utils.SecurityUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -40,10 +42,13 @@ public class GroupUserService extends AbstractZ9CrudServiceImpl<GroupUserMapper,
     public void batchAdd(GroupUserBatchAddDto dto) {
         String parentUserId = dto.getParentUserId();
         Set<String> userIds = dto.getUserIds();
+        GroupUser root = this.baseMapper.lambdaQuery().eq(GroupUser::getUserId, parentUserId).one();
+        String idPath = root == null ? parentUserId : root.getIdPath();
         List<GroupUser> collect = userIds.stream().map(i -> {
             GroupUser groupUser = new GroupUser();
             groupUser.setUserId(i);
             groupUser.setParentUserId(parentUserId);
+            groupUser.setIdPath(idPath + "," + i);
             return groupUser;
         }).collect(Collectors.toList());
         this.baseMapper.doSaveExcelData(collect);
@@ -53,19 +58,19 @@ public class GroupUserService extends AbstractZ9CrudServiceImpl<GroupUserMapper,
         return this.baseMapper.getUsers();
     }
 
-    public void checkPurview(Set<String> userIds, LoginUser loginUser) {
-        Set<String> roles = loginUser.getRoles();
+    public Set<String> checkPurview() {
+        Set<String> userIds = new HashSet<>();
+        LoginUser loginUser = SecurityUtils.getLoginUser();
         String userid = loginUser.getUserid() + "";
-        GroupUserQueryDto groupUserQueryDto = new GroupUserQueryDto();
-        groupUserQueryDto.setParentUserId(userid);
-        List<GroupUser> all = this.baseMapper.doGetAll(groupUserQueryDto);
+        List<GroupUser> relativeUsers = this.baseMapper.getRelativeUsers(userid);
         if (!loginUser.isAdmin()) {
             userIds.add(userid);
         }
-        if (CollectionUtils.isNotEmpty(all)) {
-            Set<String> collect = all.stream().map(GroupUser::getUserId).collect(Collectors.toSet());
+        if (CollectionUtils.isNotEmpty(relativeUsers)) {
+            Set<String> collect = relativeUsers.stream().map(GroupUser::getUserId).collect(Collectors.toSet());
             userIds.addAll(collect);
         }
+        return userIds;
     }
 
     @Override

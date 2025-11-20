@@ -104,6 +104,7 @@ const getData = async () => {
   loading.value = true
   try {
     const params = {
+      descFields: "playNum,accountId",
       pageNum: pageNum.value,
       pageSize: pageSize.value,
       ...queryParams.value
