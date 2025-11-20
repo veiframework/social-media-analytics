@@ -143,7 +143,7 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
         socialMediaWork.setUserId(userId);
         socialMediaWork.setAccountId(accountId);
         socialMediaWork.setTenantId(tenantId);
-        socialMediaWork.setDesc(desc);
+        socialMediaWork.setDescription(desc);
         socialMediaWork.setWorkUid(workUid);
         socialMediaWork.setPostTime(postTime);
         socialMediaWork.setMediaType(mediaType);

@@ -24,7 +24,7 @@ public class SocialMediaWork implements Serializable, Z9CrudEntity {
 
 
     @ApiModelProperty("描述")
-    private String desc;
+    private String description;
 
     @ApiModelProperty("租户id")
     private String tenantId;
@@ -84,6 +84,8 @@ public class SocialMediaWork implements Serializable, Z9CrudEntity {
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private String updater;
 
+    @TableField(exist = false)
+    private Integer workNum;
 
     @Override
     public String getUniqueId() {

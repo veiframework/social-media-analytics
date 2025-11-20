@@ -104,11 +104,12 @@ const getData = async () => {
 
 const getDict = async () => {
   try {
-    const typeRes = await getDicts('social_media_type')
+    const typeRes = await getDicts('social_media_platform')
 
     socialMediaTypeDict.value = typeRes.data.map(i => ({
       label: i.dictLabel,
-      value: i.dictValue
+      value: i.dictValue,
+      elTagType: i.listClass
     })) || []
   } catch (error) {
     console.error('获取字典数据失败:', error)

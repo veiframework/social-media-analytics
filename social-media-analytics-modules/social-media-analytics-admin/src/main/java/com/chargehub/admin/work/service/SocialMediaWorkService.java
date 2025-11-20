@@ -5,9 +5,7 @@ import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.toolkit.Db;
 import com.chargehub.admin.api.model.LoginUser;
-import com.chargehub.admin.groupuser.dto.GroupUserQueryDto;
 import com.chargehub.admin.groupuser.service.GroupUserService;
-import com.chargehub.admin.groupuser.vo.GroupUserVo;
 import com.chargehub.admin.work.domain.SocialMediaWork;
 import com.chargehub.admin.work.dto.SocialMediaWorkDto;
 import com.chargehub.admin.work.dto.SocialMediaWorkQueryDto;
@@ -52,25 +50,33 @@ public class SocialMediaWorkService extends AbstractZ9CrudServiceImpl<SocialMedi
                 .collect(Collectors.toMap(SocialMediaWork::getWorkUid, Function.identity()));
     }
 
+    public List<SocialMediaWorkVo> groupByUserIdAndPlatform(LoginUser loginUser) {
+        Set<String> userIds = new HashSet<>();
+        this.groupUserService.checkPurview(userIds, loginUser);
+        String collect = userIds.stream().map(i -> "'" + i + "'").collect(Collectors.joining(","));
+        List<SocialMediaWork> socialMediaWorks = this.baseMapper.groupByUserIdAndPlatform(collect);
+        return BeanUtil.copyToList(socialMediaWorks, SocialMediaWorkVo.class);
+    }
+
+
+    public Map<String, SocialMediaWork> groupByAccountId(Collection<String> accountIds) {
+        if (CollectionUtils.isEmpty(accountIds)) {
+            return new HashMap<>();
+        }
+        String collect = accountIds.stream().map(i -> "'" + i + "'").collect(Collectors.joining(","));
+        List<SocialMediaWork> socialMediaWorks = this.baseMapper.groupByAccountId(collect);
+        if (CollectionUtils.isEmpty(socialMediaWorks)) {
+            return new HashMap<>();
+        }
+        return socialMediaWorks.stream().collect(Collectors.toMap(SocialMediaWork::getAccountId, Function.identity()));
+    }
+
     public void saveOrUpdateBatch(Collection<SocialMediaWork> works) {
         Db.saveOrUpdateBatch(works);
     }
 
-    @SuppressWarnings("unchecked")
     public IPage<SocialMediaWorkVo> getPurviewPage(SocialMediaWorkQueryDto queryDto, LoginUser loginUser) {
-        Set<String> roles = loginUser.getRoles();
-        String userid = loginUser.getUserid() + "";
-        GroupUserQueryDto groupUserQueryDto = new GroupUserQueryDto();
-        groupUserQueryDto.setParentUserId(userid);
-        List<GroupUserVo> all = (List<GroupUserVo>) groupUserService.getAll(groupUserQueryDto);
-        Set<String> userIds = queryDto.getUserId();
-        if (!loginUser.isAdmin()) {
-            userIds.add(userid);
-        }
-        if (CollectionUtils.isNotEmpty(all)) {
-            Set<String> collect = all.stream().map(GroupUserVo::getUserId).collect(Collectors.toSet());
-            userIds.addAll(collect);
-        }
+        this.groupUserService.checkPurview(queryDto.getUserId(), loginUser);
         return this.baseMapper.doGetPage(queryDto).convert(i -> BeanUtil.copyProperties(i, voClass()));
     }
 

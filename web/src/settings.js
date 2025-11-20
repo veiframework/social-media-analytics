@@ -45,7 +45,7 @@ export default {
 	 */
 	errorLog: 'production',
 
-	uploadHost: 'https://cabinet-api-dev.vchaoxi.com',
+	uploadHost: 'http://127.0.0.1:9201',
 
 	appUser:{
 	    score: false,

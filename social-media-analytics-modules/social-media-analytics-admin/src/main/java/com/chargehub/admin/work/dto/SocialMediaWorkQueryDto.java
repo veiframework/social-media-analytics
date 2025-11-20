@@ -37,7 +37,7 @@ public class SocialMediaWorkQueryDto extends Pagination implements Serializable,
 
     @CrudQueryField(queryType = Z9QueryTypeEnum.LIKE)
     @ApiModelProperty("描述")
-    private String desc;
+    private String description;
 
     @Override
     public Page<SocialMediaWork> buildPageObj() {

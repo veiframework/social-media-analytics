@@ -2,6 +2,7 @@ package com.chargehub.admin.groupuser.service;
 
 import cn.afterturn.easypoi.handler.inter.IExcelDictHandler;
 import com.chargehub.admin.api.domain.SysUser;
+import com.chargehub.admin.api.model.LoginUser;
 import com.chargehub.admin.groupuser.domain.GroupUser;
 import com.chargehub.admin.groupuser.dto.GroupUserBatchAddDto;
 import com.chargehub.admin.groupuser.dto.GroupUserDto;
@@ -11,6 +12,7 @@ import com.chargehub.admin.groupuser.vo.GroupUserVo;
 import com.chargehub.common.security.service.ChargeExcelDictHandler;
 import com.chargehub.common.security.template.dto.Z9CrudQueryDto;
 import com.chargehub.common.security.template.service.AbstractZ9CrudServiceImpl;
+import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,6 +51,21 @@ public class GroupUserService extends AbstractZ9CrudServiceImpl<GroupUserMapper,
 
     public List<SysUser> getUsers() {
         return this.baseMapper.getUsers();
+    }
+
+    public void checkPurview(Set<String> userIds, LoginUser loginUser) {
+        Set<String> roles = loginUser.getRoles();
+        String userid = loginUser.getUserid() + "";
+        GroupUserQueryDto groupUserQueryDto = new GroupUserQueryDto();
+        groupUserQueryDto.setParentUserId(userid);
+        List<GroupUser> all = this.baseMapper.doGetAll(groupUserQueryDto);
+        if (!loginUser.isAdmin()) {
+            userIds.add(userid);
+        }
+        if (CollectionUtils.isNotEmpty(all)) {
+            Set<String> collect = all.stream().map(GroupUser::getUserId).collect(Collectors.toSet());
+            userIds.addAll(collect);
+        }
     }
 
     @Override

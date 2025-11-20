@@ -59,7 +59,7 @@ export function createByShareLink(data) {
 
 export function syncWork(data) {
     return request({
-        url: `${prefix}/sync/work/` + data.id,
+        url: `${prefix}/sync/work/` + data,
         method: 'get',
         data: data
     })

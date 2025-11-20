@@ -29,7 +29,7 @@ public class SocialMediaWorkDto implements Serializable, Z9CrudDto<SocialMediaWo
 
     @Excel(name = "描述", width = 15)
     @ApiModelProperty("描述")
-    private String desc;
+    private String description;
 
     @ApiModelProperty("租户id")
     private String tenantId;

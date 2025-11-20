@@ -32,7 +32,7 @@ public class SocialMediaWorkVo implements Serializable, Z9CrudVo {
 
     @Excel(name = "描述", width = 15)
     @ApiModelProperty("描述")
-    private String desc;
+    private String description;
 
     @NotBlank
     @Excel(name = "平台", width = 15, dict = "social_media_platform", addressList = true)
@@ -62,6 +62,9 @@ public class SocialMediaWorkVo implements Serializable, Z9CrudVo {
     @ApiModelProperty("作品状态")
     private String status;
 
+    @ApiModelProperty("作品数量")
+    private Integer workNum;
+
     @Excel(name = "点赞数量", width = 15)
     @ApiModelProperty("点赞数量")
     private Integer thumbNum;
@@ -86,7 +89,7 @@ public class SocialMediaWorkVo implements Serializable, Z9CrudVo {
     @ApiModelProperty("喜欢量")
     private Integer likeNum;
 
-    @Excel(name = "发布时间", width = 15)
+    @Excel(name = "发布时间", width = 15, format = "yyyy-MM-dd HH:mm:ss")
     @ApiModelProperty("发布时间")
     private Date postTime;
 
