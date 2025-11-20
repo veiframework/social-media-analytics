@@ -255,10 +255,19 @@ const option = reactive({
       sortable: false,
       isShow: true,
       showOverflowTooltip: true
-    },{
+    }, {
       type: 'text',
       label: '昵称',
       prop: 'accountId_dictText',
+      width: 200,
+      fixed: false,
+      sortable: false,
+      isShow: true,
+      showOverflowTooltip: true
+    }, {
+      type: 'text',
+      label: '员工',
+      prop: 'userId_dictText',
       width: 200,
       fixed: false,
       sortable: false,
@@ -503,7 +512,6 @@ const optionInfo = reactive({
  */
 const init = () => {
   getDict()
-  getData()
 }
 
 // 初始化

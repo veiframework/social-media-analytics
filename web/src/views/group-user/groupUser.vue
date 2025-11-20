@@ -338,7 +338,6 @@ const handleSave = async (val) => {
  */
 const init = () => {
   getUserSelector()
-  getData()
 }
 
 // 初始化
