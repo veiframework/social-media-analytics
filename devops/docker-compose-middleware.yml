@@ -14,7 +14,7 @@ services:
       - nginx
     privileged: true
     restart: always
-    image: nginx
+    image: swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/nginx:1.29.0
     container_name: nginx
     networks:
       - mynet
@@ -48,7 +48,7 @@ services:
       - mynet
     privileged: true
     restart: always
-    image: redis:7.2.4
+    image: swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/redis:7.2.4
     container_name: redis
     ports:
       - 36379:6379
@@ -90,7 +90,7 @@ services:
       - ${DEPLOY_PATH}/mysql/data:/var/lib/mysql
     environment:
       TZ: Asia/Shanghai
-      MYSQL_ROOT_PASSWORD: vchaoxi@8888
+      MYSQL_ROOT_PASSWORD: lumeng@8888
     command:
       --bind-address=0.0.0.0
       --max_connections=1000

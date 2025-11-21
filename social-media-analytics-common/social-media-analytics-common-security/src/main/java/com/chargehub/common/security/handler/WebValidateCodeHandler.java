@@ -28,12 +28,9 @@ public class WebValidateCodeHandler implements HandlerFunction<ServerResponse> {
     @Override
     public ServerResponse handle(ServerRequest request) throws Exception {
         AjaxResult ajax;
-        try
-        {
+        try {
             ajax = validateCodeService.createCaptcha();
-        }
-        catch (CaptchaException | IOException e)
-        {
+        } catch (CaptchaException | IOException e) {
             ajax = AjaxResult.error(e.getMessage());
             return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .contentType(MediaType.APPLICATION_JSON)
@@ -43,10 +40,9 @@ public class WebValidateCodeHandler implements HandlerFunction<ServerResponse> {
         return ServerResponse.status(HttpStatus.OK)
                 .contentType(MediaType.APPLICATION_JSON)
                 .headers(h -> {
-                    h.add(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS,"true");
+                    h.add(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS, "true");
                     h.add(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS, "*");
                     h.add(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, "*");
-                    h.add(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "*");
                 }).body(ajax);
     }
 }

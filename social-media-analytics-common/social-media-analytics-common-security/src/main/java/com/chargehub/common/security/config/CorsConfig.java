@@ -1,6 +1,8 @@
 package com.chargehub.common.security.config;
 
 import com.chargehub.common.core.constant.Constants;
+import com.chargehub.common.core.utils.SpringUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.servlet.config.annotation.CorsRegistration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
@@ -11,11 +13,17 @@ import org.springframework.web.servlet.i18n.LocaleChangeInterceptor;
  * @author Zhanghaowei
  * @date 2024/04/19 10:39
  */
+@Slf4j
 public class CorsConfig implements WebMvcConfigurer {
 
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
+        boolean corsConfig = SpringUtils.containsBean("resourcesConfig");
+        if (corsConfig) {
+            log.info("[corsConfig] found cors config so be it");
+            return;
+        }
         CorsRegistration registration = registry.addMapping(Constants.ALL_PATH);
         registration.allowCredentials(true)
                 .allowedOriginPatterns(Constants.ASTERISK)

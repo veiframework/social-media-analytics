@@ -11,7 +11,6 @@ import com.chargehub.common.core.utils.StringUtils;
 import com.chargehub.common.core.web.domain.AjaxResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpHeaders;
 import org.springframework.validation.BindException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -22,6 +21,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.util.stream.Collectors;
 
 /**
  * 全局异常处理器
@@ -47,11 +47,7 @@ public class GlobalExceptionHandler
     }
 
     private static void configResponse(HttpServletResponse response) {
-        response.setHeader(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS,"true");
-        response.setHeader(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS,"true");
-        response.setHeader(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS, "*");
-        response.setHeader(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, "*");
-        response.setHeader(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "*");
+
     }
 
     /**
@@ -159,7 +155,7 @@ public class GlobalExceptionHandler
     public AjaxResult handleBindException(BindException e, HttpServletResponse response)
     {
         log.error(e.getMessage(), e);
-        String message = e.getAllErrors().get(0).getDefaultMessage();
+        String message = e.getAllErrors().stream().map(i -> i.getObjectName() + ":" + i.getDefaultMessage()).collect(Collectors.joining(";"));
         configResponse(response);
         return AjaxResult.error(message);
     }

@@ -45,7 +45,7 @@ export default {
 	 */
 	errorLog: 'production',
 
-	uploadHost: 'http://127.0.0.1:9201',
+	uploadHost: 'http://39.106.154.254:9201',
 
 	appUser:{
 	    score: false,

@@ -13,3 +13,14 @@ GET http://localhost:9201/admin-api/debug/endpoints
 
 GET https://api.tikhub.io/api/v1/douyin/web/fetch_user_post_videos?sec_user_id=MS4wLjABAAAAMd8Nmzv60Y7XkRdq1y67J8T1NQiLIDQfcpFwPxB4tN7H9OLVMxmze50fndhxIjQR&max_cursor=0&count=50&filter_type=0&cookie
 Authorization: Bearer oJMgD/I5zGmlg0+tKo+48j7VBH6Nf5VvxTT1lGysaMaw0FaGeWWjVWOhEQ==
+
+
+####
+GET http://127.0.0.1:9201/code
+Origin: http://39.106.154.254
+
+###
+POST  http://127.0.0.1:9201/auth-api/login
+content-type: application/json;charset=UTF-8
+
+{"username":"admin","password":"admin123","code":"11","uuid":"69ce6be7f86343f6b360d086a37dea4a"}
