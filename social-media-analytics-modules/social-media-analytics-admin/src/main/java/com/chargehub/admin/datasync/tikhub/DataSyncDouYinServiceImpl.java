@@ -2,6 +2,7 @@ package com.chargehub.admin.datasync.tikhub;
 
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.http.HttpResponse;
+import cn.hutool.http.HttpStatus;
 import cn.hutool.http.HttpUtil;
 import com.chargehub.admin.account.vo.SocialMediaAccountVo;
 import com.chargehub.admin.datasync.DataSyncService;
@@ -17,6 +18,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.commons.collections.MapUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 
 import java.util.Date;
 import java.util.HashMap;
@@ -55,6 +57,8 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
                 .execute()) {
             String body = execute.body();
             JsonNode jsonNode = JacksonUtil.toObj(body);
+            int code = jsonNode.path("code").asInt(500);
+            Assert.isTrue(code == HttpStatus.HTTP_OK, "获取用户信息失败" + body);
             JsonNode path = jsonNode.at("/data/user");
             String nickname = path.get("nickname").asText();
             String uniqueId = path.get("unique_id").asText();
@@ -83,6 +87,8 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
                 .execute()) {
             String body = execute.body();
             JsonNode jsonNode = JacksonUtil.toObj(body);
+            int code = jsonNode.path("code").asInt(500);
+            Assert.isTrue(code == HttpStatus.HTTP_OK, "获取作品失败" + body);
             boolean hasMore = jsonNode.at("/data/has_more").asInt() == 1;
             Long nextCursor = jsonNode.at("/data/max_cursor").asLong(-1);
             JsonNode path = jsonNode.at("/data/aweme_list");
@@ -99,6 +105,8 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
         try (HttpResponse multiWorksExecute = HttpUtil.createGet(host + GET_WORK_STATISTIC).bearerAuth(token).form("aweme_ids", awemeIds).execute()) {
             String result = multiWorksExecute.body();
             JsonNode multiWorkNode = JacksonUtil.toObj(result);
+            int code = multiWorkNode.path("code").asInt(500);
+            Assert.isTrue(code == HttpStatus.HTTP_OK, "获取作品详情失败" + result);
             JsonNode statisticsNode = multiWorkNode.at("/data/statistics_list");
             for (JsonNode node : statisticsNode) {
                 String workUid = node.get("aweme_id").asText("");

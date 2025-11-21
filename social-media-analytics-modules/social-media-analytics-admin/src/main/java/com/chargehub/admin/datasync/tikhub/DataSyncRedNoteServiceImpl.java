@@ -2,6 +2,7 @@ package com.chargehub.admin.datasync.tikhub;
 
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.http.HttpResponse;
+import cn.hutool.http.HttpStatus;
 import cn.hutool.http.HttpUtil;
 import com.chargehub.admin.account.vo.SocialMediaAccountVo;
 import com.chargehub.admin.datasync.DataSyncService;
@@ -17,6 +18,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.commons.collections.MapUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 
 import java.util.Date;
 import java.util.HashMap;
@@ -34,7 +36,7 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
     @Autowired
     private HubProperties hubProperties;
 
-    private static final String GET_USER_PROFILE = "/api/v1/xiaohongshu/app/get_user_info";
+    private static final String GET_USER_PROFILE = "/api/v1/xiaohongshu/web_v2/fetch_user_info_app";
     private static final String GET_USER_WORKS = "/api/v1/xiaohongshu/app/get_user_notes";
 
 
@@ -53,6 +55,8 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
                 .execute()) {
             String body = execute.body();
             JsonNode jsonNode = JacksonUtil.toObj(body);
+            int code = jsonNode.path("code").asInt(500);
+            Assert.isTrue(code == HttpStatus.HTTP_OK, "获取用户信息失败" + body);
             String nickname = jsonNode.at("/data/data/nickname").asText();
             String uniqueId = jsonNode.at("/data/data/red_id").asText();
             SocialMediaUserInfo socialMediaUserInfo = new SocialMediaUserInfo();
@@ -77,6 +81,8 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
                 .execute()) {
             String body = execute.body();
             JsonNode jsonNode = JacksonUtil.toObj(body);
+            int code = jsonNode.path("code").asInt(500);
+            Assert.isTrue(code == HttpStatus.HTTP_OK, "获取作品失败" + body);
             boolean hasMore = jsonNode.at("/data/data/has_more").asBoolean();
             JsonNode path = jsonNode.at("/data/data/notes");
             String nextCursor = path.isEmpty() ? "-1" : path.get(path.size() - 1).get("cursor").asText();
