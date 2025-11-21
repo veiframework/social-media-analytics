@@ -2,20 +2,25 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.chargehub.admin.work.mapper.SocialMediaWorkMapper">
 
-    <select id="groupByAccountId" resultType="com.chargehub.admin.work.domain.SocialMediaWork">
-        SELECT IFNULL(SUM(thumb_num), 0)   AS thumb_num,
-               IFNULL(SUM(share_num), 0)   AS share_num,
-               IFNULL(SUM(collect_num), 0) AS collect_num,
-               IFNULL(SUM(comment_num), 0) AS comment_num,
-               IFNULL(SUM(play_num), 0)    AS play_num,
-               account_id
+    <select id="groupByAccountId0" resultType="com.chargehub.admin.work.domain.SocialMediaWork">
+        SELECT IFNULL(SUM(thumb_num), 0) AS thumb_num,
+        IFNULL(SUM(share_num), 0) AS share_num,
+        IFNULL(SUM(collect_num), 0) AS collect_num,
+        IFNULL(SUM(comment_num), 0) AS comment_num,
+        IFNULL(SUM(play_num), 0) AS play_num,
+        account_id
         FROM social_media_work
-        WHERE user_id in (${userId})
+        <if test='userIds!=null'>
+            WHERE user_id in
+            <foreach item="item" index="index" collection="userIds" separator="," open="(" close=")">
+                #{item}
+            </foreach>
+        </if>
         GROUP BY account_id
         ORDER BY play_num DESC
     </select>
 
-    <select id="groupByUserIdAndPlatform" resultType="com.chargehub.admin.work.domain.SocialMediaWork">
+    <select id="groupByUserIdAndPlatform0" resultType="com.chargehub.admin.work.domain.SocialMediaWork">
         SELECT platform_id,
         IFNULL(SUM(thumb_num), 0) AS thumb_num,
         IFNULL(SUM(share_num), 0) AS share_num,
@@ -25,8 +30,11 @@
         count(*) as work_num,
         account_id
         FROM social_media_work
-        <if test="userIds != null and userIds != ''">
-            WHERE user_id in (${userIds})
+        <if test='userIds!=null'>
+            WHERE user_id in
+            <foreach item="item" index="index" collection="userIds" separator="," open="(" close=")">
+                #{item}
+            </foreach>
         </if>
         GROUP BY platform_id
     </select>

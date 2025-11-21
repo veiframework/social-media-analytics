@@ -64,6 +64,9 @@ public class SocialMediaAccount implements Serializable, Z9CrudEntity {
 
     private Integer deleted;
 
+    @ApiModelProperty("同步作品状态 0-待同步，1-同步中，2已同步")
+    private Integer syncWorkStatus;
+
 
     @Override
     public String getUniqueId() {

@@ -195,29 +195,29 @@ const option = reactive({
     },
     {
       type: 'text',
-      label: '点赞数量',
+      label: '点赞数',
       prop: 'thumbNum',
       width: 100,
       fixed: false,
-      sortable: true,
+      sortable: false,
       isShow: true
     },
     {
       type: 'text',
-      label: '收藏数量',
+      label: '收藏数',
       prop: 'collectNum',
       width: 100,
       fixed: false,
-      sortable: true,
+      sortable: false,
       isShow: true
     },
     {
       type: 'text',
-      label: '评论量',
+      label: '评论数',
       prop: 'commentNum',
       width: 100,
       fixed: false,
-      sortable: true,
+      sortable: false,
       isShow: true
     },
     {
@@ -226,16 +226,16 @@ const option = reactive({
       prop: 'playNum',
       width: 100,
       fixed: false,
-      sortable: true,
+      sortable: false,
       isShow: true
     },
     {
       type: 'text',
-      label: '分享量',
+      label: '分享数',
       prop: 'shareNum',
       width: 100,
       fixed: false,
-      sortable: true,
+      sortable: false,
       isShow: true
     },
 

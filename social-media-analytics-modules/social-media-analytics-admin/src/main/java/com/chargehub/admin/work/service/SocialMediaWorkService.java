@@ -13,7 +13,6 @@ import com.chargehub.common.security.service.ChargeExcelDictHandler;
 import com.chargehub.common.security.template.dto.Z9CrudQueryDto;
 import com.chargehub.common.security.template.service.AbstractZ9CrudServiceImpl;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,21 +46,14 @@ public class SocialMediaWorkService extends AbstractZ9CrudServiceImpl<SocialMedi
                 .collect(Collectors.toMap(SocialMediaWork::getWorkUid, Function.identity()));
     }
 
-    public List<SocialMediaWorkVo> groupByUserIdAndPlatform(String userIds) {
-        if (StringUtils.isBlank(userIds)) {
-            return new ArrayList<>();
-        }
+    public List<SocialMediaWorkVo> groupByUserIdAndPlatform(Collection<String> userIds) {
         List<SocialMediaWork> socialMediaWorks = this.baseMapper.groupByUserIdAndPlatform(userIds);
         return BeanUtil.copyToList(socialMediaWorks, SocialMediaWorkVo.class);
     }
 
 
     public Map<String, SocialMediaWork> groupByAccountId(Collection<String> userIds) {
-        if (CollectionUtils.isEmpty(userIds)) {
-            return new HashMap<>();
-        }
-        String collect = userIds.stream().map(i -> "'" + i + "'").collect(Collectors.joining(","));
-        List<SocialMediaWork> socialMediaWorks = this.baseMapper.groupByAccountId(collect);
+        List<SocialMediaWork> socialMediaWorks = this.baseMapper.groupByAccountId(userIds);
         if (CollectionUtils.isEmpty(socialMediaWorks)) {
             return new HashMap<>();
         }

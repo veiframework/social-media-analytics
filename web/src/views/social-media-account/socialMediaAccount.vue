@@ -76,6 +76,8 @@ const shareLinkVisible = ref(false)
 
 
 const socialMediaTypeDict = ref([])
+const syncWorkStatusDict = ref([])
+
 
 // 获取数据
 const getData = async () => {
@@ -105,8 +107,14 @@ const getData = async () => {
 const getDict = async () => {
   try {
     const typeRes = await getDicts('social_media_platform')
+    const syncDictRes = await getDicts('sync_work_status')
 
     socialMediaTypeDict.value = typeRes.data.map(i => ({
+      label: i.dictLabel,
+      value: i.dictValue,
+      elTagType: i.listClass
+    })) || []
+    syncWorkStatusDict.value = syncDictRes.data.map(i => ({
       label: i.dictLabel,
       value: i.dictValue,
       elTagType: i.listClass
@@ -311,7 +319,7 @@ const option = reactive({
       prop: 'userId_dictText',
       width: 180,
       fixed: false,
-      sortable: true,
+      sortable: false,
       isShow: true,
       showOverflowTooltip: true
     },
@@ -324,19 +332,15 @@ const option = reactive({
       sortable: false,
       isShow: true,
       showOverflowTooltip: true
-    },
-    {
-      type: 'text',
-      label: '过期时间',
-      prop: 'expireTime',
-      width: 180,
+    }, {
+      type: 'tag',
+      label: '作品同步状态',
+      prop: 'syncWorkStatus',
+      width: 120,
       fixed: false,
-      sortable: true,
+      sortable: false,
       isShow: true,
-      showOverflowTooltip: true,
-      formatter: (row, column, cellValue) => {
-        return cellValue ? new Date(cellValue).toLocaleString() : '-';
-      }
+      dicData: syncWorkStatusDict
     },
     {
       type: 'text',
@@ -344,7 +348,7 @@ const option = reactive({
       prop: 'createTime',
       width: 180,
       fixed: false,
-      sortable: true,
+      sortable: false,
       isShow: true,
       showOverflowTooltip: true,
       formatter: (row, column, cellValue) => {
@@ -364,20 +368,29 @@ const option = reactive({
       isShow: true,
       icon: 'Edit',
       label: '编辑',
-      value: 'edit'
+      value: 'edit',
+      judge: (row) => {
+        return row.syncWorkStatus !== '1'
+      },
     },
     {
       type: 'danger',
       isShow: true,
       icon: 'Delete',
       label: '删除',
-      value: 'delete'
+      value: 'delete',
+      judge: (row) => {
+        return row.syncWorkStatus !== '1'
+      },
     },
     {
       type: 'primary',
       isShow: true,
       icon: 'Delete',
       label: '同步作品',
+      judge: (row) => {
+        return row.syncWorkStatus !== '1'
+      },
       value: 'syncWork'
     }
   ],

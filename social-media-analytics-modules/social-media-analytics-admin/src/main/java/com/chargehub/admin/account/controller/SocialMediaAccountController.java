@@ -12,6 +12,7 @@ import com.chargehub.common.security.annotation.Debounce;
 import com.chargehub.common.security.annotation.UnifyResult;
 import com.chargehub.common.security.template.controller.AbstractZ9Controller;
 import com.chargehub.common.security.utils.SecurityUtils;
+import com.google.common.collect.Sets;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
@@ -59,7 +60,16 @@ public class SocialMediaAccountController extends AbstractZ9Controller<SocialMed
     @GetMapping("/sync/work/{accountId}")
     @ApiOperation("同步作品")
     public void syncWorkData(@PathVariable("accountId") String accountId) {
-        this.dataSyncWorkScheduler.asyncExecute(accountId);
+        this.dataSyncWorkScheduler.asyncExecute(Sets.newHashSet(accountId));
+    }
+
+    @Debounce
+    @GetMapping("/sync/work")
+    @ApiOperation("同步全部作品")
+    public void syncWorkData() {
+        Set<String> userIds = groupUserService.checkPurview();
+        Set<String> accountIds = this.getCrudService().getAccountIdsByUserIds(userIds);
+        this.dataSyncWorkScheduler.asyncExecute(accountIds);
     }
 
 }

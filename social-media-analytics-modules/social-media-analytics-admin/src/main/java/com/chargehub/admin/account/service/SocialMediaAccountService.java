@@ -15,6 +15,7 @@ import com.chargehub.admin.account.vo.SocialMediaAccountVo;
 import com.chargehub.admin.datasync.DataSyncManager;
 import com.chargehub.admin.datasync.domain.SocialMediaUserInfo;
 import com.chargehub.admin.enums.SocialMediaPlatformEnum;
+import com.chargehub.admin.enums.SyncWorkStatusEnum;
 import com.chargehub.admin.work.domain.SocialMediaWork;
 import com.chargehub.admin.work.service.SocialMediaWorkService;
 import com.chargehub.common.security.service.ChargeExcelDictHandler;
@@ -30,10 +31,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author : zhanghaowei
@@ -57,6 +56,21 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
         super(baseMapper);
     }
 
+    @SuppressWarnings("unchecked")
+    public Set<String> getAccountIdsByUserIds(Collection<String> userIds) {
+        if (userIds != null && userIds.isEmpty()) {
+            return new HashSet<>();
+        }
+        List<SocialMediaAccount> list = this.baseMapper.lambdaQuery().select(SocialMediaAccount::getId).in(userIds != null, SocialMediaAccount::getUserId, userIds).list();
+        return list.stream().map(SocialMediaAccount::getId).collect(Collectors.toSet());
+    }
+
+    public void updateSyncWorkStatus(String accountId, SyncWorkStatusEnum syncWorkStatusEnum) {
+        this.baseMapper.lambdaUpdate()
+                .set(SocialMediaAccount::getSyncWorkStatus, syncWorkStatusEnum.ordinal())
+                .eq(SocialMediaAccount::getId, accountId)
+                .update();
+    }
 
     public IPage<SocialMediaAccountStatisticVo> getAccountStatistic(SocialMediaAccountQueryDto queryDto) {
         Set<String> userId = queryDto.getUserId();

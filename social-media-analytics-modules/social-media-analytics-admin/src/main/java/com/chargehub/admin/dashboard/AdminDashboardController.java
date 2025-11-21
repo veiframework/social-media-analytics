@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * @author : zhanghaowei
@@ -48,8 +47,7 @@ public class AdminDashboardController {
     @GetMapping("/statistic/platform")
     public List<SocialMediaWorkVo> groupByUserIdAndPlatform() {
         Set<String> userIds = this.groupUserService.checkPurview();
-        String collect = userIds.stream().map(i -> "'" + i + "'").collect(Collectors.joining(","));
-        return this.socialMediaWorkService.groupByUserIdAndPlatform(collect);
+        return this.socialMediaWorkService.groupByUserIdAndPlatform(userIds);
     }
 
 

@@ -54,6 +54,11 @@ public class SocialMediaAccountVo implements Serializable, Z9CrudVo {
     @ApiModelProperty("第三方openId")
     private String openId;
 
+    @Excel(name = "同步作品状态", width = 15, dict = "sync_work_status", addressList = true)
+    @Dict(dictType = "sync_work_status")
+    @ApiModelProperty("同步作品状态 0-待同步，1-同步中，2已同步")
+    private String syncWorkStatus;
+
     private Date createTime;
 
     private Date updateTime;

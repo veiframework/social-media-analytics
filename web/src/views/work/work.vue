@@ -46,6 +46,7 @@ import {getDicts} from '@/api/system/dict/data'
 import CustomTable from "@/components/CustomTable"
 import CustomInfo from "@/components/CustomInfo"
 import settings from "@/settings.js";
+import {syncAllWork} from "@/api/social-media-account.js";
 
 // 页面数据
 const tableData = ref([])
@@ -150,6 +151,32 @@ const handleHeader = (key) => {
     case 'export':
       handleExport()
       break
+    case 'syncWork':
+      handleSyncWork()
+      break
+  }
+}
+
+const handleSyncWork = async () => {
+  try {
+    await ElMessageBox.confirm('确定要同步作品吗？', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+
+    const response = await syncAllWork()
+    if (response.code === 200) {
+      ElMessage.success('同步作品需要时间，请稍后前往《作品管理》查看~')
+      getData()
+    } else {
+      ElMessage.error(response.msg || '同步失败')
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('同步失败:', error)
+      ElMessage.error('同步失败')
+    }
   }
 }
 
@@ -234,6 +261,7 @@ const option = reactive({
   /** 表格顶部左侧 button 配置项 */
   headerBtn: [
     {key: "export", text: "导出", icon: "Download", isShow: true, type: "primary", disabled: false},
+    {key: "syncWork", text: "同步作品", icon: "Refresh", isShow: true, type: "primary", disabled: false},
   ],
   /** 表格顶部右侧 toobar 配置项 */
   toolbar: {isShowToolbar: true, isShowSearch: true},
@@ -307,29 +335,29 @@ const option = reactive({
     // },
     {
       type: 'text',
-      label: '点赞数量',
+      label: '点赞数',
       prop: 'thumbNum',
       width: 100,
       fixed: false,
-      sortable: true,
+      sortable: false,
       isShow: true
     },
     {
       type: 'text',
-      label: '收藏数量',
+      label: '收藏数',
       prop: 'collectNum',
       width: 100,
       fixed: false,
-      sortable: true,
+      sortable: false,
       isShow: true
     },
     {
       type: 'text',
-      label: '评论量',
+      label: '评论数',
       prop: 'commentNum',
       width: 100,
       fixed: false,
-      sortable: true,
+      sortable: false,
       isShow: true
     },
     {
@@ -338,16 +366,16 @@ const option = reactive({
       prop: 'playNum',
       width: 100,
       fixed: false,
-      sortable: true,
+      sortable: false,
       isShow: true
     },
     {
       type: 'text',
-      label: '分享量',
+      label: '分享数',
       prop: 'shareNum',
       width: 100,
       fixed: false,
-      sortable: true,
+      sortable: false,
       isShow: true
     },
 
@@ -357,7 +385,7 @@ const option = reactive({
       prop: 'postTime',
       width: 180,
       fixed: false,
-      sortable: true,
+      sortable: false,
       isShow: true
     },
 
@@ -454,19 +482,19 @@ const optionInfo = reactive({
       infoData: [
         {
           type: 'text',
-          label: '点赞数量',
+          label: '点赞数',
           prop: 'thumbNum',
           isShow: true
         },
         {
           type: 'text',
-          label: '收藏数量',
+          label: '收藏数',
           prop: 'collectNum',
           isShow: true
         },
         {
           type: 'text',
-          label: '评论量',
+          label: '评论数',
           prop: 'commentNum',
           isShow: true
         },
@@ -478,7 +506,7 @@ const optionInfo = reactive({
         },
         {
           type: 'text',
-          label: '分享量',
+          label: '分享数',
           prop: 'shareNum',
           isShow: true
         },

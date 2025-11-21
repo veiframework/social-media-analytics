@@ -1,30 +1,31 @@
 package com.chargehub.admin.datasync;
 
 import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.date.StopWatch;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.chargehub.admin.account.dto.SocialMediaAccountQueryDto;
 import com.chargehub.admin.account.service.SocialMediaAccountService;
 import com.chargehub.admin.account.vo.SocialMediaAccountVo;
 import com.chargehub.admin.datasync.domain.SocialMediaWorkResult;
+import com.chargehub.admin.enums.SyncWorkStatusEnum;
 import com.chargehub.admin.work.domain.SocialMediaWork;
 import com.chargehub.admin.work.service.SocialMediaWorkService;
 import com.chargehub.common.redis.service.RedisService;
+import com.google.common.collect.Sets;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * @author : zhanghaowei
@@ -46,15 +47,20 @@ public class DataSyncWorkScheduler {
     @Autowired
     private RedisService redisService;
 
+    @Autowired
+    private DataSyncMessageQueue dataSyncMessageQueue;
+
     private static final ExecutorService FIXED_THREAD_POOL = Executors.newFixedThreadPool(10);
 
 
-    public void asyncExecute(String accountId) {
-        ThreadUtil.execute(() -> this.execute(accountId));
+    public void asyncExecute(Set<String> accountId) {
+        dataSyncMessageQueue.execute(() -> this.execute(accountId));
     }
 
     @SuppressWarnings("unchecked")
-    public void execute(String accountId) {
+    public void execute(Set<String> accountId) {
+        StopWatch stopWatch = new StopWatch("作品同步任务");
+        stopWatch.start();
         log.info("作品同步任务开始 {}", DateUtil.now());
         redisService.lock("lock:sync-work", lock -> {
             if (BooleanUtils.isFalse(lock)) {
@@ -65,8 +71,9 @@ public class DataSyncWorkScheduler {
             long pageNum = 1;
             while (hasMore) {
                 SocialMediaAccountQueryDto socialMediaAccountQueryDto = new SocialMediaAccountQueryDto(pageNum, 10L, false);
-                if (StringUtils.isNotBlank(accountId)) {
-                    socialMediaAccountQueryDto.setId(Stream.of(accountId).collect(Collectors.toSet()));
+                socialMediaAccountQueryDto.setSyncWorkStatus(Sets.newHashSet(SyncWorkStatusEnum.WAIT.ordinal(), SyncWorkStatusEnum.COMPLETE.ordinal()));
+                if (CollectionUtils.isNotEmpty(accountId)) {
+                    socialMediaAccountQueryDto.setId(accountId);
                 }
                 IPage<SocialMediaAccountVo> page = (IPage<SocialMediaAccountVo>) socialMediaAccountService.getPage(socialMediaAccountQueryDto);
                 List<SocialMediaAccountVo> records = page.getRecords();
@@ -83,13 +90,15 @@ public class DataSyncWorkScheduler {
                 CompletableFuture.allOf(allFutures.toArray(new CompletableFuture[0])).join();
             }
             return null;
-        }, 30);
-        log.info("作品同步任务结束 {}", DateUtil.now());
+        });
+        stopWatch.stop();
+        log.info("作品同步任务结束 {}秒", stopWatch.getTotalTimeSeconds());
     }
 
     private void fetchWorks(SocialMediaAccountVo socialMediaAccountVo) {
+        String accountId = socialMediaAccountVo.getId();
         try {
-
+            this.socialMediaAccountService.updateSyncWorkStatus(accountId, SyncWorkStatusEnum.SYNCING);
             boolean moreData = true;
             String nextCursor = null;
             while (moreData) {
@@ -115,7 +124,11 @@ public class DataSyncWorkScheduler {
             }
         } catch (Exception e) {
             log.error("作品同步任务异常", e);
+            this.socialMediaAccountService.updateSyncWorkStatus(accountId, SyncWorkStatusEnum.ERROR);
+            return;
         }
+        this.socialMediaAccountService.updateSyncWorkStatus(accountId, SyncWorkStatusEnum.COMPLETE);
+
     }
 
 

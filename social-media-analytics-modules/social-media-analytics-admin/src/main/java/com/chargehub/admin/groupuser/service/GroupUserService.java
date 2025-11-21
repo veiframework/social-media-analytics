@@ -61,15 +61,16 @@ public class GroupUserService extends AbstractZ9CrudServiceImpl<GroupUserMapper,
     public Set<String> checkPurview() {
         Set<String> userIds = new HashSet<>();
         LoginUser loginUser = SecurityUtils.getLoginUser();
+        if (loginUser.isAdmin()) {
+            return null;
+        }
         String userid = loginUser.getUserid() + "";
         List<GroupUser> relativeUsers = this.baseMapper.getRelativeUsers(userid);
-        if (!loginUser.isAdmin()) {
-            userIds.add(userid);
-        }
         if (CollectionUtils.isNotEmpty(relativeUsers)) {
             Set<String> collect = relativeUsers.stream().map(GroupUser::getUserId).collect(Collectors.toSet());
             userIds.addAll(collect);
         }
+        userIds.add(userid);
         return userIds;
     }
 

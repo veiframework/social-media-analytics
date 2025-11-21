@@ -61,6 +61,12 @@ export function syncWork(data) {
     return request({
         url: `${prefix}/sync/work/` + data,
         method: 'get',
-        data: data
+    })
+}
+
+export function syncAllWork() {
+    return request({
+        url: `${prefix}/sync/work/`,
+        method: 'get',
     })
 }
