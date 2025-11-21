@@ -52,6 +52,9 @@ public class SocialMediaAccount implements Serializable, Z9CrudEntity {
     @ApiModelProperty("第三方openId")
     private String openId;
 
+    @ApiModelProperty("社交账号类型 个人- individual, 素人- amateur")
+    private String type;
+
     private Date createTime;
 
     private Date updateTime;

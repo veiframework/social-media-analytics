@@ -13,6 +13,7 @@ import com.chargehub.common.security.service.ChargeExcelDictHandler;
 import com.chargehub.common.security.template.dto.Z9CrudQueryDto;
 import com.chargehub.common.security.template.service.AbstractZ9CrudServiceImpl;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -58,6 +59,16 @@ public class SocialMediaWorkService extends AbstractZ9CrudServiceImpl<SocialMedi
             return new HashMap<>();
         }
         return socialMediaWorks.stream().collect(Collectors.toMap(SocialMediaWork::getAccountId, Function.identity()));
+    }
+
+    public void deleteByAccountIds(String accountIds) {
+        if (StringUtils.isBlank(accountIds)) {
+            return;
+        }
+        Set<String> collect = Arrays.stream(accountIds.split(",")).collect(Collectors.toSet());
+        this.baseMapper.lambdaUpdate()
+                .in(SocialMediaWork::getAccountId, collect)
+                .remove();
     }
 
     public void saveOrUpdateBatch(Collection<SocialMediaWork> works) {

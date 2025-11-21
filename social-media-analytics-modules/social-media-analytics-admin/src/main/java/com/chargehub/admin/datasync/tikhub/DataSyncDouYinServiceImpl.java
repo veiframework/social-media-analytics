@@ -13,9 +13,11 @@ import com.chargehub.admin.enums.SocialMediaPlatformEnum;
 import com.chargehub.admin.enums.WorkTypeEnum;
 import com.chargehub.admin.work.domain.SocialMediaWork;
 import com.chargehub.common.core.properties.HubProperties;
+import com.chargehub.common.security.utils.DictUtils;
 import com.chargehub.common.security.utils.JacksonUtil;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.commons.collections.MapUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -130,6 +132,7 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
     public void buildWork(SocialMediaAccountVo socialMediaAccount, JsonNode node, Map<String, SocialMediaWork> socialMediaWorkMap) {
         String userId = socialMediaAccount.getUserId();
         String accountId = socialMediaAccount.getId();
+        String accountType = socialMediaAccount.getType();
         Date postTime = DateUtil.date(node.get("create_time").asLong(0) * 1000L);
         String shareUrl = node.at("/share_info/share_url").asText("");
         //内容类型 (0=普通视频, 68=图文)
@@ -141,6 +144,16 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
         int shareNum = node.at("/statistics/share_count").asInt(0);
         int commentNum = node.at("/statistics/comment_count").asInt(0);
         int likeNum = node.at("/statistics/admire_count").asInt(0);
+        JsonNode textExtra = node.get("text_extra");
+        String customType = "";
+        Map<String, String> socialMediaCustomType = DictUtils.getDictLabelMap("social_media_custom_type");
+        for (JsonNode jsonNode : textExtra) {
+            String hashtagName = jsonNode.get("hashtag_name").asText("");
+            String type = socialMediaCustomType.get(hashtagName);
+            if (StringUtils.isNotBlank(type)) {
+                customType = type;
+            }
+        }
         String desc = node.get("desc").asText("");
         String workUid = node.get("aweme_id").asText("");
         String platformId = socialMediaAccount.getPlatformId();
@@ -162,6 +175,8 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
         socialMediaWork.setCommentNum(commentNum);
         socialMediaWork.setLikeNum(likeNum);
         socialMediaWork.setPlayNum(0);
+        socialMediaWork.setAccountType(accountType);
+        socialMediaWork.setCustomType(customType);
         socialMediaWorkMap.put(workUid, socialMediaWork);
     }
 

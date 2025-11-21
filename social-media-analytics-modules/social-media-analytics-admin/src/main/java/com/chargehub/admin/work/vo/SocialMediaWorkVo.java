@@ -101,6 +101,18 @@ public class SocialMediaWorkVo implements Serializable, Z9CrudVo {
     @ApiModelProperty("数据统计的md5")
     private String statisticMd5;
 
+
+    @Excel(name = "社交账号类型", width = 15, dict = "social_media_account_type", addressList = true)
+    @Dict(dictType = "social_media_account_type")
+    @ApiModelProperty("社交账号类型 个人- individual, 素人- amateur")
+    private String accountType;
+
+    @Excel(name = "业务类型", width = 15, dict = "social_media_custom_type", addressList = true)
+    @Dict(dictType = "social_media_custom_type")
+    @ApiModelProperty("业务类型")
+    private String customType;
+
+
     private Date createTime;
 
     private Date updateTime;

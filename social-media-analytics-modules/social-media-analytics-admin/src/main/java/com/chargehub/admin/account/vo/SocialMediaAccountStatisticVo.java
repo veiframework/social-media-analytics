@@ -39,6 +39,10 @@ public class SocialMediaAccountStatisticVo implements Serializable {
     @ApiModelProperty("平台id")
     private String platformId;
 
+    @Excel(name = "社交账号类型", width = 15, dict = "social_media_account_type", addressList = true)
+    @Dict(dictType = "social_media_account_type")
+    @ApiModelProperty("社交账号类型 个人- individual, 素人- amateur")
+    private String type;
 
     @ApiModelProperty("点赞数量")
     private int thumbNum;

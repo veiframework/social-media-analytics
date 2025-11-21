@@ -13,6 +13,7 @@ import com.chargehub.admin.enums.SocialMediaPlatformEnum;
 import com.chargehub.admin.enums.WorkTypeEnum;
 import com.chargehub.admin.work.domain.SocialMediaWork;
 import com.chargehub.common.core.properties.HubProperties;
+import com.chargehub.common.security.utils.DictUtils;
 import com.chargehub.common.security.utils.JacksonUtil;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.commons.collections.MapUtils;
@@ -109,6 +110,7 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
     public void buildWork(SocialMediaAccountVo socialMediaAccount, JsonNode node, Map<String, SocialMediaWork> socialMediaWorkMap) {
         String userId = socialMediaAccount.getUserId();
         String accountId = socialMediaAccount.getId();
+        String accountType = socialMediaAccount.getType();
         Date postTime = DateUtil.date(node.get("create_time").asLong(0) * 1000L);
         String shareUrl = "";
         //内容类型 （normal=图文笔记，video=视频笔记）
@@ -123,6 +125,16 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
         int playNum = (thumbNum + collectNum + shareNum + commentNum) * 30;
         String desc = node.get("display_title").asText("");
         String workUid = node.get("id").asText("");
+        String hashtagName = node.get("desc").asText("");
+        String customType = "";
+        Map<String, String> socialMediaCustomType = DictUtils.getDictLabelMap("social_media_custom_type");
+        for (Map.Entry<String, String> entry : socialMediaCustomType.entrySet()) {
+            String k = entry.getKey();
+            String v = entry.getValue();
+            if (hashtagName.contains(k)) {
+                customType = v;
+            }
+        }
         String platformId = socialMediaAccount.getPlatformId();
         String tenantId = socialMediaAccount.getTenantId();
         SocialMediaWork socialMediaWork = new SocialMediaWork();
@@ -142,6 +154,8 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
         socialMediaWork.setCommentNum(commentNum);
         socialMediaWork.setLikeNum(thumbNum);
         socialMediaWork.setPlayNum(playNum);
+        socialMediaWork.setAccountType(accountType);
+        socialMediaWork.setCustomType(customType);
         socialMediaWorkMap.put(workUid, socialMediaWork);
     }
 

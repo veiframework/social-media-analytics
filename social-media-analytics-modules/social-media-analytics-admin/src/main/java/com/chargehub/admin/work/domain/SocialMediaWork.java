@@ -74,6 +74,12 @@ public class SocialMediaWork implements Serializable, Z9CrudEntity {
     @ApiModelProperty("数据统计的md5")
     private String statisticMd5;
 
+    @ApiModelProperty("社交账号类型 个人- individual, 素人- amateur")
+    private String accountType;
+
+    @ApiModelProperty("业务类型")
+    private String customType;
+
     @ApiModelProperty("发布时间")
     private Date postTime;
 
@@ -130,6 +136,9 @@ public class SocialMediaWork implements Serializable, Z9CrudEntity {
         }
         if (!this.getPlayNum().equals(newWork.getPlayNum())) {
             updateWork.setPlayNum(newWork.getPlayNum());
+        }
+        if (!this.getCustomType().equals(newWork.getCustomType())) {
+            updateWork.setCustomType(newWork.getCustomType());
         }
         updateWork.setStatisticMd5(newWork.getStatisticMd5());
         return updateWork;

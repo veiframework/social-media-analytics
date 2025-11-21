@@ -65,6 +65,12 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
         return list.stream().map(SocialMediaAccount::getId).collect(Collectors.toSet());
     }
 
+    @Override
+    public void deleteByIds(String ids) {
+        super.deleteByIds(ids);
+//        this.socialMediaWorkService.deleteByAccountIds(ids);
+    }
+
     public void updateSyncWorkStatus(String accountId, SyncWorkStatusEnum syncWorkStatusEnum) {
         this.baseMapper.lambdaUpdate()
                 .set(SocialMediaAccount::getSyncWorkStatus, syncWorkStatusEnum.ordinal())

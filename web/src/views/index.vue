@@ -101,6 +101,7 @@ const queryParams = reactive({
 // 字典数据
 const platformDict = ref([])
 const userDict = ref([])
+const socialMediaAccountTypeDict = ref([])
 
 // 平台统计数据
 const platformStats = ref([])
@@ -110,11 +111,16 @@ const platformLoading = ref(false)
 const getDict = async () => {
   try {
     const platformRes = await getDicts('social_media_platform')
+    const socialMediaAccountTypeRes = await getDicts('social_media_account_type')
     platformDict.value = platformRes.data.map(i => ({
       label: i.dictLabel,
       value: i.dictValue,
       elTagType: i.listClass
-
+    })) || []
+    socialMediaAccountTypeDict.value = socialMediaAccountTypeRes.data.map(i => ({
+      label: i.dictLabel,
+      value: i.dictValue,
+      elTagType: i.listClass
     })) || []
   } catch (error) {
     console.error('获取字典数据失败:', error)
@@ -192,6 +198,15 @@ const option = reactive({
       fixed: false,
       sortable: false,
       isShow: true
+    }, {
+      type: 'tag',
+      label: '账号类型',
+      prop: 'type',
+      width: 120,
+      fixed: false,
+      sortable: false,
+      isShow: true,
+      dicData: socialMediaAccountTypeDict
     },
     {
       type: 'text',

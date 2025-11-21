@@ -77,6 +77,7 @@ const shareLinkVisible = ref(false)
 
 const socialMediaTypeDict = ref([])
 const syncWorkStatusDict = ref([])
+const socialMediaAccountTypeDict = ref([])
 
 
 // 获取数据
@@ -108,6 +109,7 @@ const getDict = async () => {
   try {
     const typeRes = await getDicts('social_media_platform')
     const syncDictRes = await getDicts('sync_work_status')
+    const socialMediaAccountTypeRes = await getDicts('social_media_account_type')
 
     socialMediaTypeDict.value = typeRes.data.map(i => ({
       label: i.dictLabel,
@@ -115,6 +117,11 @@ const getDict = async () => {
       elTagType: i.listClass
     })) || []
     syncWorkStatusDict.value = syncDictRes.data.map(i => ({
+      label: i.dictLabel,
+      value: i.dictValue,
+      elTagType: i.listClass
+    })) || []
+    socialMediaAccountTypeDict.value = socialMediaAccountTypeRes.data.map(i => ({
       label: i.dictLabel,
       value: i.dictValue,
       elTagType: i.listClass
@@ -334,6 +341,15 @@ const option = reactive({
       showOverflowTooltip: true
     }, {
       type: 'tag',
+      label: '账号类型',
+      prop: 'type',
+      width: 120,
+      fixed: false,
+      sortable: false,
+      isShow: true,
+      dicData: socialMediaAccountTypeDict
+    }, {
+      type: 'tag',
       label: '作品同步状态',
       prop: 'syncWorkStatus',
       width: 120,
@@ -411,6 +427,12 @@ const optionDialog = reactive({
       prop: "platformId",
       placeholder: "请输入平台ID",
       dicData: socialMediaTypeDict
+    },{
+      type: "select",
+      label: "账号类型",
+      prop: "type",
+      placeholder: "请选择账号类型",
+      dicData: socialMediaAccountTypeDict
     },
     {
       type: "input",
@@ -449,7 +471,9 @@ const optionDialog = reactive({
   rules: {
     userId: [{required: true, message: '请输入用户ID', trigger: 'blur'}],
     platformId: [{required: true, message: '请输入平台ID', trigger: 'blur'}],
-    uid: [{required: true, message: '请输入社交平台用户ID', trigger: 'blur'}]
+    uid: [{required: true, message: '请输入社交平台用户ID', trigger: 'blur'}],
+    type: [{required: true, message: '请选择账号类型', trigger: 'blur'}]
+
   }
 })
 
@@ -464,10 +488,18 @@ const optionShareLink = reactive({
       label: "分享链接",
       prop: "shareLink",
       placeholder: "请输入分享链接",
+    },
+    {
+      type: "select",
+      label: "账号类型",
+      prop: "type",
+      dicData: socialMediaAccountTypeDict,
+      placeholder: "请选择账号类型",
     }
   ],
   rules: {
-    shareLink: [{required: true, message: '请输入分享链接', trigger: 'blur'}]
+    shareLink: [{required: true, message: '请输入分享链接', trigger: 'blur'}],
+    type: [{required: true, message: '请选择账号类型', trigger: 'blur'}]
   }
 })
 

@@ -15,9 +15,16 @@ public class SocialMediaAccountShareLinkDto implements Serializable {
     private static final long serialVersionUID = -7664321231443401267L;
 
     @NotBlank
+    @ApiModelProperty("社交账号类型 个人- individual, 素人- amateur")
+    private String type;
+
+    @NotBlank
     @ApiModelProperty("分享链接")
     private String shareLink;
 
     private String userId;
+
+
+
 
 }

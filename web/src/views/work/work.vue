@@ -63,6 +63,8 @@ const typeDict = ref([])
 const mediaTypeDict = ref([])
 const platformDict = ref([])
 const statusDict = ref([])
+const socialMediaAccountTypeDict = ref([])
+const socialMediaCustomTypeDict = ref([])
 
 // 详情弹窗
 const infoVisible = ref(false)
@@ -71,11 +73,13 @@ const rowData = ref({})
 // 获取字典数据
 const getDict = async () => {
   try {
-    const [typeRes, mediaTypeRes, platformRes, statusRes] = await Promise.all([
+    const [typeRes, mediaTypeRes, platformRes, statusRes, socialMediaAccountTypeRes,socialMediaCustomTypeRes] = await Promise.all([
       getDicts('work_type'),
       getDicts('media_type'),
       getDicts('social_media_platform'),
-      getDicts('work_status')
+      getDicts('work_status'),
+      getDicts("social_media_account_type"),
+      getDicts("social_media_custom_type")
     ])
 
     typeDict.value = typeRes.data.map(i => ({label: i.dictLabel, value: i.dictValue, elTagType: i.listClass})) || []
@@ -90,6 +94,16 @@ const getDict = async () => {
       elTagType: i.listClass
     })) || []
     statusDict.value = statusRes.data.map(i => ({label: i.dictLabel, value: i.dictValue, elTagType: i.listClass})) || []
+    socialMediaAccountTypeDict.value = socialMediaAccountTypeRes.data.map(i => ({
+      label: i.dictLabel,
+      value: i.dictValue,
+      elTagType: i.listClass
+    })) || []
+    socialMediaCustomTypeDict.value = socialMediaCustomTypeRes.data.map(i => ({
+      label: i.dictLabel,
+      value: i.dictValue,
+      elTagType: i.listClass
+    }))
   } catch (error) {
     console.error('获取字典数据失败:', error)
     // 如果字典获取失败，使用默认值
@@ -311,6 +325,24 @@ const option = reactive({
       sortable: false,
       isShow: true,
       dicData: platformDict
+    }, {
+      type: 'tag',
+      label: '账号类型',
+      prop: 'accountType',
+      width: 100,
+      fixed: false,
+      sortable: false,
+      isShow: true,
+      dicData: socialMediaAccountTypeDict
+    }, {
+      type: 'tag',
+      label: '业务类型',
+      prop: 'customType',
+      width: 100,
+      fixed: false,
+      sortable: false,
+      isShow: true,
+      dicData: socialMediaCustomTypeDict
     },
     {
       type: 'tag',
