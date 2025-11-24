@@ -1,6 +1,6 @@
 package com.chargehub.admin.account.controller;
 
-import com.chargehub.admin.datasync.DataSyncWorkScheduler;
+import com.chargehub.admin.scheduler.DataSyncWorkScheduler;
 import com.chargehub.common.security.annotation.InnerAuth;
 import com.chargehub.common.security.annotation.UnifyResult;
 import io.swagger.annotations.ApiOperation;

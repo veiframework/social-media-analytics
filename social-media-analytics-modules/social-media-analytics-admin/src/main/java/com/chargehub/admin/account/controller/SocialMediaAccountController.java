@@ -6,7 +6,7 @@ import com.chargehub.admin.account.dto.SocialMediaAccountQueryDto;
 import com.chargehub.admin.account.dto.SocialMediaAccountShareLinkDto;
 import com.chargehub.admin.account.service.SocialMediaAccountService;
 import com.chargehub.admin.account.vo.SocialMediaAccountVo;
-import com.chargehub.admin.datasync.DataSyncWorkScheduler;
+import com.chargehub.admin.scheduler.DataSyncWorkScheduler;
 import com.chargehub.admin.groupuser.service.GroupUserService;
 import com.chargehub.common.redis.service.RedisService;
 import com.chargehub.common.security.annotation.Debounce;
