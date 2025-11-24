@@ -13,6 +13,7 @@ import com.chargehub.admin.account.mapper.SocialMediaAccountMapper;
 import com.chargehub.admin.account.vo.SocialMediaAccountStatisticVo;
 import com.chargehub.admin.account.vo.SocialMediaAccountVo;
 import com.chargehub.admin.datasync.DataSyncManager;
+import com.chargehub.admin.datasync.DataSyncMessageQueue;
 import com.chargehub.admin.datasync.domain.SocialMediaUserInfo;
 import com.chargehub.admin.enums.SocialMediaPlatformEnum;
 import com.chargehub.admin.enums.SyncWorkStatusEnum;
@@ -50,6 +51,9 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
 
     @Autowired
     private SocialMediaWorkService socialMediaWorkService;
+
+    @Autowired
+    private DataSyncMessageQueue dataSyncMessageQueue;
 
 
     public SocialMediaAccountService(SocialMediaAccountMapper baseMapper) {
@@ -117,11 +121,13 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
 
     public void createByShareLink(SocialMediaAccountShareLinkDto dto) {
         String shareLink = dto.getShareLink();
+        String type = dto.getType();
         SocialMediaPlatformEnum.SecUser secUser = SocialMediaPlatformEnum.parseSecUserId(shareLink);
-        Assert.notNull(secUser, "第三方用户信息解析失败");
+        Assert.notNull(secUser, "解析社交平台用户信息失败，请联系管理员");
         String secUserIdId = secUser.getId();
-        //获取社交平台信息
-        SocialMediaUserInfo socialMediaUserInfo = dataSyncManager.getSocialMediaUserInfo(secUser.getPlatformEnum(), secUserIdId);
+        //获取社交平台信息, 限流10个
+        SocialMediaUserInfo socialMediaUserInfo = dataSyncMessageQueue.syncExecute(() -> dataSyncManager.getSocialMediaUserInfo(secUser.getPlatformEnum(), secUserIdId));
+        Assert.notNull(socialMediaUserInfo, "获取社交平台用户信息失败，请联系管理员");
         //TODO 直接获取社交平台accessToken
         String nickname = socialMediaUserInfo.getNickname();
         String uid = socialMediaUserInfo.getUid();
@@ -131,6 +137,7 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
         socialMediaAccountDto.setUserId(dto.getUserId());
         socialMediaAccountDto.setUid(uid);
         socialMediaAccountDto.setNickname(nickname);
+        socialMediaAccountDto.setType(type);
         this.create(socialMediaAccountDto);
     }
 

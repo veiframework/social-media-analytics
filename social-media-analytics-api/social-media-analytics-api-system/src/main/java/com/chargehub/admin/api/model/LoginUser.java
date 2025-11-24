@@ -3,7 +3,6 @@ package com.chargehub.admin.api.model;
 import com.chargehub.admin.api.domain.SysUser;
 import com.chargehub.common.core.constant.CacheConstants;
 import com.chargehub.common.core.constant.SecurityConstants;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -187,6 +186,13 @@ public class LoginUser implements Serializable {
             return false;
         }
         return getRoles().contains(SecurityConstants.ROLE_ZG_ADMIN);
+    }
+
+    public boolean isSuperAdmin(){
+        if (CollectionUtils.isEmpty(roles)) {
+            return false;
+        }
+        return getRoles().contains("管理员");
     }
 
     public String getInfo() {

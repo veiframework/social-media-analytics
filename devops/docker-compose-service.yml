@@ -83,6 +83,11 @@ services:
     volumes:
       - ${DEPLOY_PATH}/logs/${COMPOSE_PROJECT_NAME}-admin:/${COMPOSE_PROJECT_NAME}-admin/logs/admin
       - /opt/resources:/opt/resources
+    healthcheck:
+      test: curl -f http://localhost:9201/admin-api/health/1992774542232305665 || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
     deploy:
       replicas: 1
       update_config:

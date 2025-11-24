@@ -61,7 +61,7 @@ public class GroupUserService extends AbstractZ9CrudServiceImpl<GroupUserMapper,
     public Set<String> checkPurview() {
         Set<String> userIds = new HashSet<>();
         LoginUser loginUser = SecurityUtils.getLoginUser();
-        if (loginUser.isAdmin()) {
+        if (loginUser.isAdmin() || loginUser.isSuperAdmin()) {
             return null;
         }
         String userid = loginUser.getUserid() + "";

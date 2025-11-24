@@ -57,12 +57,20 @@ public class DataSyncWorkScheduler {
         dataSyncMessageQueue.execute(() -> this.execute(accountId));
     }
 
+    public void execute() {
+        this.execute(null);
+    }
+
     @SuppressWarnings("unchecked")
     public void execute(Set<String> accountId) {
         StopWatch stopWatch = new StopWatch("作品同步任务");
         stopWatch.start();
         log.info("作品同步任务开始 {}", DateUtil.now());
-        redisService.lock("lock:sync-work", lock -> {
+        String tag = "";
+        if (CollectionUtils.isNotEmpty(accountId)) {
+            tag = ":" + String.join("", accountId);
+        }
+        redisService.lock("lock:sync-work" + tag, lock -> {
             if (BooleanUtils.isFalse(lock)) {
                 return null;
             }
@@ -71,7 +79,7 @@ public class DataSyncWorkScheduler {
             long pageNum = 1;
             while (hasMore) {
                 SocialMediaAccountQueryDto socialMediaAccountQueryDto = new SocialMediaAccountQueryDto(pageNum, 10L, false);
-                socialMediaAccountQueryDto.setSyncWorkStatus(Sets.newHashSet(SyncWorkStatusEnum.WAIT.ordinal(), SyncWorkStatusEnum.COMPLETE.ordinal()));
+                socialMediaAccountQueryDto.setSyncWorkStatus(Sets.newHashSet(SyncWorkStatusEnum.WAIT.ordinal(), SyncWorkStatusEnum.COMPLETE.ordinal(), SyncWorkStatusEnum.ERROR.ordinal()));
                 if (CollectionUtils.isNotEmpty(accountId)) {
                     socialMediaAccountQueryDto.setId(accountId);
                 }

@@ -289,7 +289,7 @@ const option = reactive({
   ],
   /** 表格顶部左侧 button 配置项 */
   headerBtn: [
-    {key: "add", text: "新增账号", icon: "Plus", isShow: true, type: "primary", disabled: false},
+    // {key: "add", text: "新增账号", icon: "Plus", isShow: true, type: "primary", disabled: false},
     {key: "shareLink", text: "通过分享链接添加", icon: "Link", isShow: true, type: "success", disabled: false}
   ],
   /** 表格顶部右侧 toobar 配置项 */
