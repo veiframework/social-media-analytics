@@ -78,4 +78,4 @@ vei:
 
 z9:
   crud:
-    debug: true
+    debug: false
