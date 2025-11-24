@@ -75,3 +75,7 @@ vei:
   payment:
     wechat:
       enabled: true
+
+z9:
+  crud:
+    debug: true

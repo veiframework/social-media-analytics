@@ -7,6 +7,7 @@ import com.chargehub.admin.account.vo.SocialMediaAccountStatisticVo;
 import com.chargehub.admin.groupuser.service.GroupUserService;
 import com.chargehub.admin.work.service.SocialMediaWorkService;
 import com.chargehub.admin.work.vo.SocialMediaWorkVo;
+import com.chargehub.common.security.annotation.RequiresLogin;
 import com.chargehub.common.security.annotation.UnifyResult;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +36,7 @@ public class AdminDashboardController {
     @Autowired
     private GroupUserService groupUserService;
 
+    @RequiresLogin
     @ApiOperation("统计账号的数据")
     @GetMapping("/statistic/account")
     public IPage<SocialMediaAccountStatisticVo> getAccountStatistic(SocialMediaAccountQueryDto queryDto) {
@@ -43,6 +45,7 @@ public class AdminDashboardController {
         return this.socialMediaAccountService.getAccountStatistic(queryDto);
     }
 
+    @RequiresLogin
     @ApiOperation("统计各个平台的数据")
     @GetMapping("/statistic/platform")
     public List<SocialMediaWorkVo> groupByUserIdAndPlatform() {

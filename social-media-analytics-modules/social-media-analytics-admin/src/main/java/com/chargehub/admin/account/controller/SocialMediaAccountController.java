@@ -8,17 +8,22 @@ import com.chargehub.admin.account.service.SocialMediaAccountService;
 import com.chargehub.admin.account.vo.SocialMediaAccountVo;
 import com.chargehub.admin.datasync.DataSyncWorkScheduler;
 import com.chargehub.admin.groupuser.service.GroupUserService;
+import com.chargehub.common.redis.service.RedisService;
 import com.chargehub.common.security.annotation.Debounce;
+import com.chargehub.common.security.annotation.RequiresLogin;
 import com.chargehub.common.security.annotation.UnifyResult;
 import com.chargehub.common.security.template.controller.AbstractZ9Controller;
+import com.chargehub.common.security.template.enums.Z9CrudApiCodeEnum;
 import com.chargehub.common.security.utils.SecurityUtils;
 import com.google.common.collect.Sets;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.Assert;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author : zhanghaowei
@@ -35,17 +40,23 @@ public class SocialMediaAccountController extends AbstractZ9Controller<SocialMed
     @Autowired
     private GroupUserService groupUserService;
 
+    @Autowired
+    private RedisService redisService;
+
     protected SocialMediaAccountController(SocialMediaAccountService crudService) {
         super(crudService);
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public IPage<SocialMediaAccountVo> getPage(SocialMediaAccountQueryDto queryDto) {
+        doCheckPermissions(Z9CrudApiCodeEnum.PAGE);
         Set<String> userIds = groupUserService.checkPurview();
         queryDto.setUserId(userIds);
-        return super.getPage(queryDto);
+        return (IPage<SocialMediaAccountVo>) this.getCrudService().getPage(queryDto);
     }
 
+    @RequiresLogin
     @Debounce
     @PostMapping("/share-link")
     @ApiOperation("根据分享链接添加账号")
@@ -56,6 +67,7 @@ public class SocialMediaAccountController extends AbstractZ9Controller<SocialMed
     }
 
 
+    @RequiresLogin
     @Debounce
     @GetMapping("/sync/work/{accountId}")
     @ApiOperation("同步作品")
@@ -63,10 +75,14 @@ public class SocialMediaAccountController extends AbstractZ9Controller<SocialMed
         this.dataSyncWorkScheduler.asyncExecute(Sets.newHashSet(accountId));
     }
 
-    @Debounce
+    @RequiresLogin
     @GetMapping("/sync/work")
     @ApiOperation("同步全部作品")
     public void syncWorkData() {
+        Long userId = SecurityUtils.getUserId();
+        String lockName = "lock:sync-work:user:" + userId;
+        Boolean set = redisService.setNx(lockName, 1, 1L, TimeUnit.MINUTES);
+        Assert.isTrue(set, "同步数据需要时间，请稍等");
         Set<String> userIds = groupUserService.checkPurview();
         Set<String> accountIds = this.getCrudService().getAccountIdsByUserIds(userIds);
         this.dataSyncWorkScheduler.asyncExecute(accountIds);

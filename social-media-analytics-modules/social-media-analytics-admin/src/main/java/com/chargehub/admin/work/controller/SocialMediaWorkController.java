@@ -5,6 +5,7 @@ import com.chargehub.admin.groupuser.service.GroupUserService;
 import com.chargehub.admin.work.dto.SocialMediaWorkQueryDto;
 import com.chargehub.admin.work.service.SocialMediaWorkService;
 import com.chargehub.admin.work.vo.SocialMediaWorkVo;
+import com.chargehub.common.security.annotation.RequiresLogin;
 import com.chargehub.common.security.annotation.RequiresPermissions;
 import com.chargehub.common.security.annotation.UnifyResult;
 import com.chargehub.common.security.template.domain.Z9CrudExportResult;
@@ -42,6 +43,7 @@ public class SocialMediaWorkController {
     }
 
 
+    @RequiresLogin
     @ApiOperation("获取详情")
     @Operation(summary = "获取详情")
     @GetMapping("/social-media/work/{id}")
@@ -49,6 +51,7 @@ public class SocialMediaWorkController {
         return (SocialMediaWorkVo) this.socialMediaWorkService.getDetailById(id);
     }
 
+    @RequiresLogin
     @ApiOperation("导出excel")
     @Operation(summary = "导出excel")
     @GetMapping("/social-media/work/export")

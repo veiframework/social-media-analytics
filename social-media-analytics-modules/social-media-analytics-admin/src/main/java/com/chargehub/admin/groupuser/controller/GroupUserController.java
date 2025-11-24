@@ -6,6 +6,7 @@ import com.chargehub.admin.groupuser.dto.GroupUserQueryDto;
 import com.chargehub.admin.groupuser.service.GroupUserService;
 import com.chargehub.admin.groupuser.vo.GroupUserVo;
 import com.chargehub.common.security.annotation.Debounce;
+import com.chargehub.common.security.annotation.RequiresLogin;
 import com.chargehub.common.security.annotation.RequiresPermissions;
 import com.chargehub.common.security.annotation.UnifyResult;
 import com.chargehub.common.security.utils.SecurityUtils;
@@ -62,6 +63,7 @@ public class GroupUserController {
         this.groupUserService.deleteByIds(ids);
     }
 
+    @RequiresLogin
     @ApiOperation("获取用户下拉列表")
     @Operation(summary = "获取用户下拉列表")
     @GetMapping("/user/selector")
