@@ -24,3 +24,18 @@ POST  http://127.0.0.1:9201/auth-api/login
 content-type: application/json;charset=UTF-8
 
 {"username":"admin","password":"admin123","code":"11","uuid":"69ce6be7f86343f6b360d086a37dea4a"}
+
+
+### 测试告警通知
+POST http://127.0.0.1:9201/admin-api/social-media/work/alarm/webhook/test
+content-type: application/json;charset=UTF-8
+from-source: inner
+
+{
+  "type": "dingding_robot",
+  "userId": "1",
+  "webhook": "https://oapi.dingtalk.com/robot/send?access_token=ebbedbdee71f2a9e2a0ea4027011c9c3faa53755b165420025d3e18b5c1982bf",
+  "token": "SEC5391f167e4ed87139607ac7a1fc0995cf3871d7697f6762d01d8e1176e331de6",
+  "msgFields": ["alarmName","workDesc","nickname","thumbNum"],
+  "msgTemplate": "提醒：{0} \r\n作品：{1}\r\n用户：{2}\r\n点赞数：{3} \r\n"
+}

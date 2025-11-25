@@ -40,6 +40,10 @@ public class GroupUserService extends AbstractZ9CrudServiceImpl<GroupUserMapper,
         super(baseMapper);
     }
 
+    public GroupUser getByUserId(String userId) {
+        return this.baseMapper.lambdaQuery().eq(GroupUser::getUserId, userId).one();
+    }
+
     public void batchAdd(GroupUserBatchAddDto dto) {
         String parentUserId = dto.getParentUserId();
         Set<String> userIds = dto.getUserIds();

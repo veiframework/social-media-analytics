@@ -64,43 +64,46 @@ public class DataSyncWorkScheduler {
     @SuppressWarnings("unchecked")
     public void execute(Set<String> accountId) {
         StopWatch stopWatch = new StopWatch("作品同步任务");
-        stopWatch.start();
-        log.info("作品同步任务开始 {}", DateUtil.now());
-        String tag = "";
-        if (CollectionUtils.isNotEmpty(accountId)) {
-            tag = ":" + String.join("", accountId);
-        }
-        redisService.lock("lock:sync-work" + tag, lock -> {
-            if (BooleanUtils.isFalse(lock)) {
+        try {
+            stopWatch.start();
+            log.info("作品同步任务开始 {}", DateUtil.now());
+            String tag = "";
+            if (CollectionUtils.isNotEmpty(accountId)) {
+                tag = ":" + String.join("", accountId);
+            }
+            redisService.lock("lock:sync-work" + tag, lock -> {
+                if (BooleanUtils.isFalse(lock)) {
+                    return null;
+                }
+                List<CompletableFuture<Void>> allFutures = new ArrayList<>();
+                boolean hasMore = true;
+                long pageNum = 1;
+                while (hasMore) {
+                    SocialMediaAccountQueryDto socialMediaAccountQueryDto = new SocialMediaAccountQueryDto(pageNum, 10L, false);
+                    socialMediaAccountQueryDto.setSyncWorkStatus(Sets.newHashSet(SyncWorkStatusEnum.WAIT.ordinal(), SyncWorkStatusEnum.COMPLETE.ordinal(), SyncWorkStatusEnum.ERROR.ordinal()));
+                    if (CollectionUtils.isNotEmpty(accountId)) {
+                        socialMediaAccountQueryDto.setId(accountId);
+                    }
+                    IPage<SocialMediaAccountVo> page = (IPage<SocialMediaAccountVo>) socialMediaAccountService.getPage(socialMediaAccountQueryDto);
+                    List<SocialMediaAccountVo> records = page.getRecords();
+                    hasMore = CollectionUtils.isNotEmpty(records);
+                    pageNum++;
+                    for (SocialMediaAccountVo socialMediaAccountVo : records) {
+                        CompletableFuture<Void> future = CompletableFuture.runAsync(() -> this.fetchWorks(socialMediaAccountVo), FIXED_THREAD_POOL);
+                        allFutures.add(future);
+                    }
+                }
+                // 等待所有任务完成
+                if (!allFutures.isEmpty()) {
+                    //无限期等待, 可通过CompletableFuture.allOf(allFutures.toArray(new CompletableFuture[0])).get(30, TimeUnit.MINUTES); 设置超时时间
+                    CompletableFuture.allOf(allFutures.toArray(new CompletableFuture[0])).join();
+                }
                 return null;
-            }
-            List<CompletableFuture<Void>> allFutures = new ArrayList<>();
-            boolean hasMore = true;
-            long pageNum = 1;
-            while (hasMore) {
-                SocialMediaAccountQueryDto socialMediaAccountQueryDto = new SocialMediaAccountQueryDto(pageNum, 10L, false);
-                socialMediaAccountQueryDto.setSyncWorkStatus(Sets.newHashSet(SyncWorkStatusEnum.WAIT.ordinal(), SyncWorkStatusEnum.COMPLETE.ordinal(), SyncWorkStatusEnum.ERROR.ordinal()));
-                if (CollectionUtils.isNotEmpty(accountId)) {
-                    socialMediaAccountQueryDto.setId(accountId);
-                }
-                IPage<SocialMediaAccountVo> page = (IPage<SocialMediaAccountVo>) socialMediaAccountService.getPage(socialMediaAccountQueryDto);
-                List<SocialMediaAccountVo> records = page.getRecords();
-                hasMore = CollectionUtils.isNotEmpty(records);
-                pageNum++;
-                for (SocialMediaAccountVo socialMediaAccountVo : records) {
-                    CompletableFuture<Void> future = CompletableFuture.runAsync(() -> this.fetchWorks(socialMediaAccountVo), FIXED_THREAD_POOL);
-                    allFutures.add(future);
-                }
-            }
-            // 等待所有任务完成
-            if (!allFutures.isEmpty()) {
-                //无限期等待, 可通过CompletableFuture.allOf(allFutures.toArray(new CompletableFuture[0])).get(30, TimeUnit.MINUTES); 设置超时时间
-                CompletableFuture.allOf(allFutures.toArray(new CompletableFuture[0])).join();
-            }
-            return null;
-        });
-        stopWatch.stop();
-        log.info("作品同步任务结束 {}秒", stopWatch.getTotalTimeSeconds());
+            });
+        } finally {
+            stopWatch.stop();
+            log.info("作品同步任务结束 {}秒", stopWatch.getTotalTimeSeconds());
+        }
     }
 
     private void fetchWorks(SocialMediaAccountVo socialMediaAccountVo) {

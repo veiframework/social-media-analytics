@@ -290,6 +290,9 @@ const handleEdit = async (id) => {
     const response = await getAlarmApi(id)
     if (response.code === 200) {
       form.value = { ...response.data }
+      msgFields.value = response.data.msgFields.map((i,idx)=> {
+        return {id:idx,value:i}
+      }) || []
       // 初始化消息字段集合
       visible.value = true
     } else {
@@ -534,13 +537,13 @@ const optionDialog = reactive({
       type: "input",
       label: "关键字",
       prop: "keyword",
-      placeholder: "请输入告警名称",
+      placeholder: "请输入关键字",
       default: null
     },{
       type: "input",
       label: "关键字值",
       prop: "keywordValue",
-      placeholder: "请输入告警名称",
+      placeholder: "请输入关键字值",
       default: null
     },
     {
@@ -602,7 +605,7 @@ const optionInfo = reactive({
   tableInfoItem: [
     {
       title: '基本信息', 
-      column: 1, 
+      column: 2,
       infoData: [
         { 
           type: 'tag', 

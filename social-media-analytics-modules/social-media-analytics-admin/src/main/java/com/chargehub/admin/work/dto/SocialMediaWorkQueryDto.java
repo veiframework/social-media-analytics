@@ -57,6 +57,9 @@ public class SocialMediaWorkQueryDto extends Pagination implements Serializable,
     @ApiModelProperty("社交账号类型 个人- individual, 素人- amateur")
     private String accountType;
 
+    @CrudQueryField(queryType = Z9QueryTypeEnum.GE)
+    private String updateTime;
+
     @Override
     public Page<SocialMediaWork> buildPageObj() {
         return page();

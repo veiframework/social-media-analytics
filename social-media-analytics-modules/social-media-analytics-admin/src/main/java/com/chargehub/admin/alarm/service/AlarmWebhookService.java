@@ -11,6 +11,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
+import java.util.List;
+
 /**
  * @author zhanghaowei
  * @since 1.0
@@ -24,6 +27,10 @@ public class AlarmWebhookService extends AbstractZ9CrudServiceImpl<AlarmWebhookM
 
     protected AlarmWebhookService(AlarmWebhookMapper baseMapper) {
         super(baseMapper);
+    }
+
+    public List<AlarmWebhook> getByUserIds(Collection<String> userIds) {
+        return this.baseMapper.lambdaQuery().in(AlarmWebhook::getUserId, userIds).eq(AlarmWebhook::getDisabled, "0").list();
     }
 
     @Override

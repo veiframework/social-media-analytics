@@ -4,11 +4,14 @@ import com.chargehub.admin.alarm.dto.AlarmWebhookDto;
 import com.chargehub.admin.alarm.dto.AlarmWebhookQueryDto;
 import com.chargehub.admin.alarm.dto.SocialMediaWorkAlarmDto;
 import com.chargehub.admin.alarm.dto.SocialMediaWorkAlarmQueryDto;
+import com.chargehub.admin.alarm.service.AlarmNotificationConfig;
+import com.chargehub.admin.alarm.service.AlarmNotificationManager;
 import com.chargehub.admin.alarm.service.AlarmWebhookService;
 import com.chargehub.admin.alarm.service.SocialMediaWorkAlarmService;
 import com.chargehub.admin.alarm.vo.AlarmWebhookVo;
 import com.chargehub.admin.alarm.vo.SocialMediaWorkAlarmVo;
 import com.chargehub.common.security.annotation.Debounce;
+import com.chargehub.common.security.annotation.InnerAuth;
 import com.chargehub.common.security.annotation.RequiresLogin;
 import com.chargehub.common.security.annotation.UnifyResult;
 import com.chargehub.common.security.template.controller.AbstractZ9Controller;
@@ -35,6 +38,9 @@ public class SocialMediaWorkAlarmController extends AbstractZ9Controller<SocialM
 
     @Autowired
     private AlarmWebhookService alarmWebhookService;
+
+    @Autowired
+    private AlarmNotificationManager alarmNotificationManager;
 
     protected SocialMediaWorkAlarmController(SocialMediaWorkAlarmService crudService) {
         super(crudService);
@@ -71,5 +77,13 @@ public class SocialMediaWorkAlarmController extends AbstractZ9Controller<SocialM
         }
     }
 
+
+    @InnerAuth
+    @ApiOperation("测试告警webhook")
+    @Operation(summary = "测试告警webhook")
+    @PostMapping("/webhook/test")
+    public void testAlarm(@RequestBody AlarmNotificationConfig alarmNotificationConfig) {
+        alarmNotificationManager.send(alarmNotificationConfig);
+    }
 
 }

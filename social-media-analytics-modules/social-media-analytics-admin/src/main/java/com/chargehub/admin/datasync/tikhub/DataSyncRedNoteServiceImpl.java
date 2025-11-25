@@ -38,7 +38,7 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
     private HubProperties hubProperties;
 
     private static final String GET_USER_PROFILE = "/api/v1/xiaohongshu/web_v2/fetch_user_info_app";
-    private static final String GET_USER_WORKS = "/api/v1/xiaohongshu/app/get_user_notes";
+    private static final String GET_USER_WORKS = "/api/v1/xiaohongshu/web/get_user_notes_v2";
 
 
     @Override
@@ -58,8 +58,8 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
             JsonNode jsonNode = JacksonUtil.toObj(body);
             int code = jsonNode.path("code").asInt(500);
             Assert.isTrue(code == HttpStatus.HTTP_OK, "获取用户信息失败" + body);
-            String nickname = jsonNode.at("/data/data/nickname").asText();
-            String uniqueId = jsonNode.at("/data/data/red_id").asText();
+            String nickname = jsonNode.at("/data/nickname").asText();
+            String uniqueId = jsonNode.at("/data/red_id").asText();
             SocialMediaUserInfo socialMediaUserInfo = new SocialMediaUserInfo();
             socialMediaUserInfo.setNickname(nickname);
             socialMediaUserInfo.setUid(uniqueId);
@@ -78,7 +78,7 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
         String secUid = socialMediaAccount.getSecUid();
         try (HttpResponse execute = HttpUtil.createGet(host + GET_USER_WORKS).bearerAuth(token)
                 .form("user_id", secUid)
-                .form("cursor", cursor)
+                .form("lastCursor", cursor)
                 .execute()) {
             String body = execute.body();
             JsonNode jsonNode = JacksonUtil.toObj(body);

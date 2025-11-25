@@ -262,7 +262,7 @@ const handleShareLink = (val) => {
   const formData = {...val}
   createByShareLink(formData).then(res => {
     if (res.code === 200) {
-      ElMessage.success(res.msg || '通过分享链接添加成功')
+      ElMessage.success(res.msg || '通过主页分享链接添加成功')
       shareLinkVisible.value = false
       getData()
     } else {
@@ -315,7 +315,7 @@ const option = reactive({
   /** 表格顶部左侧 button 配置项 */
   headerBtn: [
     // {key: "add", text: "新增账号", icon: "Plus", isShow: true, type: "primary", disabled: false},
-    {key: "shareLink", text: "通过分享链接添加", icon: "Link", isShow: true, type: "success", disabled: false}
+    {key: "shareLink", text: "通过主页分享链接添加", icon: "Link", isShow: true, type: "success", disabled: false}
   ],
   /** 表格顶部右侧 toobar 配置项 */
   toolbar: {isShowToolbar: true, isShowSearch: true},
@@ -504,7 +504,7 @@ const optionDialog = reactive({
 
 // 分享链接表单配置项
 const optionShareLink = reactive({
-  dialogTitle: '通过分享链接添加账号',
+  dialogTitle: '通过主页分享链接添加账号',
   dialogClass: 'dialog_md',
   labelWidth: '120px',
   formitem: [

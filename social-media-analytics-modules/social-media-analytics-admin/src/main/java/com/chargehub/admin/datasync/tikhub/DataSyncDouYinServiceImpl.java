@@ -148,7 +148,7 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
         String customType = "";
         Map<String, String> socialMediaCustomType = DictUtils.getDictLabelMap("social_media_custom_type");
         for (JsonNode jsonNode : textExtra) {
-            String hashtagName = jsonNode.get("hashtag_name").asText("");
+            String hashtagName = jsonNode.at("/hashtag_name").asText("");
             String type = socialMediaCustomType.get(hashtagName);
             if (StringUtils.isNotBlank(type)) {
                 customType = type;
