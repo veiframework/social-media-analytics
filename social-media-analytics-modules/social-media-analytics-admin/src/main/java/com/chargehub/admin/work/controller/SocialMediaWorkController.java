@@ -11,6 +11,7 @@ import com.chargehub.common.security.annotation.UnifyResult;
 import com.chargehub.common.security.template.domain.Z9CrudExportResult;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.v3.oas.annotations.Operation;
+import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -37,8 +38,10 @@ public class SocialMediaWorkController {
     @Operation(summary = "分页")
     @GetMapping("/social-media/work")
     public IPage<SocialMediaWorkVo> getPage(SocialMediaWorkQueryDto queryDto) {
-        Set<String> userIds = this.groupUserService.checkPurview();
-        queryDto.setUserId(userIds);
+        if (CollectionUtils.isEmpty(queryDto.getUserId())) {
+            Set<String> userIds = this.groupUserService.checkPurview();
+            queryDto.setUserId(userIds);
+        }
         return this.socialMediaWorkService.getPurviewPage(queryDto);
     }
 

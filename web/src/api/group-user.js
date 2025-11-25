@@ -33,6 +33,13 @@ export function groupUserApi() {
         url: `${API_PATH}/user/selector`,
         method: 'get'
       })
+    },
+    // 获取用户下拉列表
+    getUserQuerySelector: () => {
+      return request({
+        url: `${API_PATH}/user/query/selector`,
+        method: 'get'
+      })
     }
   }
 }

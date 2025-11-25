@@ -55,6 +55,7 @@ import {
 import CustomTable from "@/components/CustomTable"
 import CustomDialog from "@/components/CustomDialog"
 import {getDicts} from "@/api/system/dict/data.js";
+import {groupUserApi} from "@/api/group-user.js";
 
 // 页面数据
 const tableData = ref([])
@@ -78,7 +79,15 @@ const shareLinkVisible = ref(false)
 const socialMediaTypeDict = ref([])
 const syncWorkStatusDict = ref([])
 const socialMediaAccountTypeDict = ref([])
+const userDict = ref([])
 
+const getUserList3 = async () => {
+  const res = await groupUserApi().getUserQuerySelector()
+  userDict.value = res.data.map(i => ({
+    label: i.userId_dictText,
+    value: i.userId,
+  }))
+}
 
 // 获取数据
 const getData = async () => {
@@ -279,6 +288,22 @@ const option = reactive({
   searchLabelWidth: 90,
   /** 搜索字段配置项 */
   searchItem: [
+    {
+      type: "select",
+      label: "员工账号",
+      prop: "userId",
+      default: null,
+      filterable: true,
+      dicData: userDict
+    },
+    {
+      type: "select",
+      label: "账号类型",
+      prop: "type",
+      default: null,
+      filterable: true,
+      dicData: socialMediaAccountTypeDict
+    },
     {
       type: "input",
       label: "用户昵称",
@@ -508,7 +533,7 @@ const optionShareLink = reactive({
  */
 const init = () => {
   getDict()
-
+  getUserList3()
   getData()
 }
 

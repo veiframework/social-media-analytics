@@ -1,6 +1,7 @@
 package com.chargehub.admin.groupuser.service;
 
 import cn.afterturn.easypoi.handler.inter.IExcelDictHandler;
+import cn.hutool.core.bean.BeanUtil;
 import com.chargehub.admin.api.domain.SysUser;
 import com.chargehub.admin.api.model.LoginUser;
 import com.chargehub.admin.groupuser.domain.GroupUser;
@@ -56,6 +57,11 @@ public class GroupUserService extends AbstractZ9CrudServiceImpl<GroupUserMapper,
 
     public List<SysUser> getUsers() {
         return this.baseMapper.getUsers();
+    }
+
+    public List<GroupUserVo> getGroupUsers(String userId) {
+        List<GroupUser> relativeUsers = this.baseMapper.getRelativeUsers(userId);
+        return BeanUtil.copyToList(relativeUsers, GroupUserVo.class);
     }
 
     public Set<String> checkPurview() {

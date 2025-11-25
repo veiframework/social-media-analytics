@@ -10,6 +10,7 @@ import com.chargehub.admin.work.vo.SocialMediaWorkVo;
 import com.chargehub.common.security.annotation.RequiresLogin;
 import com.chargehub.common.security.annotation.UnifyResult;
 import io.swagger.annotations.ApiOperation;
+import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -40,8 +41,10 @@ public class AdminDashboardController {
     @ApiOperation("统计账号的数据")
     @GetMapping("/statistic/account")
     public IPage<SocialMediaAccountStatisticVo> getAccountStatistic(SocialMediaAccountQueryDto queryDto) {
-        Set<String> userIds = this.groupUserService.checkPurview();
-        queryDto.setUserId(userIds);
+        if (CollectionUtils.isEmpty(queryDto.getUserId())) {
+            Set<String> userIds = this.groupUserService.checkPurview();
+            queryDto.setUserId(userIds);
+        }
         return this.socialMediaAccountService.getAccountStatistic(queryDto);
     }
 

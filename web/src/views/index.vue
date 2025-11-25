@@ -85,6 +85,7 @@ import {ElMessage, ElMessageBox} from 'element-plus'
 import {getAccountStatistic, getPlatformStatistic} from '@/api/dashboard'
 import {getDicts} from '@/api/system/dict/data'
 import CustomTable from "@/components/CustomTable"
+import {groupUserApi} from "@/api/group-user.js";
 
 // 表格数据
 const tableData = ref([])
@@ -94,9 +95,7 @@ const total = ref(0)
 const loading = ref(false)
 
 // 查询参数
-const queryParams = reactive({
-  nickname: ''
-})
+const queryParams = ref({})
 
 // 字典数据
 const platformDict = ref([])
@@ -129,15 +128,39 @@ const getDict = async () => {
   }
 }
 
+const getUserList2 = async () => {
+  const res = await groupUserApi().getUserQuerySelector()
+  userDict.value = res.data.map(i => ({
+    label: i.userId_dictText,
+    value: i.userId,
+  }))
+}
+
 // 表格配置项
 const option = reactive({
   showSearch: true,
-  searchLabelWidth: 120,
+  searchLabelWidth: 90,
   /** 搜索字段配置项 */
   searchItem: [
     {
+      type: "select",
+      label: "员工账号",
+      prop: "userId",
+      default: null,
+      // filterable: true,
+      dicData: userDict
+    },
+    {
+      type: "select",
+      label: "账号类型",
+      prop: "type",
+      default: null,
+      filterable: true,
+      dicData: socialMediaAccountTypeDict
+    },
+    {
       type: "input",
-      label: "社交帐号昵称",
+      label: "社交昵称",
       prop: "nickname",
       placeholder: "社交帐号昵称",
       default: ""
@@ -264,7 +287,7 @@ const getData = async () => {
   loading.value = true
   try {
     const params = {
-      ...queryParams,
+      ...queryParams.value,
       pageNum: pageNum.value,
       pageSize: pageSize.value
     }
@@ -288,8 +311,8 @@ const getData = async () => {
 }
 
 // 搜索
-const handleSearch = (val) => {
-  Object.assign(queryParams, val)
+const handleSearch = (searchParams) => {
+  queryParams.value = {...queryParams.value, ...searchParams}
   pageNum.value = 1
   getData()
 }
@@ -398,6 +421,7 @@ const init = () => {
     getPlatformStats()
   })
   getData()
+  getUserList2()
 }
 
 // 初始化

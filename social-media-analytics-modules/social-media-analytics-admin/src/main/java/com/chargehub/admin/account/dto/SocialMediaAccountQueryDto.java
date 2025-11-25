@@ -35,6 +35,9 @@ public class SocialMediaAccountQueryDto extends Pagination implements Z9CrudQuer
     @CrudQueryField(queryType = Z9QueryTypeEnum.IN)
     private Set<Integer> syncWorkStatus;
 
+    @CrudQueryField
+    private String type;
+
 
     public SocialMediaAccountQueryDto() {
     }

@@ -17,6 +17,7 @@ import com.chargehub.common.security.template.enums.Z9CrudApiCodeEnum;
 import com.chargehub.common.security.utils.SecurityUtils;
 import com.google.common.collect.Sets;
 import io.swagger.annotations.ApiOperation;
+import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
 import org.springframework.validation.annotation.Validated;
@@ -51,8 +52,10 @@ public class SocialMediaAccountController extends AbstractZ9Controller<SocialMed
     @Override
     public IPage<SocialMediaAccountVo> getPage(SocialMediaAccountQueryDto queryDto) {
         doCheckPermissions(Z9CrudApiCodeEnum.PAGE);
-        Set<String> userIds = groupUserService.checkPurview();
-        queryDto.setUserId(userIds);
+        if (CollectionUtils.isEmpty(queryDto.getUserId())) {
+            Set<String> userIds = this.groupUserService.checkPurview();
+            queryDto.setUserId(userIds);
+        }
         return (IPage<SocialMediaAccountVo>) this.getCrudService().getPage(queryDto);
     }
 

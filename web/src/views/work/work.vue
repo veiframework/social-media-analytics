@@ -47,6 +47,8 @@ import CustomTable from "@/components/CustomTable"
 import CustomInfo from "@/components/CustomInfo"
 import settings from "@/settings.js";
 import {syncAllWork} from "@/api/social-media-account.js";
+import {groupUserApi} from '@/api/group-user'
+
 
 // 页面数据
 const tableData = ref([])
@@ -63,6 +65,8 @@ const typeDict = ref([])
 const mediaTypeDict = ref([])
 const platformDict = ref([])
 const statusDict = ref([])
+const userDict = ref([])
+
 const socialMediaAccountTypeDict = ref([])
 const socialMediaCustomTypeDict = ref([])
 
@@ -73,7 +77,7 @@ const rowData = ref({})
 // 获取字典数据
 const getDict = async () => {
   try {
-    const [typeRes, mediaTypeRes, platformRes, statusRes, socialMediaAccountTypeRes,socialMediaCustomTypeRes] = await Promise.all([
+    const [typeRes, mediaTypeRes, platformRes, statusRes, socialMediaAccountTypeRes, socialMediaCustomTypeRes] = await Promise.all([
       getDicts('work_type'),
       getDicts('media_type'),
       getDicts('social_media_platform'),
@@ -112,6 +116,14 @@ const getDict = async () => {
     platformDict.value = []
     statusDict.value = []
   }
+}
+
+const getUserList = async () => {
+  const res = await groupUserApi().getUserQuerySelector()
+  userDict.value = res.data.map(i => ({
+    label: i.userId_dictText,
+    value: i.userId,
+  }))
 }
 
 // 获取数据
@@ -240,22 +252,45 @@ const option = reactive({
   searchLabelWidth: 90,
   /** 搜索字段配置项 */
   searchItem: [
-    {
-      type: "select",
-      label: "作品类型",
-      prop: "type",
-      default: null,
-      filterable: true,
-      dicData: typeDict
-    },
     // {
     //   type: "select",
-    //   label: "作品状态",
-    //   prop: "status",
+    //   label: "作品类型",
+    //   prop: "type",
     //   default: null,
     //   filterable: true,
-    //   dicData: statusDict
+    //   dicData: typeDict
     // },
+    {
+      type: "select",
+      label: "业务类型",
+      prop: "customType",
+      default: null,
+      filterable: true,
+      dicData: socialMediaCustomTypeDict
+    },{
+      type: "select",
+      label: "账号类型",
+      prop: "accountType",
+      default: null,
+      filterable: true,
+      dicData: socialMediaAccountTypeDict
+    },
+    {
+      type: "datetimerange",
+      label: "发布时间",
+      prop: "PostTime",
+      format: "YYYY-MM-DD HH:mm:ss",
+      valueFormat: "YYYY-MM-DD HH:mm:ss",
+      category: "datetimerange",
+      default: null
+    }, {
+      type: "select",
+      label: "员工账号",
+      prop: "userId",
+      default: null,
+      filterable: true,
+      dicData: userDict
+    },
     {
       type: "select",
       label: "平台",
@@ -572,6 +607,7 @@ const optionInfo = reactive({
  */
 const init = () => {
   getDict()
+  getUserList()
 }
 
 // 初始化
