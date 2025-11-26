@@ -9,6 +9,7 @@ import com.chargehub.admin.account.domain.SocialMediaAccount;
 import com.chargehub.admin.account.dto.SocialMediaAccountDto;
 import com.chargehub.admin.account.dto.SocialMediaAccountQueryDto;
 import com.chargehub.admin.account.dto.SocialMediaAccountShareLinkDto;
+import com.chargehub.admin.account.dto.SocialMediaAccountWechatVideoNicknameDto;
 import com.chargehub.admin.account.mapper.SocialMediaAccountMapper;
 import com.chargehub.admin.account.vo.SocialMediaAccountStatisticVo;
 import com.chargehub.admin.account.vo.SocialMediaAccountVo;
@@ -143,6 +144,24 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
         SocialMediaAccountDto socialMediaAccountDto = new SocialMediaAccountDto();
         socialMediaAccountDto.setSecUid(secUserIdId);
         socialMediaAccountDto.setPlatformId(secUser.getPlatform());
+        socialMediaAccountDto.setUserId(dto.getUserId());
+        socialMediaAccountDto.setUid(uid);
+        socialMediaAccountDto.setNickname(nickname);
+        socialMediaAccountDto.setType(type);
+        this.create(socialMediaAccountDto);
+    }
+
+    public void createByWechatVideoNickname(SocialMediaAccountWechatVideoNicknameDto dto) {
+        String nickname = dto.getNickname();
+        String type = dto.getType();
+        //获取社交平台信息, 限流10个
+        SocialMediaUserInfo socialMediaUserInfo = dataSyncMessageQueue.syncExecute(() -> dataSyncManager.getSocialMediaUserInfo(SocialMediaPlatformEnum.WECHAT_VIDEO, nickname));
+        Assert.notNull(socialMediaUserInfo, "获取社交平台用户信息失败，请联系管理员");
+        //TODO 直接获取社交平台accessToken
+        String uid = socialMediaUserInfo.getUid();
+        SocialMediaAccountDto socialMediaAccountDto = new SocialMediaAccountDto();
+        socialMediaAccountDto.setSecUid(socialMediaUserInfo.getUid());
+        socialMediaAccountDto.setPlatformId(SocialMediaPlatformEnum.WECHAT_VIDEO.getDomain());
         socialMediaAccountDto.setUserId(dto.getUserId());
         socialMediaAccountDto.setUid(uid);
         socialMediaAccountDto.setNickname(nickname);

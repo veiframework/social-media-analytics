@@ -57,6 +57,14 @@ export function createByShareLink(data) {
     })
 }
 
+export function createByWechatVideoNickname(data) {
+    return request({
+        url: `${prefix}/wechat-video-nickname`,
+        method: 'post',
+        data: data
+    })
+}
+
 export function syncWork(data) {
     return request({
         url: `${prefix}/sync/work/` + data,

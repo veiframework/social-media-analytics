@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.chargehub.admin.account.dto.SocialMediaAccountDto;
 import com.chargehub.admin.account.dto.SocialMediaAccountQueryDto;
 import com.chargehub.admin.account.dto.SocialMediaAccountShareLinkDto;
+import com.chargehub.admin.account.dto.SocialMediaAccountWechatVideoNicknameDto;
 import com.chargehub.admin.account.service.SocialMediaAccountService;
 import com.chargehub.admin.account.vo.SocialMediaAccountVo;
 import com.chargehub.admin.scheduler.DataSyncWorkScheduler;
@@ -67,6 +68,16 @@ public class SocialMediaAccountController extends AbstractZ9Controller<SocialMed
         Long userId = SecurityUtils.getUserId();
         dto.setUserId(userId + "");
         this.getCrudService().createByShareLink(dto);
+    }
+
+    @RequiresLogin
+    @Debounce
+    @PostMapping("/wechat-video-nickname")
+    @ApiOperation("微信视频号添加")
+    public void createByWechatVideoNickname(@RequestBody @Validated SocialMediaAccountWechatVideoNicknameDto dto) {
+        Long userId = SecurityUtils.getUserId();
+        dto.setUserId(userId + "");
+        this.getCrudService().createByWechatVideoNickname(dto);
     }
 
 

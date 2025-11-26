@@ -26,7 +26,8 @@ public enum SocialMediaPlatformEnum {
         return split[split.length - 1];
     }),
     RED_NOTE("xiaohongshu", uri -> DOU_YIN.getSecUserId().apply(uri)),
-    BILI_BILI("bilibili", uri -> DOU_YIN.getSecUserId().apply(uri));
+    BILI_BILI("bilibili", uri -> DOU_YIN.getSecUserId().apply(uri)),
+    WECHAT_VIDEO("wechatvideo", uri -> null);
 
     private final String domain;
 

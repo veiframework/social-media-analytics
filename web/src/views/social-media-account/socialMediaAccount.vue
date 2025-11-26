@@ -36,6 +36,15 @@
         @cancel="shareLinkVisible = false"
         @save="handleShareLink"
     />
+
+    <!-- 微信视频号名称 -->
+    <CustomDialog
+        :form="wechatVideoForm"
+        :option="wechatVideoOption"
+        :visible="wechatVideoVisible"
+        @cancel="wechatVideoVisible = false"
+        @save="handleWechatVideoForm"
+    />
   </div>
 </template>
 
@@ -51,7 +60,7 @@ import {
   updateSocialMediaAccount,
   delSocialMediaAccount,
   syncWork,
-  createByShareLink
+  createByShareLink, createByWechatVideoNickname
 } from '@/api/social-media-account'
 import CustomTable from "@/components/CustomTable"
 import CustomDialog from "@/components/CustomDialog"
@@ -71,6 +80,10 @@ const queryParams = ref({})
 // 表单数据
 const form = ref({})
 const visible = ref(false)
+
+const wechatVideoForm = ref({})
+const wechatVideoVisible = ref(false)
+
 
 // 分享链接表单数据
 const shareLinkForm = ref({})
@@ -169,6 +182,10 @@ const handleHeader = (key) => {
     case 'shareLink':
       shareLinkForm.value = {}
       shareLinkVisible.value = true
+      break
+    case 'wechatVideo':
+      wechatVideoForm.value = {}
+      wechatVideoVisible.value = true
       break
   }
 }
@@ -293,6 +310,24 @@ const handleShareLink = async (val) => {
   }
 }
 
+// 通过微信视频号名称添加
+const handleWechatVideoForm = async (val) => {
+  let loading = ElLoading.service(loadingOpt)
+  try {
+    const formData = {...val}
+    let res = await createByWechatVideoNickname(formData)
+    if (res.code === 200) {
+      ElMessage.success(res.msg || '通过微信视频号名称添加成功')
+      wechatVideoVisible.value = false
+      await getData()
+    } else {
+      ElMessage.error(res.msg || '操作失败')
+    }
+  } finally {
+    loading.close()
+  }
+}
+
 
 // 表格配置项
 const option = reactive({
@@ -327,7 +362,9 @@ const option = reactive({
   /** 表格顶部左侧 button 配置项 */
   headerBtn: [
     // {key: "add", text: "新增账号", icon: "Plus", isShow: true, type: "primary", disabled: false},
-    {key: "shareLink", text: "通过主页分享链接添加", icon: "Link", isShow: true, type: "success", disabled: false}
+    {key: "shareLink", text: "通过主页分享链接添加", icon: "Link", isShow: true, type: "primary", disabled: false},
+    {key: "wechatVideo", text: "通过微信视频号名称添加", icon: "Link", isShow: true, type: "success", disabled: false}
+
   ],
   /** 表格顶部右侧 toobar 配置项 */
   toolbar: {isShowToolbar: true, isShowSearch: true},
@@ -536,6 +573,32 @@ const optionShareLink = reactive({
   ],
   rules: {
     shareLink: [{required: true, message: '请输入分享链接', trigger: 'blur'}],
+    type: [{required: true, message: '请选择账号类型', trigger: 'blur'}]
+  }
+})
+
+// 分享链接表单配置项
+const wechatVideoOption = reactive({
+  dialogTitle: '微信视频号名称',
+  dialogClass: 'dialog_md',
+  labelWidth: '140px',
+  formitem: [
+    {
+      type: "input",
+      label: "微信视频号名称",
+      prop: "nickname",
+      placeholder: "请输入微信视频号名称",
+    },
+    {
+      type: "select",
+      label: "账号类型",
+      prop: "type",
+      dicData: socialMediaAccountTypeDict,
+      placeholder: "请选择账号类型",
+    }
+  ],
+  rules: {
+    nickname: [{required: true, message: '请输入微信视频号名称', trigger: 'blur'}],
     type: [{required: true, message: '请选择账号类型', trigger: 'blur'}]
   }
 })
