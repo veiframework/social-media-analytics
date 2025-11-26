@@ -112,7 +112,7 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
             JsonNode statisticsNode = multiWorkNode.at("/data/statistics_list");
             for (JsonNode node : statisticsNode) {
                 String workUid = node.get("aweme_id").asText("");
-                int playNum = node.get("play_count").asInt(0);
+                int playNum = node.at("/play_count").asInt(0);
                 SocialMediaWork socialMediaWork = socialMediaWorkMap.get(workUid);
                 if (socialMediaWork == null) {
                     continue;

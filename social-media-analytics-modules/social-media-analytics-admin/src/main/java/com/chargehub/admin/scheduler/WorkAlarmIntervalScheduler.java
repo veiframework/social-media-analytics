@@ -5,8 +5,10 @@ import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.StopWatch;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.ReflectUtil;
+import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
+import com.chargehub.admin.account.service.SocialMediaAccountService;
 import com.chargehub.admin.alarm.domain.SocialMediaWorkAlarm;
 import com.chargehub.admin.alarm.service.AlarmNotificationConfig;
 import com.chargehub.admin.alarm.service.AlarmNotificationManager;
@@ -17,6 +19,8 @@ import com.chargehub.admin.work.service.SocialMediaWorkService;
 import com.chargehub.admin.work.vo.SocialMediaWorkVo;
 import com.chargehub.biz.admin.service.ISysUserService;
 import com.chargehub.common.redis.service.RedisService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
@@ -55,12 +59,18 @@ public class WorkAlarmIntervalScheduler {
     @Autowired
     private SocialMediaWorkService socialMediaWorkService;
 
+    @Autowired
+    private SocialMediaAccountService socialMediaAccountService;
+
     public static final String WORK_ALARM_RECORD_KEY = "work-alarm-record:";
 
     public static final String WORK_ALARM_LAST_EXECUTE_TIME_KEY = "work-alarm-last-execute-time:";
 
     @Autowired
     private ISysUserService iSysUserService;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @SuppressWarnings("unchecked")
     public void execute(String taskId) {
@@ -129,15 +139,25 @@ public class WorkAlarmIntervalScheduler {
             alarmExp = alarmExpression.replaceAll("\\d+", startInterval + "");
         }
         Map<String, Object> evalContextMap = MapUtil.builder(new HashMap<String, Object>()).put(alarmField, currentFieldValue).build();
-        evalContextMap.putAll(BeanUtil.beanToMap(socialMediaWorkVo));
         evalContextMap.putAll(BeanUtil.beanToMap(socialMediaWorkAlarm));
+        evalContextMap.put("alarmExpression", alarmExp);
+        evalContextMap.put("oldValue", lastRecordValue.getValue());
         StandardEvaluationContext evaluationContext = createEvaluationContext(evalContextMap);
         Boolean evalResult = PARSER.parseExpression(StringPool.HASH + alarmField + alarmExp).getValue(evaluationContext, Boolean.class);
         if (BooleanUtils.isTrue(evalResult)) {
             String userId = socialMediaWorkVo.getUserId();
-            SysUser sysUser = iSysUserService.selectUserById(Long.parseLong(userId));
-            evalContextMap.put("nickname", sysUser.getNickName());
             List<AlarmNotificationConfig> leadershipWebhook = alarmNotificationManager.getLeadershipWebhook(userId);
+            if (CollectionUtils.isNotEmpty(leadershipWebhook)) {
+                String json = this.toJson(socialMediaWorkVo);
+                evalContextMap.putAll(JSON.parseObject(json));
+                long leaderUserId = Long.parseLong(leadershipWebhook.get(0).getUserId());
+                SysUser sysUser = iSysUserService.selectUserById(leaderUserId);
+                if (sysUser != null) {
+                    evalContextMap.put("leaderNickname", sysUser.getNickName());
+                }
+                String uid = socialMediaAccountService.getUidByAccountId(socialMediaWorkVo.getAccountId());
+                evalContextMap.put("socialMediaUid", uid);
+            }
             for (AlarmNotificationConfig alarmNotificationConfig : leadershipWebhook) {
                 List<String> collect = msgFields.stream().map(i -> String.valueOf(evalContextMap.get(i))).collect(Collectors.toList());
                 alarmNotificationConfig.setMsgFields(collect);
@@ -154,5 +174,11 @@ public class WorkAlarmIntervalScheduler {
         return standardEvaluationContext;
     }
 
-
+    public String toJson(Object o) {
+        try {
+            return objectMapper.writeValueAsString(o);
+        } catch (JsonProcessingException e) {
+            return null;
+        }
+    }
 }

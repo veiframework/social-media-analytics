@@ -75,6 +75,7 @@ public class AlarmDingDingRobotNotification implements AlarmNotification {
             //req.setAt(at);
             OapiRobotSendResponse rsp = client.execute(req, accessToken);
             String body = rsp.getBody();
+            log.debug("发送钉钉消息{}：结果:{}", formatMsg, body);
             JsonNode jsonNode = JacksonUtil.toObj(body);
             Integer errCode = jsonNode.get("errcode").asInt();
             Assert.isTrue(Objects.equals(0, errCode), body);

@@ -1,6 +1,7 @@
 package com.chargehub.admin.datasync.tikhub;
 
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.map.MapUtil;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpStatus;
 import cn.hutool.http.HttpUtil;
@@ -13,10 +14,16 @@ import com.chargehub.admin.enums.SocialMediaPlatformEnum;
 import com.chargehub.admin.enums.WorkTypeEnum;
 import com.chargehub.admin.work.domain.SocialMediaWork;
 import com.chargehub.common.core.properties.HubProperties;
+import com.chargehub.common.core.utils.ThreadHelper;
+import com.chargehub.common.redis.service.RedisService;
 import com.chargehub.common.security.utils.DictUtils;
 import com.chargehub.common.security.utils.JacksonUtil;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.MissingNode;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.MapUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -25,21 +32,38 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * @author : zhanghaowei
  * @since : 1.0
  */
+@Slf4j
 @Service
 public class DataSyncRedNoteServiceImpl implements DataSyncService {
 
     @Autowired
     private HubProperties hubProperties;
 
-    private static final String GET_USER_PROFILE = "/api/v1/xiaohongshu/web_v2/fetch_user_info_app";
-    private static final String GET_USER_WORKS = "/api/v1/xiaohongshu/web/get_user_notes_v2";
+    @Autowired
+    private RedisService redisService;
 
+
+    private static final List<String> USER_INFO_URL = Stream.of(
+            "/api/v1/xiaohongshu/web_v2/fetch_user_info_app",
+            "/api/v1/xiaohongshu/web_v2/fetch_user_info").collect(Collectors.toList());
+
+    private static final List<String> WORKS_URL = Stream.of(
+            "/api/v1/xiaohongshu/web/get_user_notes_v2",
+            "/api/v1/xiaohongshu/app/get_user_notes",
+            "/api/v1/xiaohongshu/web_v2/fetch_home_notes",
+            "/api/v1/xiaohongshu/web_v2/fetch_home_notes_app",
+            "/api/v1/xiaohongshu/web/get_user_notes",
+            "/api/v1/xiaohongshu/web/get_user_notes_v2"
+    ).collect(Collectors.toList());
 
     @Override
     public SocialMediaPlatformEnum platform() {
@@ -51,20 +75,59 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
         HubProperties.SocialMediaDataApi socialMediaDataApi = hubProperties.getSocialMediaDataApi().get("tikhub");
         String token = socialMediaDataApi.getToken();
         String host = socialMediaDataApi.getHost();
-        try (HttpResponse execute = HttpUtil.createGet(host + GET_USER_PROFILE).bearerAuth(token)
-                .form("user_id", secUserId)
-                .execute()) {
-            String body = execute.body();
-            JsonNode jsonNode = JacksonUtil.toObj(body);
-            int code = jsonNode.path("code").asInt(500);
-            Assert.isTrue(code == HttpStatus.HTTP_OK, "获取用户信息失败" + body);
-            String nickname = jsonNode.at("/data/nickname").asText();
-            String uniqueId = jsonNode.at("/data/red_id").asText();
-            SocialMediaUserInfo socialMediaUserInfo = new SocialMediaUserInfo();
-            socialMediaUserInfo.setNickname(nickname);
-            socialMediaUserInfo.setUid(uniqueId);
-            return socialMediaUserInfo;
+        JsonNode jsonNode = this.getUserProfile(host, token, secUserId);
+        Assert.notNull(jsonNode, "获取用户信息失败");
+        int code = jsonNode.path("code").asInt(500);
+        Assert.isTrue(code == HttpStatus.HTTP_OK, "获取用户信息失败" + jsonNode);
+        JsonNode dataNode = jsonNode.path("/data/result/data");
+        String nickname;
+        try {
+            nickname = dataNode.get("nickname").asText();
+        } catch (Exception e) {
+            nickname = jsonNode.at("/data/nickname").asText();
         }
+        String uniqueId;
+        try {
+            uniqueId = dataNode.get("red_id").asText();
+        } catch (Exception e) {
+            uniqueId = jsonNode.at("/data/red_id").asText();
+        }
+        SocialMediaUserInfo socialMediaUserInfo = new SocialMediaUserInfo();
+        socialMediaUserInfo.setNickname(nickname);
+        socialMediaUserInfo.setUid(uniqueId);
+        return socialMediaUserInfo;
+    }
+
+    public JsonNode getUserProfile(String host, String token, String secUserId) {
+        AtomicReference<JsonNode> atomicReference = new AtomicReference<>();
+        String key = "rednot:user_uri";
+        String cacheUri = redisService.getCacheObject(key);
+        Map<String, String> params = MapUtil.of("user_id", secUserId);
+        if (StringUtils.isNotBlank(cacheUri)) {
+            JsonNode request = this.request(host, cacheUri, token, params);
+            int code = request.path("code").asInt(500);
+            if (code == 200) {
+                return request;
+            }
+        }
+        CountDownLatch latch = new CountDownLatch(1);
+        for (String uri : USER_INFO_URL) {
+            ThreadHelper.execute(() -> {
+                JsonNode request = this.request(host, uri, token, params);
+                int code = request.path("code").asInt(500);
+                if (code == 200) {
+                    redisService.setCacheObject(key, uri);
+                    atomicReference.set(request);
+                    latch.countDown();
+                }
+            });
+        }
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        return atomicReference.get();
     }
 
     @SuppressWarnings("unchecked")
@@ -76,26 +139,31 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
         String token = socialMediaDataApi.getToken();
         String host = socialMediaDataApi.getHost();
         String secUid = socialMediaAccount.getSecUid();
-        try (HttpResponse execute = HttpUtil.createGet(host + GET_USER_WORKS).bearerAuth(token)
-                .form("user_id", secUid)
-                .form("lastCursor", cursor)
-                .execute()) {
-            String body = execute.body();
-            JsonNode jsonNode = JacksonUtil.toObj(body);
-            int code = jsonNode.path("code").asInt(500);
-            Assert.isTrue(code == HttpStatus.HTTP_OK, "获取作品失败" + body);
-            boolean hasMore = jsonNode.at("/data/data/has_more").asBoolean();
-            JsonNode path = jsonNode.at("/data/data/notes");
-            String nextCursor = path.isEmpty() ? "-1" : path.get(path.size() - 1).get("cursor").asText();
-            for (JsonNode node : path) {
-                this.buildWork(socialMediaAccount, node, socialMediaWorkMap);
-            }
+        JsonNode jsonNode = this.getRedNoteWorks(cursor, host, token, secUid);
+        Assert.notNull(jsonNode, "获取作品失败");
+        int code = jsonNode.path("code").asInt(500);
+        Assert.isTrue(code == HttpStatus.HTTP_OK, "获取作品失败" + jsonNode);
+        JsonNode dataNode = jsonNode.get("data");
+        boolean hasMore;
+        try {
+            hasMore = dataNode.get("has_more").asBoolean();
+        } catch (Exception e) {
+            hasMore = dataNode.at("/data/has_more").asBoolean();
+        }
 
-            socialMediaWorkResult.setHasMore(hasMore);
-            socialMediaWorkResult.setNextCursor(nextCursor);
-            if (MapUtils.isEmpty(socialMediaWorkMap)) {
-                return (SocialMediaWorkResult<T>) socialMediaWorkResult;
-            }
+        JsonNode path = dataNode.path("notes");
+        if (path instanceof MissingNode) {
+            path = dataNode.at("/data/notes");
+        }
+        String nextCursor = path.isEmpty() ? "-1" : path.get(path.size() - 1).get("cursor").asText();
+        for (JsonNode node : path) {
+            this.buildWork(socialMediaAccount, node, socialMediaWorkMap);
+        }
+
+        socialMediaWorkResult.setHasMore(hasMore);
+        socialMediaWorkResult.setNextCursor(nextCursor);
+        if (MapUtils.isEmpty(socialMediaWorkMap)) {
+            return (SocialMediaWorkResult<T>) socialMediaWorkResult;
         }
 
         List<SocialMediaWork> socialMediaWorks = socialMediaWorkMap.values().stream().map(i -> {
@@ -107,14 +175,72 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
         return (SocialMediaWorkResult<T>) socialMediaWorkResult;
     }
 
+    private JsonNode getRedNoteWorks(String cursor, String host, String token, String secUid) {
+        AtomicReference<JsonNode> atomicReference = new AtomicReference<>();
+        String key = "rednot:work_uri";
+        String cacheUri = redisService.getCacheObject(key);
+        if (StringUtils.isNotBlank(cacheUri)) {
+            int i = WORKS_URL.indexOf(cacheUri);
+            Map<String, String> params = this.createParams(cursor, secUid, i);
+            JsonNode request = this.request(host, cacheUri, token, params);
+            int code = request.path("code").asInt(500);
+            if (code == 200) {
+                return request;
+            }
+        }
+        CountDownLatch latch = new CountDownLatch(1);
+        for (int i = 0; i < WORKS_URL.size(); i++) {
+            String uri = WORKS_URL.get(i);
+            Map<String, String> params = this.createParams(cursor, secUid, i);
+            ThreadHelper.execute(() -> {
+                JsonNode request = this.request(host, uri, token, params);
+                int code = request.path("code").asInt(500);
+                if (code == 200) {
+                    redisService.setCacheObject(key, uri);
+                    atomicReference.set(request);
+                    latch.countDown();
+                }
+            });
+        }
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        return atomicReference.get();
+    }
+
+    @NotNull
+    private Map<String, String> createParams(String cursor, String secUid, int i) {
+        Map<String, String> params = new HashMap<>();
+        if (i == 0 || i == 4 || i == 5) {
+            params.put("user_id", secUid);
+            params.put("lastCursor", cursor);
+        } else if (i == 1 || i == 2 || i == 3) {
+            params.put("user_id", secUid);
+            params.put("cursor", cursor);
+        }
+        return params;
+    }
+
+
+    private JsonNode request(String host, String uri, String token, Map<String, String> params) {
+        try (HttpResponse execute = HttpUtil.createGet(host + uri).bearerAuth(token)
+                .formStr(params)
+                .execute()) {
+            String body = execute.body();
+            return JacksonUtil.toObj(body);
+        }
+    }
+
+
     public void buildWork(SocialMediaAccountVo socialMediaAccount, JsonNode node, Map<String, SocialMediaWork> socialMediaWorkMap) {
         String userId = socialMediaAccount.getUserId();
         String accountId = socialMediaAccount.getId();
         String accountType = socialMediaAccount.getType();
         Date postTime = DateUtil.date(node.get("create_time").asLong(0) * 1000L);
-        String shareUrl = "";
         //内容类型 （normal=图文笔记，video=视频笔记）
-        String workType = node.get("type").asText().equals("normal") ? WorkTypeEnum.RICH_TEXT.getType() : WorkTypeEnum.NORMAL_VIDEO.getType();
+        String workType = "normal".equals(node.get("type").asText()) ? WorkTypeEnum.RICH_TEXT.getType() : WorkTypeEnum.NORMAL_VIDEO.getType();
         //媒体类型 (2=图片, 4=视频)
         String mediaType = workType.equals(WorkTypeEnum.RICH_TEXT.getType()) ? MediaTypeEnum.PICTURE.getType() : MediaTypeEnum.VIDEO.getType();
         int thumbNum = node.get("likes").asInt(0);
@@ -122,7 +248,7 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
         int shareNum = node.get("share_count").asInt(0);
         int commentNum = node.get("comments_count").asInt(0);
         // 基于3.3%互动率估算,目前无法从 view_count获取浏览量
-        int playNum = (thumbNum + collectNum + shareNum + commentNum) * 30;
+        int playNum = (thumbNum + collectNum + shareNum + commentNum) * 10;
         String desc = node.get("display_title").asText("");
         String workUid = node.get("id").asText("");
         String hashtagName = node.get("desc").asText("");
@@ -135,6 +261,7 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
                 customType = v;
             }
         }
+        String shareUrl = "https://www.xiaohongshu.com/discovery/item/" + workUid;
         String platformId = socialMediaAccount.getPlatformId();
         String tenantId = socialMediaAccount.getTenantId();
         SocialMediaWork socialMediaWork = new SocialMediaWork();

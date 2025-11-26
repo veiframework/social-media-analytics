@@ -75,6 +75,15 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
 //        this.socialMediaWorkService.deleteByAccountIds(ids);
     }
 
+    @SuppressWarnings("unchecked")
+    public String getUidByAccountId(String accountId) {
+        SocialMediaAccount mediaAccount = this.baseMapper.lambdaQuery().select(SocialMediaAccount::getUid).eq(SocialMediaAccount::getId, accountId).one();
+        if (mediaAccount == null) {
+            return "";
+        }
+        return mediaAccount.getUid();
+    }
+
     public void updateSyncWorkStatus(String accountId, SyncWorkStatusEnum syncWorkStatusEnum) {
         this.baseMapper.lambdaUpdate()
                 .set(SocialMediaAccount::getSyncWorkStatus, syncWorkStatusEnum.ordinal())

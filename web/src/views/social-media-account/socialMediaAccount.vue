@@ -43,6 +43,7 @@
 import {ref, reactive, onMounted} from 'vue'
 import {ElMessage, ElMessageBox} from 'element-plus'
 import {Plus, Link} from "@element-plus/icons-vue";
+import {ElLoading} from 'element-plus'
 import {
   listSocialMediaAccount,
   getSocialMediaAccount,
@@ -74,7 +75,11 @@ const visible = ref(false)
 // 分享链接表单数据
 const shareLinkForm = ref({})
 const shareLinkVisible = ref(false)
-
+let loadingOpt = {
+  lock: true,
+  text: '加载中……',
+  background: 'rgba(0, 0, 0, .1)',
+}
 
 const socialMediaTypeDict = ref([])
 const syncWorkStatusDict = ref([])
@@ -212,7 +217,7 @@ const handleDelete = async (id) => {
     const response = await delSocialMediaAccount(id)
     if (response.code === 200) {
       ElMessage.success('删除成功')
-      getData()
+      await getData()
     } else {
       ElMessage.error(response.msg || '删除失败')
     }
@@ -235,7 +240,7 @@ const handleSyncWork = async (accountId) => {
     const response = await syncWork(accountId)
     if (response.code === 200) {
       ElMessage.success('同步作品需要时间，请稍后前往《作品管理》查看~')
-      getData()
+      await getData()
     } else {
       ElMessage.error(response.msg || '同步失败')
     }
@@ -248,39 +253,46 @@ const handleSyncWork = async (accountId) => {
 }
 
 // 保存社交媒体账号
-const handleSave = (val) => {
+const handleSave = async (val) => {
   const formData = {...val}
-  if (val.id) {
-    updateSocialMediaAccount(formData).then(res => resMsg(res))
-  } else {
-    addSocialMediaAccount(formData).then(res => resMsg(res))
+  let loading = ElLoading.service(loadingOpt)
+  try {
+    let res;
+    if (val.id) {
+      res = await updateSocialMediaAccount(formData)
+    } else {
+      res = await addSocialMediaAccount(formData)
+    }
+    if (res.code === 200) {
+      ElMessage.success(res.msg || '操作成功')
+      visible.value = false
+      await getData();
+    } else {
+      ElMessage.error(res.msg || '操作失败')
+    }
+  } finally {
+    loading.close()
   }
 }
 
 // 处理分享链接
-const handleShareLink = (val) => {
-  const formData = {...val}
-  createByShareLink(formData).then(res => {
+const handleShareLink = async (val) => {
+  let loading = ElLoading.service(loadingOpt)
+  try {
+    const formData = {...val}
+    let res = await createByShareLink(formData)
     if (res.code === 200) {
       ElMessage.success(res.msg || '通过主页分享链接添加成功')
       shareLinkVisible.value = false
-      getData()
+      await getData()
     } else {
       ElMessage.error(res.msg || '操作失败')
     }
-  })
-}
-
-// 响应消息处理
-const resMsg = (res) => {
-  if (res.code === 200) {
-    ElMessage.success(res.msg || '操作成功')
-    visible.value = false
-    getData()
-  } else {
-    ElMessage.error(res.msg || '操作失败')
+  } finally {
+    loading.close()
   }
 }
+
 
 // 表格配置项
 const option = reactive({
@@ -452,7 +464,7 @@ const optionDialog = reactive({
       prop: "platformId",
       placeholder: "请输入平台ID",
       dicData: socialMediaTypeDict
-    },{
+    }, {
       type: "select",
       label: "账号类型",
       prop: "type",

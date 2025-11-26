@@ -64,6 +64,7 @@ public class SocialMediaWorkAlarmService extends AbstractZ9CrudServiceImpl<Socia
             jobDto.setInvokeTarget(alarmTypeEnum.getBeanName() + ".execute('" + taskId + "')");
             jobDto.setCronExpression(e.getCronExpression());
             jobDto.setStatus(e.getState());
+            jobDto.setMisfirePolicy("3");
             AjaxResult result = remoteSysJobService.add(jobDto);
             Assert.isTrue(result.isSuccess(), "创建监控器失败");
         }
@@ -81,6 +82,7 @@ public class SocialMediaWorkAlarmService extends AbstractZ9CrudServiceImpl<Socia
             jobDto.setInvokeTarget(alarmTypeEnum.getBeanName() + ".execute('" + taskId + "')");
             jobDto.setCronExpression(e.getCronExpression());
             jobDto.setStatus("1");
+            jobDto.setMisfirePolicy("3");
             AjaxResult result = remoteSysJobService.add(jobDto);
             Assert.isTrue(result.isSuccess(), "暂停监控器失败");
         }

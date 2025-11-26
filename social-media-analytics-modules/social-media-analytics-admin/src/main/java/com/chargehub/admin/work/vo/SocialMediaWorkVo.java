@@ -3,8 +3,10 @@ package com.chargehub.admin.work.vo;
 import cn.afterturn.easypoi.excel.annotation.Excel;
 import com.chargehub.common.security.annotation.Dict;
 import com.chargehub.common.security.template.vo.Z9CrudVo;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import javax.validation.constraints.NotBlank;
 import java.io.Serializable;
@@ -89,6 +91,8 @@ public class SocialMediaWorkVo implements Serializable, Z9CrudVo {
     @ApiModelProperty("喜欢量")
     private Integer likeNum;
 
+    @JsonFormat(timezone = "GMT+8", pattern = "yyyy-MM-dd HH:mm:ss")
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @Excel(name = "发布时间", width = 15, format = "yyyy-MM-dd HH:mm:ss")
     @ApiModelProperty("发布时间")
     private Date postTime;
@@ -112,9 +116,12 @@ public class SocialMediaWorkVo implements Serializable, Z9CrudVo {
     @ApiModelProperty("业务类型")
     private String customType;
 
-
+    @JsonFormat(timezone = "GMT+8", pattern = "yyyy-MM-dd HH:mm:ss")
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date createTime;
 
+    @JsonFormat(timezone = "GMT+8", pattern = "yyyy-MM-dd HH:mm:ss")
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date updateTime;
 
     @Dict(dictTable = "sys_user", nameColumn = "nick_name", valueColumn = "user_id")
