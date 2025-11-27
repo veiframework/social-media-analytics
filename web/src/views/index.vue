@@ -157,6 +157,13 @@ const option = reactive({
       default: null,
       filterable: true,
       dicData: socialMediaAccountTypeDict
+    },{
+      type: "select",
+      label: "平台类型",
+      prop: "platformId",
+      default: null,
+      filterable: true,
+      dicData: platformDict
     },
     {
       type: "input",

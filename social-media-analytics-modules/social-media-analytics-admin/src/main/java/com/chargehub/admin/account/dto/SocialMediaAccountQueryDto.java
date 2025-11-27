@@ -41,6 +41,10 @@ public class SocialMediaAccountQueryDto extends Pagination implements Z9CrudQuer
     @CrudQueryField(queryType = Z9QueryTypeEnum.LE)
     private String syncWorkDate;
 
+    @CrudQueryField
+    @ApiModelProperty("平台id")
+    private String platformId;
+
     public SocialMediaAccountQueryDto() {
     }
 
