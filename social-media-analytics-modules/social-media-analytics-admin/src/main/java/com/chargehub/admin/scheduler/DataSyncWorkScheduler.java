@@ -2,7 +2,6 @@ package com.chargehub.admin.scheduler;
 
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.StopWatch;
-import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.chargehub.admin.account.dto.SocialMediaAccountQueryDto;
 import com.chargehub.admin.account.service.SocialMediaAccountService;
 import com.chargehub.admin.account.vo.SocialMediaAccountVo;
@@ -50,7 +49,7 @@ public class DataSyncWorkScheduler {
     @Autowired
     private DataSyncMessageQueue dataSyncMessageQueue;
 
-    private static final ExecutorService FIXED_THREAD_POOL = Executors.newFixedThreadPool(10);
+    private static final ExecutorService FIXED_THREAD_POOL = Executors.newFixedThreadPool(9);
 
 
     public void asyncExecute(Set<String> accountId) {
@@ -75,28 +74,26 @@ public class DataSyncWorkScheduler {
                 if (BooleanUtils.isFalse(lock)) {
                     return null;
                 }
+                SocialMediaAccountQueryDto socialMediaAccountQueryDto = new SocialMediaAccountQueryDto();
+                socialMediaAccountQueryDto.setSyncWorkStatus(Sets.newHashSet(SyncWorkStatusEnum.WAIT.ordinal(), SyncWorkStatusEnum.COMPLETE.ordinal(), SyncWorkStatusEnum.ERROR.ordinal()));
+                if (CollectionUtils.isNotEmpty(accountId)) {
+                    socialMediaAccountQueryDto.setId(accountId);
+                }
+                List<SocialMediaAccountVo> page = (List<SocialMediaAccountVo>) socialMediaAccountService.getAll(socialMediaAccountQueryDto);
                 List<CompletableFuture<Void>> allFutures = new ArrayList<>();
-                boolean hasMore = true;
-                long pageNum = 1;
-                while (hasMore) {
-                    SocialMediaAccountQueryDto socialMediaAccountQueryDto = new SocialMediaAccountQueryDto(pageNum, 10L, false);
-                    socialMediaAccountQueryDto.setSyncWorkStatus(Sets.newHashSet(SyncWorkStatusEnum.WAIT.ordinal(), SyncWorkStatusEnum.COMPLETE.ordinal(), SyncWorkStatusEnum.ERROR.ordinal()));
-                    if (CollectionUtils.isNotEmpty(accountId)) {
-                        socialMediaAccountQueryDto.setId(accountId);
-                    }
-                    IPage<SocialMediaAccountVo> page = (IPage<SocialMediaAccountVo>) socialMediaAccountService.getPage(socialMediaAccountQueryDto);
-                    List<SocialMediaAccountVo> records = page.getRecords();
-                    hasMore = CollectionUtils.isNotEmpty(records);
-                    pageNum++;
-                    for (SocialMediaAccountVo socialMediaAccountVo : records) {
-                        CompletableFuture<Void> future = CompletableFuture.runAsync(() -> this.fetchWorks(socialMediaAccountVo), FIXED_THREAD_POOL);
-                        allFutures.add(future);
-                    }
+                for (SocialMediaAccountVo socialMediaAccountVo : page) {
+                    CompletableFuture<Void> future = CompletableFuture.runAsync(() -> this.fetchWorks(socialMediaAccountVo), FIXED_THREAD_POOL);
+                    allFutures.add(future);
                 }
                 // 等待所有任务完成
-                if (!allFutures.isEmpty()) {
-                    //无限期等待, 可通过CompletableFuture.allOf(allFutures.toArray(new CompletableFuture[0])).get(30, TimeUnit.MINUTES); 设置超时时间
-                    CompletableFuture.allOf(allFutures.toArray(new CompletableFuture[0])).join();
+                if (allFutures.isEmpty()) {
+                    return null;
+                }
+                try {
+                    CompletableFuture.allOf(allFutures.toArray(new CompletableFuture[0])).get(1, TimeUnit.HOURS);
+                } catch (Exception e) {
+                    Thread.currentThread().interrupt();
+                    log.error("作品同步任务异常", e);
                 }
                 return null;
             });

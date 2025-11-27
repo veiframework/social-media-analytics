@@ -2,7 +2,6 @@ package com.chargehub.admin.scheduler;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.date.StopWatch;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.ReflectUtil;
 import com.alibaba.fastjson.JSON;
@@ -74,47 +73,40 @@ public class WorkAlarmIntervalScheduler {
 
     @SuppressWarnings("unchecked")
     public void execute(String taskId) {
-        StopWatch stopWatch = new StopWatch(taskId);
-        try {
-            stopWatch.start();
-            log.info("作品间隔类型告警任务开始:{}", taskId);
-            redisService.lock("lock:work-alarm:" + taskId, locked -> {
-                if (BooleanUtils.isFalse(locked)) {
-                    return null;
-                }
-                SocialMediaWorkAlarm socialMediaWorkAlarm = socialMediaWorkAlarmService.getBaseMapper().doGetDetailById(taskId);
-                if (socialMediaWorkAlarm == null) {
-                    return null;
-                }
-                String workAlarmLastExecuteTimeKey = WORK_ALARM_LAST_EXECUTE_TIME_KEY + taskId;
-                String keyword = socialMediaWorkAlarm.getKeyword();
-                String keywordValue = socialMediaWorkAlarm.getKeywordValue();
-                String lastDatetime = redisService.getCacheObject(workAlarmLastExecuteTimeKey);
-                boolean hasMore = true;
-                long pageNum = 1;
-                while (hasMore) {
-                    SocialMediaWorkQueryDto socialMediaAccountQueryDto = new SocialMediaWorkQueryDto();
-                    socialMediaAccountQueryDto.setNumber(pageNum);
-                    socialMediaAccountQueryDto.setSize(50L);
-                    socialMediaAccountQueryDto.setUpdateTime(lastDatetime);
-                    if (StringUtils.isNotBlank(keyword)) {
-                        ReflectUtil.setFieldValue(socialMediaAccountQueryDto, keyword, keywordValue);
-                    }
-                    IPage<SocialMediaWorkVo> page = (IPage<SocialMediaWorkVo>) socialMediaWorkService.getPage(socialMediaAccountQueryDto);
-                    List<SocialMediaWorkVo> records = page.getRecords();
-                    hasMore = CollectionUtils.isNotEmpty(records);
-                    pageNum++;
-                    for (SocialMediaWorkVo socialMediaWorkVo : records) {
-                        this.executeAlarmCheck(taskId, socialMediaWorkVo, socialMediaWorkAlarm);
-                    }
-                }
-                redisService.setCacheObject(workAlarmLastExecuteTimeKey, DateUtil.now());
+        redisService.lock("lock:work-alarm:" + taskId, locked -> {
+            if (BooleanUtils.isFalse(locked)) {
                 return null;
-            });
-        } finally {
-            stopWatch.stop();
-            log.info("作品间隔类型告警任务结束:{}, 花费时间{}秒", taskId, stopWatch.getTotalTimeSeconds());
-        }
+            }
+            SocialMediaWorkAlarm socialMediaWorkAlarm = socialMediaWorkAlarmService.getBaseMapper().doGetDetailById(taskId);
+            if (socialMediaWorkAlarm == null) {
+                return null;
+            }
+            String workAlarmLastExecuteTimeKey = WORK_ALARM_LAST_EXECUTE_TIME_KEY + taskId;
+            String keyword = socialMediaWorkAlarm.getKeyword();
+            String keywordValue = socialMediaWorkAlarm.getKeywordValue();
+            String lastDatetime = redisService.getCacheObject(workAlarmLastExecuteTimeKey);
+            boolean hasMore = true;
+            long pageNum = 1;
+            while (hasMore) {
+                SocialMediaWorkQueryDto socialMediaAccountQueryDto = new SocialMediaWorkQueryDto();
+                socialMediaAccountQueryDto.setNumber(pageNum);
+                socialMediaAccountQueryDto.setSize(50L);
+                socialMediaAccountQueryDto.setUpdateTime(lastDatetime);
+                socialMediaAccountQueryDto.setSearchCount(false);
+                if (StringUtils.isNotBlank(keyword)) {
+                    ReflectUtil.setFieldValue(socialMediaAccountQueryDto, keyword, keywordValue);
+                }
+                IPage<SocialMediaWorkVo> page = (IPage<SocialMediaWorkVo>) socialMediaWorkService.getPage(socialMediaAccountQueryDto);
+                List<SocialMediaWorkVo> records = page.getRecords();
+                hasMore = CollectionUtils.isNotEmpty(records);
+                pageNum++;
+                for (SocialMediaWorkVo socialMediaWorkVo : records) {
+                    this.executeAlarmCheck(taskId, socialMediaWorkVo, socialMediaWorkAlarm);
+                }
+            }
+            redisService.setCacheObject(workAlarmLastExecuteTimeKey, DateUtil.now());
+            return null;
+        });
     }
 
     private void executeAlarmCheck(String taskId,

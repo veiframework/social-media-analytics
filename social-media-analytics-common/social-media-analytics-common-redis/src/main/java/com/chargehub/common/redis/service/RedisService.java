@@ -1,10 +1,9 @@
 package com.chargehub.common.redis.service;
 
-import cn.hutool.core.lang.Assert;
 import cn.hutool.core.map.MapUtil;
+import cn.hutool.core.thread.ThreadUtil;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -301,29 +300,30 @@ public class RedisService implements ApplicationContextAware {
     }
 
     public <T> T lock(String lockName, Function<Boolean, T> function, int wait) {
-        Assert.notNull(redissonClient, "尚未引入redisson依赖");
-        RLock lock = redissonClient.getLock(lockName);
         boolean isLocked = false;
         try {
-            isLocked = lock.tryLock(wait, 60, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            log.error("执行加锁失败:" + e.getMessage());
-            Thread.currentThread().interrupt();
-        }
-        try {
+            for (int i = 0; i <= wait; i++) {
+                isLocked = redisTemplate.opsForValue().setIfAbsent(lockName, "1", 1, TimeUnit.HOURS);
+                if (isLocked) {
+                    break;
+                }
+                if (wait != 0) {
+                    ThreadUtil.safeSleep(1000);
+                }
+            }
             return function.apply(isLocked);
         } finally {
             if (!TransactionSynchronizationManager.isActualTransactionActive()) {
-                if (isLocked && lock.isHeldByCurrentThread()) {
-                    lock.unlock();
+                if (isLocked) {
+                    redisTemplate.delete(lockName);
                 }
             } else {
                 boolean finalIsLocked = isLocked;
                 TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                     @Override
                     public void afterCompletion(int status) {
-                        if (finalIsLocked && lock.isHeldByCurrentThread()) {
-                            lock.unlock();
+                        if (finalIsLocked) {
+                            redisTemplate.delete(lockName);
                         }
                     }
                 });

@@ -1,11 +1,11 @@
 package com.chargehub.admin.datasync.tikhub;
 
 import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpStatus;
 import cn.hutool.http.HttpUtil;
 import com.chargehub.admin.account.vo.SocialMediaAccountVo;
+import com.chargehub.admin.datasync.DataSyncMessageQueue;
 import com.chargehub.admin.datasync.DataSyncService;
 import com.chargehub.admin.datasync.domain.SocialMediaUserInfo;
 import com.chargehub.admin.datasync.domain.SocialMediaWorkResult;
@@ -35,6 +35,9 @@ public class DataSyncBiliBiliServiceImpl implements DataSyncService {
 
     @Autowired
     private HubProperties hubProperties;
+
+    @Autowired
+    private DataSyncMessageQueue dataSyncMessageQueue;
 
     private static final String GET_USER_PROFILE = "/api/v1/bilibili/web/fetch_user_profile";
     private static final String GET_USER_WORKS = "/api/v1/bilibili/web/fetch_user_post_videos";
@@ -89,8 +92,7 @@ public class DataSyncBiliBiliServiceImpl implements DataSyncService {
             boolean hasMore = !path.isEmpty();
             Long nextCursor = realCursor + 1;
             for (JsonNode node : path) {
-                ThreadUtil.safeSleep(300);
-                this.buildWork(socialMediaAccount, node, socialMediaWorkMap);
+                this.dataSyncMessageQueue.syncBiliBiliExecute(() -> this.buildWork(socialMediaAccount, node, socialMediaWorkMap));
             }
             socialMediaWorkResult.setHasMore(hasMore);
             socialMediaWorkResult.setNextCursor(nextCursor + "");
