@@ -75,4 +75,6 @@ public class SocialMediaAccountVo implements Serializable, Z9CrudVo {
     @Dict(dictTable = "sys_user", nameColumn = "nick_name", valueColumn = "user_id")
     private String updater;
 
+    @ApiModelProperty("同步作品日期")
+    private Date syncWorkDate;
 }

@@ -3,6 +3,7 @@ package com.chargehub.admin.account.service;
 import cn.afterturn.easypoi.handler.inter.IExcelDictHandler;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.bean.copier.CopyOptions;
+import cn.hutool.core.date.DateUtil;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.chargehub.admin.account.domain.SocialMediaAccount;
@@ -88,7 +89,18 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
     public void updateSyncWorkStatus(String accountId, SyncWorkStatusEnum syncWorkStatusEnum) {
         this.baseMapper.lambdaUpdate()
                 .set(SocialMediaAccount::getSyncWorkStatus, syncWorkStatusEnum.ordinal())
+                .set(SocialMediaAccount::getSyncWorkDate, new Date())
                 .eq(SocialMediaAccount::getId, accountId)
+                .update();
+    }
+
+    public void updateSyncWorkError(int minute) {
+        String now = DateUtil.now();
+        this.baseMapper.lambdaUpdate()
+                .set(SocialMediaAccount::getSyncWorkStatus, SyncWorkStatusEnum.ERROR.ordinal())
+                .eq(SocialMediaAccount::getSyncWorkStatus, SyncWorkStatusEnum.SYNCING.ordinal())
+                .isNotNull(SocialMediaAccount::getSyncWorkDate)
+                .apply("TIMESTAMPDIFF(MINUTE, sync_work_date, '" + now + "') > " + minute)
                 .update();
     }
 
