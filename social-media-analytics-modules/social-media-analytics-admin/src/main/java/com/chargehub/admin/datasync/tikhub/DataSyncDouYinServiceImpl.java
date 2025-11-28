@@ -5,6 +5,7 @@ import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpStatus;
 import cn.hutool.http.HttpUtil;
 import com.chargehub.admin.account.vo.SocialMediaAccountVo;
+import com.chargehub.admin.datasync.DataSyncMessageQueue;
 import com.chargehub.admin.datasync.DataSyncService;
 import com.chargehub.admin.datasync.domain.SocialMediaUserInfo;
 import com.chargehub.admin.datasync.domain.SocialMediaWorkResult;
@@ -38,6 +39,8 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
     @Autowired
     private HubProperties hubProperties;
 
+    @Autowired
+    private DataSyncMessageQueue dataSyncMessageQueue;
 
     private static final String GET_USER_PROFILE = "/api/v1/douyin/web/handler_user_profile";
     private static final String GET_USER_WORKS = "/api/v1/douyin/app/v3/fetch_user_post_videos";
@@ -111,22 +114,24 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
             }
         }
         String awemeIds = String.join(",", socialMediaWorkMap.keySet());
-        try (HttpResponse multiWorksExecute = HttpUtil.createGet(host + GET_WORK_STATISTIC).bearerAuth(token).form("aweme_ids", awemeIds).execute()) {
-            String result = multiWorksExecute.body();
-            JsonNode multiWorkNode = JacksonUtil.toObj(result);
-            int code = multiWorkNode.path("code").asInt(500);
-            Assert.isTrue(code == HttpStatus.HTTP_OK, "获取作品详情失败" + result);
-            JsonNode statisticsNode = multiWorkNode.at("/data/statistics_list");
-            for (JsonNode node : statisticsNode) {
-                String workUid = node.get("aweme_id").asText("");
-                int playNum = node.at("/play_count").asInt(0);
-                SocialMediaWork socialMediaWork = socialMediaWorkMap.get(workUid);
-                if (socialMediaWork == null) {
-                    continue;
+        dataSyncMessageQueue.syncDouyinExecute(() -> {
+            try (HttpResponse multiWorksExecute = HttpUtil.createGet(host + GET_WORK_STATISTIC).bearerAuth(token).form("aweme_ids", awemeIds).execute()) {
+                String result = multiWorksExecute.body();
+                JsonNode multiWorkNode = JacksonUtil.toObj(result);
+                int code = multiWorkNode.path("code").asInt(500);
+                Assert.isTrue(code == HttpStatus.HTTP_OK, "获取作品详情失败" + result);
+                JsonNode statisticsNode = multiWorkNode.at("/data/statistics_list");
+                for (JsonNode node : statisticsNode) {
+                    String workUid = node.get("aweme_id").asText("");
+                    int playNum = node.at("/play_count").asInt(0);
+                    SocialMediaWork socialMediaWork = socialMediaWorkMap.get(workUid);
+                    if (socialMediaWork == null) {
+                        continue;
+                    }
+                    socialMediaWork.setPlayNum(playNum);
                 }
-                socialMediaWork.setPlayNum(playNum);
             }
-        }
+        });
         List<SocialMediaWork> socialMediaWorks = socialMediaWorkMap.values().stream().map(i -> {
             String md5 = i.generateStatisticMd5();
             i.setStatisticMd5(md5);
@@ -141,7 +146,6 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
         String accountId = socialMediaAccount.getId();
         String accountType = socialMediaAccount.getType();
         Date postTime = DateUtil.date(node.get("create_time").asLong(0) * 1000L);
-        String shareUrl = node.at("/share_info/share_url").asText("");
         //内容类型 (0=普通视频, 68=图文)
         String workType = node.get("aweme_type").asInt() == 0 ? WorkTypeEnum.NORMAL_VIDEO.getType() : WorkTypeEnum.RICH_TEXT.getType();
         //媒体类型 (2=图片, 4=视频)
@@ -163,6 +167,7 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
         }
         String desc = node.get("desc").asText("");
         String workUid = node.get("aweme_id").asText("");
+        String shareUrl = "https://www.douyin.com/user/" + socialMediaAccount.getSecUid() + "?modal_id=" + workUid;
         String platformId = socialMediaAccount.getPlatformId();
         String tenantId = socialMediaAccount.getTenantId();
         SocialMediaWork socialMediaWork = new SocialMediaWork();

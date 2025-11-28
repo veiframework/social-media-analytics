@@ -17,16 +17,15 @@ import java.util.function.Supplier;
 @Component
 public class DataSyncMessageQueue {
 
-    private static final ExecutorService FIXED_THREAD_POOL = Executors.newFixedThreadPool(10);
+    public static final ExecutorService FIXED_THREAD_POOL = Executors.newFixedThreadPool(10);
 
 
     private static final ExecutorService FIXED_GET_USER_INFO_POOL = Executors.newFixedThreadPool(10);
 
     private static final ExecutorService FIXED_BILIBILI_THREAD_POOL = Executors.newFixedThreadPool(10);
 
-    public void execute(Runnable runnable) {
-        FIXED_THREAD_POOL.execute(runnable);
-    }
+    private static final ExecutorService FIXED_DOUYIN_DETAIL_THREAD_POOL = Executors.newFixedThreadPool(10);
+
 
     public SocialMediaUserInfo syncExecute(Supplier<SocialMediaUserInfo> runnable) {
         CompletableFuture<SocialMediaUserInfo> future = CompletableFuture.supplyAsync(() -> {
@@ -48,6 +47,17 @@ public class DataSyncMessageQueue {
                 log.error("执行异步任务失败: ", e);
             }
         }, FIXED_BILIBILI_THREAD_POOL);
+        future.join();
+    }
+
+    public void syncDouyinExecute(Runnable runnable) {
+        CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+            try {
+                runnable.run();
+            } catch (Exception e) {
+                log.error("执行异步任务失败: ", e);
+            }
+        }, FIXED_DOUYIN_DETAIL_THREAD_POOL);
         future.join();
     }
 

@@ -46,14 +46,12 @@ public class DataSyncWorkScheduler {
     @Autowired
     private RedisService redisService;
 
-    @Autowired
-    private DataSyncMessageQueue dataSyncMessageQueue;
 
-    private static final ExecutorService FIXED_THREAD_POOL = Executors.newFixedThreadPool(9);
+    private static final ExecutorService FIXED_THREAD_POOL = Executors.newFixedThreadPool(10);
 
 
     public void asyncExecute(Set<String> accountId) {
-        dataSyncMessageQueue.execute(() -> this.execute(accountId));
+        FIXED_THREAD_POOL.execute(() -> this.execute(accountId));
     }
 
     public void execute() {
@@ -82,7 +80,7 @@ public class DataSyncWorkScheduler {
                 List<SocialMediaAccountVo> page = (List<SocialMediaAccountVo>) socialMediaAccountService.getAll(socialMediaAccountQueryDto);
                 List<CompletableFuture<Void>> allFutures = new ArrayList<>();
                 for (SocialMediaAccountVo socialMediaAccountVo : page) {
-                    CompletableFuture<Void> future = CompletableFuture.runAsync(() -> this.fetchWorks(socialMediaAccountVo), FIXED_THREAD_POOL);
+                    CompletableFuture<Void> future = CompletableFuture.runAsync(() -> this.fetchWorks(socialMediaAccountVo), DataSyncMessageQueue.FIXED_THREAD_POOL);
                     allFutures.add(future);
                 }
                 // 等待所有任务完成
