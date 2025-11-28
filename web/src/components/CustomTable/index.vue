@@ -2,7 +2,7 @@
     <div class="box">
         <!-- 搜索栏 -->
         <search ref="searchRef" :showSearch="option.showSearch" :searchLabelWidth="option.searchLabelWidth"
-            :searchItem="option.searchItem" @search="handleSearch">
+            :searchItem="option.searchItem" @search="handleSearch" :option="option">
             <template #custom-item="{ prop, queryParams }">
                 <slot name='custom-item' :prop="prop" :queryParams="queryParams"></slot>
             </template>

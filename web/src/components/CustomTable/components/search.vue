@@ -163,7 +163,8 @@ const props = defineProps({
 	searchItem: {
 		type: Array,
 		default: []
-	}
+	},
+  option: { type: Object, default: {} }
 });
 /**
  * 回传事件
@@ -192,8 +193,8 @@ const isShow = ref(false);
 // 查询参数保存
 const queryParams = ref({});
 
-const ascFields = ref(new Set())
-const descFields = ref(new Set())
+const ascFields = ref(props.option?.ascFields||new Set())
+const descFields = ref(props.option?.descFields||new Set())
 
 // 日期范围选择时默认将原始数组分至两个参数
 const handleDate = (val, prop) => {
