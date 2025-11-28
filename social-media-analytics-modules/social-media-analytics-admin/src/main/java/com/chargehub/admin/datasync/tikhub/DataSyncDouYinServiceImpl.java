@@ -167,7 +167,8 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
         }
         String desc = node.get("desc").asText("");
         String workUid = node.get("aweme_id").asText("");
-        String shareUrl = "https://www.douyin.com/user/" + socialMediaAccount.getSecUid() + "?modal_id=" + workUid;
+        String secUid = node.at("/author/sec_uid").asText();
+        String shareUrl = "https://www.douyin.com/user/" + secUid + "?modal_id=" + workUid;
         String platformId = socialMediaAccount.getPlatformId();
         String tenantId = socialMediaAccount.getTenantId();
         SocialMediaWork socialMediaWork = new SocialMediaWork();
