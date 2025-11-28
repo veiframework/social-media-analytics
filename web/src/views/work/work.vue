@@ -256,6 +256,7 @@ const showDetail = async (id) => {
 const option = reactive({
   showSearch: true,
   searchLabelWidth: 90,
+  descFields: new Set(["postTime","thumbNum"]),
   /** 搜索字段配置项 */
   searchItem: [
     {

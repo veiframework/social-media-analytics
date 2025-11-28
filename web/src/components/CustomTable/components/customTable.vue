@@ -469,8 +469,8 @@ const handleHeaderCellClass = ({ row, column, rowIndex, columnIndex })=> {
   return label;
 }
 
-const ascFields = ref(new Set())
-const descFields = ref(new Set())
+const ascFields = ref(props.option?.ascFields||new Set())
+const descFields = ref(props.option?.descFields||new Set())
 
 const orderBy = (prop, order) => {
   ascFields.value.delete(prop)

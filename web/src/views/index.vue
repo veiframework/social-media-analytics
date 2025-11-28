@@ -140,6 +140,7 @@ const getUserList2 = async () => {
 const option = reactive({
   showSearch: true,
   searchLabelWidth: 90,
+  descFields: new Set(["thumbNum"]),
   /** 搜索字段配置项 */
   searchItem: [
     {
