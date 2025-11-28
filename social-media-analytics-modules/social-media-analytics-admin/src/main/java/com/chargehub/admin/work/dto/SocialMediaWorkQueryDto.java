@@ -52,6 +52,8 @@ public class SocialMediaWorkQueryDto extends Pagination implements Serializable,
     @ApiModelProperty("发布时间结束")
     private String endPostTime;
 
+    @CrudQueryField
+    private String accountId;
 
     @CrudQueryField
     @ApiModelProperty("社交账号类型 个人- individual, 素人- amateur")

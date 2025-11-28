@@ -1,7 +1,7 @@
 <template>
     <div class="box">
         <!-- 搜索栏 -->
-        <search :showSearch="option.showSearch" :searchLabelWidth="option.searchLabelWidth"
+        <search ref="searchRef" :showSearch="option.showSearch" :searchLabelWidth="option.searchLabelWidth"
             :searchItem="option.searchItem" @search="handleSearch">
             <template #custom-item="{ prop, queryParams }">
                 <slot name='custom-item' :prop="prop" :queryParams="queryParams"></slot>
@@ -28,7 +28,7 @@
     </div>
 </template>
 <script setup>
-import { reactive } from "vue";
+import {reactive, ref} from "vue";
 import search from "./components/search";
 import customTable from "./components/customTable";
 const props = defineProps({
@@ -54,6 +54,7 @@ const emits = defineEmits([
 // 基础配置项
 const option = reactive(props.option);
 const tableRef = ref();
+const searchRef = ref();
 /**
  * 配置搜索框显示隐藏
  */
@@ -93,7 +94,14 @@ const select = (val) => emits('selectChange', val);
 /**
  * 排序功能
  */
-const sort = (val) => emits('sortChange', val);
+const sort = (val) => {
+  let order = val.order;
+  let column = val.column;
+  let label = column.label;
+  let prop = option.tableItem.filter(item => item.label === label)[0].prop;
+  searchRef.value.orderBy(prop, order)
+  tableRef.value.orderBy(prop, order)
+};
 /**
  * 操作选中
  */

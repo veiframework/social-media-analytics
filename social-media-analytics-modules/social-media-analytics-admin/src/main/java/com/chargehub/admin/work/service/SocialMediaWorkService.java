@@ -53,8 +53,8 @@ public class SocialMediaWorkService extends AbstractZ9CrudServiceImpl<SocialMedi
     }
 
 
-    public Map<String, SocialMediaWork> groupByAccountId(Collection<String> userIds) {
-        List<SocialMediaWork> socialMediaWorks = this.baseMapper.groupByAccountId(userIds);
+    public Map<String, SocialMediaWork> groupByAccountId(Collection<String> userIds, Set<String> ascFields, Set<String> descFields) {
+        List<SocialMediaWork> socialMediaWorks = this.baseMapper.groupByAccountId(userIds, ascFields, descFields);
         if (CollectionUtils.isEmpty(socialMediaWorks)) {
             return new HashMap<>();
         }

@@ -106,13 +106,15 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
 
     public IPage<SocialMediaAccountStatisticVo> getAccountStatistic(SocialMediaAccountQueryDto queryDto) {
         Set<String> userId = queryDto.getUserId();
-        Map<String, SocialMediaWork> socialMediaWorkMap = socialMediaWorkService.groupByAccountId(userId);
+        Map<String, SocialMediaWork> socialMediaWorkMap = socialMediaWorkService.groupByAccountId(userId, queryDto.getAscFields(), queryDto.getDescFields());
         if (MapUtils.isEmpty(socialMediaWorkMap)) {
             return new Page<>();
         }
         Set<String> accountIds = socialMediaWorkMap.keySet();
         queryDto.setUserId(null);
         queryDto.setId(accountIds);
+        queryDto.setAscFields(null);
+        queryDto.setDescFields(null);
         IPage<SocialMediaAccountStatisticVo> page = this.baseMapper.doGetPage(queryDto).convert(i -> BeanUtil.copyProperties(i, SocialMediaAccountStatisticVo.class));
         List<SocialMediaAccountStatisticVo> records = page.getRecords();
         if (CollectionUtils.isEmpty(records)) {

@@ -160,7 +160,7 @@ const getDict = async () => {
 
 // 搜索处理
 const handleSearch = (searchParams) => {
-  queryParams.value = {...queryParams.value, ...searchParams}
+  queryParams.value = searchParams
   pageNum.value = 1
   getData()
 }
@@ -357,6 +357,13 @@ const option = reactive({
       default: null,
       filterable: true,
       dicData: socialMediaTypeDict
+    },{
+      type: "select",
+      label: "同步状态",
+      prop: "syncWorkStatus",
+      default: null,
+      filterable: true,
+      dicData: syncWorkStatusDict
     },
     {
       type: "input",

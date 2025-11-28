@@ -111,7 +111,7 @@
 						<!-- 范围日期时间 -->
 						<template v-else-if="item.type == 'datetimerange'">
 							<el-form-item v-if="appStore.device == 'desktop'" :label="item.label + '：'">
-								<el-date-picker class="w100" start-placeholder="开始时间" end-placeholder="结束时间"
+								<el-date-picker :shortcuts="item.shortcuts" class="w100" start-placeholder="开始时间" end-placeholder="结束时间"
 									:format="item.format" :value-format="item.valueFormat"
 									:default-time="[new Date(2000, 1, 1, 0, 0, 0), new Date(2000, 2, 1, 23, 59, 59)]"
 									v-model="queryParams[item.prop]" @change="(val) => handleDate(val, item.prop)"
@@ -191,6 +191,10 @@ const remoteMethod = (query, request, key, itemNum) => {
 const isShow = ref(false);
 // 查询参数保存
 const queryParams = ref({});
+
+const ascFields = ref(new Set())
+const descFields = ref(new Set())
+
 // 日期范围选择时默认将原始数组分至两个参数
 const handleDate = (val, prop) => {
 	if (val && Array.isArray(val) && val.length > 0) {
@@ -204,6 +208,8 @@ const handleDate = (val, prop) => {
 // 查询事件
 const searchChange = () => {
 	let paramsData = { ...queryParams.value };
+  paramsData.descFields = [...descFields.value].join(",")
+  paramsData.ascFields = [...ascFields.value].join(",")
 	for (const item of MultipleProp.value) { if (paramsData[item]?.length > 0) paramsData[item] = paramsData[item].join(',') };
 	for (const key in paramsData) { if (Array.isArray(paramsData[key])) delete paramsData[key] };
 	for (const item of props.searchItem) {
@@ -222,6 +228,21 @@ const searchChange = () => {
 	}
 	emits('search', paramsData);
 }
+
+const orderBy = (prop, order)=>{
+  ascFields.value.delete(prop)
+  descFields.value.delete(prop)
+  if (order) {
+    let asc = order === 'ascending'
+    if (asc) {
+      ascFields.value.add(prop)
+    } else {
+      descFields.value.add(prop)
+    }
+  }
+  searchChange()
+}
+
 // 重置事件
 const resetChange = () => {
 	queryParams.value = {}
@@ -285,6 +306,7 @@ onActivated(() => {
 	changeParams();
 	searchChange();
 })
+defineExpose({ orderBy });
 </script>
 <style lang="scss" scoped>
 :deep(.el-card__body) {

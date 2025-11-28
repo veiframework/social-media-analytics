@@ -61,7 +61,7 @@
 		<template v-if="appStore.device == 'desktop'">
 			<el-table ref="tableRef" border @select-all="handleSelectionAllChange" @select="handleSelectionChange"
 				:span-method="tableOption.methods" :data="props.data" :max-height="tableOption.maxHeight"
-				@sort-change="sortChange">
+				@sort-change="sortChange" :header-cell-class-name="handleHeaderCellClass">
 				<!-- 是否开启多选 -->
 				<el-table-column v-if="tableOption.openSelection" type="selection" width="40" />
 				<!-- 是否开启序号 -->
@@ -454,6 +454,38 @@ const handleSelectionChange = (e, row) => {
 	emits('selectChange', row);
 	emits('selectData', Object.values(selectData.value).reduce((acc, arr) => acc.concat(arr), []));
 }
+
+const handleHeaderCellClass = ({ row, column, rowIndex, columnIndex })=> {
+  let label = column.label;
+  let prop = tableOption.tableItem.filter(item => item.label === label)[0]?.prop;
+  let hasAsc =  ascFields.value.has(prop)
+  if(hasAsc){
+      column.order = 'ascending'
+  }
+  let hasDesc = descFields.value.has(prop)
+  if(hasDesc){
+      column.order = 'descending'
+  }
+  return label;
+}
+
+const ascFields = ref(new Set())
+const descFields = ref(new Set())
+
+const orderBy = (prop, order) => {
+  ascFields.value.delete(prop)
+  descFields.value.delete(prop)
+  if (order) {
+    let asc = order === 'ascending'
+    if (asc) {
+      ascFields.value.add(prop)
+    } else {
+      descFields.value.add(prop)
+    }
+  }
+}
+
+
 /**
  * 排序功能
  */
@@ -502,7 +534,7 @@ watch(() => props.data, (news) => {
 		})
 	}
 }, { deep: true, immediate: true })
-defineExpose({ clearData });
+defineExpose({ clearData,orderBy });
 </script>
 <style lang="scss" scoped>
 .header {

@@ -46,9 +46,8 @@ import {getDicts} from '@/api/system/dict/data'
 import CustomTable from "@/components/CustomTable"
 import CustomInfo from "@/components/CustomInfo"
 import settings from "@/settings.js";
-import {syncAllWork} from "@/api/social-media-account.js";
+import {listSocialMediaAccount, syncAllWork} from "@/api/social-media-account.js";
 import {groupUserApi} from '@/api/group-user'
-
 
 // 页面数据
 const tableData = ref([])
@@ -69,7 +68,7 @@ const userDict = ref([])
 
 const socialMediaAccountTypeDict = ref([])
 const socialMediaCustomTypeDict = ref([])
-
+const accountListDict = ref([])
 // 详情弹窗
 const infoVisible = ref(false)
 const rowData = ref({})
@@ -118,6 +117,14 @@ const getDict = async () => {
   }
 }
 
+const getAccountList = async () => {
+  const res = await listSocialMediaAccount({pageNum:1,pageSize:9999999})
+  accountListDict.value = res.data.records.map(i => ({
+    label: i.nickname,
+    value: i.id,
+  }))
+}
+
 const getUserList = async () => {
   const res = await groupUserApi().getUserQuerySelector()
   userDict.value = res.data.map(i => ({
@@ -131,7 +138,6 @@ const getData = async () => {
   loading.value = true
   try {
     const params = {
-      descFields: "playNum,accountId",
       pageNum: pageNum.value,
       pageSize: pageSize.value,
       ...queryParams.value
@@ -154,7 +160,7 @@ const getData = async () => {
 
 // 搜索处理
 const handleSearch = (searchParams) => {
-  queryParams.value = {...queryParams.value, ...searchParams}
+  queryParams.value = searchParams
   pageNum.value = 1
   getData()
 }
@@ -252,14 +258,14 @@ const option = reactive({
   searchLabelWidth: 90,
   /** 搜索字段配置项 */
   searchItem: [
-    // {
-    //   type: "select",
-    //   label: "作品类型",
-    //   prop: "type",
-    //   default: null,
-    //   filterable: true,
-    //   dicData: typeDict
-    // },
+    {
+      type: "select",
+      label: "作品类型",
+      prop: "type",
+      default: null,
+      filterable: true,
+      dicData: typeDict
+    },
     {
       type: "select",
       label: "业务类型",
@@ -267,13 +273,20 @@ const option = reactive({
       default: null,
       filterable: true,
       dicData: socialMediaCustomTypeDict
-    },{
+    }, {
       type: "select",
       label: "账号类型",
       prop: "accountType",
       default: null,
       filterable: true,
       dicData: socialMediaAccountTypeDict
+    },{
+      type: "select",
+      label: "社交帐号",
+      prop: "accountId",
+      default: null,
+      filterable: true,
+      dicData: accountListDict
     },
     {
       type: "datetimerange",
@@ -282,7 +295,63 @@ const option = reactive({
       format: "YYYY-MM-DD HH:mm:ss",
       valueFormat: "YYYY-MM-DD HH:mm:ss",
       category: "datetimerange",
-      default: null
+      default: null,
+      shortcuts: [
+        {
+          text: '近7天',
+          value: () => {
+            const end = new Date()
+            const start = new Date()
+            start.setTime(start.getTime() - 3600 * 1000 * 24 * 7)
+            return [start, end]
+          }
+        },
+        {
+          text: '近15天',
+          value: () => {
+            const end = new Date()
+            const start = new Date()
+            start.setTime(start.getTime() - 3600 * 1000 * 24 * 15)
+            return [start, end]
+          }
+        },
+        {
+          text: '近1个月',
+          value: () => {
+            const end = new Date()
+            const start = new Date()
+            start.setMonth(start.getMonth() - 1)
+            return [start, end]
+          }
+        },
+        {
+          text: '近2个月',
+          value: () => {
+            const end = new Date()
+            const start = new Date()
+            start.setMonth(start.getMonth() - 2)
+            return [start, end]
+          }
+        },
+        {
+          text: '近3个月',
+          value: () => {
+            const end = new Date()
+            const start = new Date()
+            start.setMonth(start.getMonth() - 3)
+            return [start, end]
+          }
+        },
+        {
+          text: '近半年',
+          value: () => {
+            const end = new Date()
+            const start = new Date()
+            start.setMonth(start.getMonth() - 6)
+            return [start, end]
+          }
+        }
+      ]
     }, {
       type: "select",
       label: "员工账号",
@@ -380,14 +449,13 @@ const option = reactive({
       dicData: socialMediaCustomTypeDict
     },
     {
-      type: 'tag',
-      label: '作品类型',
-      prop: 'type',
-      width: 120,
+      type: 'text',
+      label: '发布时间',
+      prop: 'postTime',
+      width: 180,
       fixed: false,
-      sortable: false,
-      isShow: true,
-      dicData: typeDict
+      sortable: true,
+      isShow: true
     },
 
     // {
@@ -406,7 +474,7 @@ const option = reactive({
       prop: 'thumbNum',
       width: 100,
       fixed: false,
-      sortable: false,
+      sortable: true,
       isShow: true
     },
     {
@@ -415,7 +483,7 @@ const option = reactive({
       prop: 'collectNum',
       width: 100,
       fixed: false,
-      sortable: false,
+      sortable: true,
       isShow: true
     },
     {
@@ -424,7 +492,7 @@ const option = reactive({
       prop: 'commentNum',
       width: 100,
       fixed: false,
-      sortable: false,
+      sortable: true,
       isShow: true
     },
     {
@@ -433,7 +501,7 @@ const option = reactive({
       prop: 'playNum',
       width: 100,
       fixed: false,
-      sortable: false,
+      sortable: true,
       isShow: true
     },
     {
@@ -442,20 +510,20 @@ const option = reactive({
       prop: 'shareNum',
       width: 100,
       fixed: false,
-      sortable: false,
+      sortable: true,
       isShow: true
     },
 
     {
-      type: 'text',
-      label: '发布时间',
-      prop: 'postTime',
-      width: 180,
+      type: 'tag',
+      label: '作品类型',
+      prop: 'type',
+      width: 120,
       fixed: false,
       sortable: false,
-      isShow: true
+      isShow: true,
+      dicData: typeDict
     },
-
   ],
   /** 操作菜单配置项 */
   menu: {
@@ -608,6 +676,7 @@ const optionInfo = reactive({
 const init = () => {
   getDict()
   getUserList()
+  getAccountList()
 }
 
 // 初始化

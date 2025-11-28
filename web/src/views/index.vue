@@ -244,7 +244,7 @@ const option = reactive({
       prop: 'thumbNum',
       width: 100,
       fixed: false,
-      sortable: false,
+      sortable: true,
       isShow: true
     },
     {
@@ -253,7 +253,7 @@ const option = reactive({
       prop: 'collectNum',
       width: 100,
       fixed: false,
-      sortable: false,
+      sortable: true,
       isShow: true
     },
     {
@@ -262,7 +262,7 @@ const option = reactive({
       prop: 'commentNum',
       width: 100,
       fixed: false,
-      sortable: false,
+      sortable: true,
       isShow: true
     },
     {
@@ -271,7 +271,7 @@ const option = reactive({
       prop: 'playNum',
       width: 100,
       fixed: false,
-      sortable: false,
+      sortable: true,
       isShow: true
     },
     {
@@ -280,7 +280,7 @@ const option = reactive({
       prop: 'shareNum',
       width: 100,
       fixed: false,
-      sortable: false,
+      sortable: true,
       isShow: true
     },
 
@@ -319,7 +319,7 @@ const getData = async () => {
 
 // 搜索
 const handleSearch = (searchParams) => {
-  queryParams.value = {...queryParams.value, ...searchParams}
+  queryParams.value = searchParams
   pageNum.value = 1
   getData()
 }

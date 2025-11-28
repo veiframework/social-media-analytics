@@ -3,11 +3,11 @@
 <mapper namespace="com.chargehub.admin.work.mapper.SocialMediaWorkMapper">
 
     <select id="groupByAccountId0" resultType="com.chargehub.admin.work.domain.SocialMediaWork">
-        SELECT IFNULL(SUM(thumb_num), 0) AS thumb_num,
-        IFNULL(SUM(share_num), 0) AS share_num,
-        IFNULL(SUM(collect_num), 0) AS collect_num,
-        IFNULL(SUM(comment_num), 0) AS comment_num,
-        IFNULL(SUM(play_num), 0) AS play_num,
+        SELECT IFNULL(SUM(thumb_num), 0) AS thumbNum,
+        IFNULL(SUM(share_num), 0) AS shareNum,
+        IFNULL(SUM(collect_num), 0) AS collectNum,
+        IFNULL(SUM(comment_num), 0) AS commentNum,
+        IFNULL(SUM(play_num), 0) AS playNum,
         account_id
         FROM social_media_work
         <if test='userIds!=null'>
@@ -17,7 +17,22 @@
             </foreach>
         </if>
         GROUP BY account_id
-        ORDER BY play_num DESC
+        <if test='ascFields!=null||descFields!=null'>
+        ORDER BY
+            <if test='ascFields!=null'>
+                <foreach item="item" index="index" collection="ascFields" separator=",">
+                    ${item} ASC
+                </foreach>
+            </if>
+            <if test='descFields!=null'>
+                <if test='ascFields!=null'>
+                    ,
+                </if>
+                <foreach item="item" index="index" collection="descFields" separator=",">
+                    ${item} DESC
+                </foreach>
+            </if>
+        </if>
     </select>
 
     <select id="groupByUserIdAndPlatform0" resultType="com.chargehub.admin.work.domain.SocialMediaWork">
