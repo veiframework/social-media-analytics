@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Configuration;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Zhanghaowei
@@ -35,6 +36,8 @@ public class HubProperties {
 
     private Map<String, SocialMediaDataApi> socialMediaDataApi = new HashMap<>();
 
+    private long recentDays;
+
     @Data
     public static class SocialMediaDataApi {
 
@@ -42,5 +45,13 @@ public class HubProperties {
 
         private String token;
     }
+
+    public boolean isValidDate(long timestamp) {
+        long now = System.currentTimeMillis();
+        long diff = now - timestamp;
+        long daysDiff = TimeUnit.DAYS.convert(diff, TimeUnit.MILLISECONDS);
+        return recentDays >= daysDiff;
+    }
+
 
 }

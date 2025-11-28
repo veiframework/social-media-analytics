@@ -93,8 +93,14 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
             int code = jsonNode.path("code").asInt(500);
             Assert.isTrue(code == HttpStatus.HTTP_OK, "获取作品失败" + body);
             boolean hasMore = jsonNode.at("/data/has_more").asInt() == 1;
-            Long nextCursor = jsonNode.at("/data/max_cursor").asLong(-1);
+            long nextCursor = jsonNode.at("/data/max_cursor").asLong(-1);
             JsonNode path = jsonNode.at("/data/aweme_list");
+            if (!path.isEmpty()) {
+                JsonNode lastNode = path.get(path.size() - 1);
+                long lastTime = lastNode.get("create_time").asLong() * 1000;
+                hasMore = hubProperties.isValidDate(lastTime);
+                nextCursor = hasMore ? nextCursor : -1;
+            }
             for (JsonNode node : path) {
                 this.buildWork(socialMediaAccount, node, socialMediaWorkMap);
             }

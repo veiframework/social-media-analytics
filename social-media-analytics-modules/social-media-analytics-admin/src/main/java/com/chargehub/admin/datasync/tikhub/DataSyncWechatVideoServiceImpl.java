@@ -97,6 +97,12 @@ public class DataSyncWechatVideoServiceImpl implements DataSyncService {
             JsonNode path = jsonNode.at("/data/object");
             boolean hasMore = !path.isEmpty();
             String nextCursor = code == 500 ? "-1" : jsonNode.at("/data/last_buffer").asText();
+            if (!path.isEmpty()) {
+                JsonNode lastNode = path.get(path.size() - 1);
+                long lastTime = lastNode.get("createtime").asLong() * 1000;
+                hasMore = hubProperties.isValidDate(lastTime);
+                nextCursor = hasMore ? nextCursor : "-1";
+            }
             socialMediaWorkResult.setHasMore(hasMore);
             socialMediaWorkResult.setNextCursor(nextCursor);
             if (hasMore) {

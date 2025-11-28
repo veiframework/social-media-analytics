@@ -90,7 +90,13 @@ public class DataSyncBiliBiliServiceImpl implements DataSyncService {
             Assert.isTrue(code == HttpStatus.HTTP_OK, "获取作品失败" + body);
             JsonNode path = jsonNode.at("/data/data/list/vlist");
             boolean hasMore = !path.isEmpty();
-            Long nextCursor = realCursor + 1;
+            long nextCursor = realCursor + 1;
+            if (!path.isEmpty()) {
+                JsonNode lastNode = path.get(path.size() - 1);
+                long lastTime = lastNode.get("created").asLong() * 1000;
+                hasMore = hubProperties.isValidDate(lastTime);
+                nextCursor = hasMore ? nextCursor : -1;
+            }
             for (JsonNode node : path) {
                 this.dataSyncMessageQueue.syncBiliBiliExecute(() -> this.buildWork(socialMediaAccount, node, socialMediaWorkMap));
             }

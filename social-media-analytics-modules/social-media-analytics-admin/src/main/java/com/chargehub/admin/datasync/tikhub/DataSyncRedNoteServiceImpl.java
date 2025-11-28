@@ -155,7 +155,15 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
         if (path instanceof MissingNode) {
             path = dataNode.at("/data/notes");
         }
-        String nextCursor = path.isEmpty() ? "-1" : path.get(path.size() - 1).get("cursor").asText();
+        String nextCursor;
+        if (path.isEmpty()) {
+            nextCursor = "-1";
+        } else {
+            JsonNode lastNode = path.get(path.size() - 1);
+            long lastTime = lastNode.get("create_time").asLong() * 1000;
+            hasMore = hubProperties.isValidDate(lastTime);
+            nextCursor = hasMore ? lastNode.get("cursor").asText() : "-1";
+        }
         for (JsonNode node : path) {
             this.buildWork(socialMediaAccount, node, socialMediaWorkMap);
         }
