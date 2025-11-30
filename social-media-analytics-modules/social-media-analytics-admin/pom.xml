@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <groupId>com.lumeng</groupId>
         <artifactId>social-media-analytics-modules</artifactId>
@@ -13,18 +14,6 @@
 
 
     <dependencies>
-
-        <!-- SpringCloud Alibaba Nacos -->
-<!--        <dependency>-->
-<!--            <groupId>com.alibaba.cloud</groupId>-->
-<!--            <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>-->
-<!--        </dependency>-->
-
-<!--        &lt;!&ndash; SpringCloud Alibaba Nacos Config &ndash;&gt;-->
-<!--        <dependency>-->
-<!--            <groupId>com.alibaba.cloud</groupId>-->
-<!--            <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>-->
-<!--        </dependency>-->
 
         <!-- SpringCloud Alibaba Sentinel -->
         <dependency>
@@ -43,7 +32,6 @@
         </dependency>
 
 
-
         <!-- RuoYi Common DataScope -->
         <dependency>
             <groupId>com.lumeng</groupId>
@@ -59,9 +47,6 @@
             <groupId>com.lumeng</groupId>
             <artifactId>social-media-analytics-common-swagger</artifactId>
         </dependency>
-
-
-
 
 
         <!-- RuoYi Common Log -->
@@ -103,6 +88,23 @@
             </exclusions>
         </dependency>
 
+        <!-- https://mvnrepository.com/artifact/com.microsoft.playwright/playwright -->
+        <dependency>
+            <groupId>com.microsoft.playwright</groupId>
+            <artifactId>playwright</artifactId>
+            <version>1.56.0</version>
+        </dependency>
+        <dependency>
+            <groupId>net.datafaker</groupId>
+            <artifactId>datafaker</artifactId>
+            <version>1.9.0</version> <!-- 检查最新版 -->
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/org.jsoup/jsoup -->
+        <dependency>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+            <version>1.21.2</version>
+        </dependency>
     </dependencies>
 
     <build>
