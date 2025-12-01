@@ -121,5 +121,6 @@ public class SocialMediaWorkDto implements Serializable, Z9CrudDto<SocialMediaWo
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private String updater;
 
-
+    @ApiModelProperty("来源 manual-手动, sync-同步")
+    private String source = "manual";
 }

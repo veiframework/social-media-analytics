@@ -17,6 +17,59 @@
       <template #table-top></template>
       <template #table-custom="{ row, prop, index }">
         <!-- 由于使用了 tag 类型和 dicData，不再需要自定义模板 -->
+        <template v-if="prop == 'thumbNumUp'">
+          <div class="thumb_num_box">
+            <div>
+              {{ row.thumbNumUp }}
+            </div>
+            <template v-if="row.thumbNumChange>0">
+
+              <div class="thumb_num_change" style="color: green">
+                <el-icon>
+                  <arrow-up color="green" />
+                </el-icon>
+                {{ row.thumbNumChange }}
+              </div>
+            </template>
+            <template v-else>
+              <div class="thumb_num_change" style="color: red">
+                <el-icon>
+                  <arrow-down color="red"/>
+                </el-icon>
+                {{ Math.abs(row.thumbNumChange) }}
+              </div>
+            </template>
+
+
+          </div>
+        </template>
+        <template v-if="prop == 'playNumUp'">
+          <div class="thumb_num_box">
+            <div>
+              {{ row.playNumUp }}
+            </div>
+            <template v-if="row.playNumChange>0">
+
+              <div class="thumb_num_change" style="color: green">
+                <el-icon>
+                  <arrow-up color="green" />
+                </el-icon>
+                {{ row.playNumChange }}
+              </div>
+            </template>
+            <template v-else>
+              <div class="thumb_num_change" style="color: red">
+                <el-icon>
+                  <arrow-down color="red"/>
+                </el-icon>
+                {{ Math.abs(row.playNumChange) }}
+              </div>
+            </template>
+
+
+          </div>
+        </template>
+
       </template>
     </CustomTable>
 
@@ -48,6 +101,7 @@ import CustomInfo from "@/components/CustomInfo"
 import settings from "@/settings.js";
 import {listSocialMediaAccount, syncAllWork} from "@/api/social-media-account.js";
 import {groupUserApi} from '@/api/group-user'
+import Template from "@/views/base/template.vue";
 
 // 页面数据
 const tableData = ref([])
@@ -118,7 +172,7 @@ const getDict = async () => {
 }
 
 const getAccountList = async () => {
-  const res = await listSocialMediaAccount({pageNum:1,pageSize:9999999})
+  const res = await listSocialMediaAccount({pageNum: 1, pageSize: 9999999})
   accountListDict.value = res.data.records.map(i => ({
     label: i.nickname,
     value: i.id,
@@ -256,7 +310,7 @@ const showDetail = async (id) => {
 const option = reactive({
   showSearch: true,
   searchLabelWidth: 90,
-  descFields: new Set(["postTime","thumbNum"]),
+  descFields: new Set(["postTime", "thumbNum"]),
   /** 搜索字段配置项 */
   searchItem: [
     {
@@ -281,7 +335,7 @@ const option = reactive({
       default: null,
       filterable: true,
       dicData: socialMediaAccountTypeDict
-    },{
+    }, {
       type: "select",
       label: "社交帐号",
       prop: "accountId",
@@ -477,6 +531,30 @@ const option = reactive({
       fixed: false,
       sortable: true,
       isShow: true
+    }, {
+      type: 'custom',
+      label: '点赞增长量',
+      prop: 'thumbNumUp',
+      width: 100,
+      fixed: false,
+      sortable: true,
+      isShow: true
+    }, {
+      type: 'text',
+      label: '播放量',
+      prop: 'playNum',
+      width: 100,
+      fixed: false,
+      sortable: true,
+      isShow: true
+    }, {
+      type: 'custom',
+      label: '播放增长量',
+      prop: 'playNumUp',
+      width: 100,
+      fixed: false,
+      sortable: true,
+      isShow: true
     },
     {
       type: 'text',
@@ -496,15 +574,7 @@ const option = reactive({
       sortable: true,
       isShow: true
     },
-    {
-      type: 'text',
-      label: '播放量',
-      prop: 'playNum',
-      width: 100,
-      fixed: false,
-      sortable: true,
-      isShow: true
-    },
+
     {
       type: 'text',
       label: '分享数',
@@ -686,4 +756,15 @@ init()
 
 <style scoped>
 /* 自定义样式 */
+.thumb_num_box {
+  display: flex;
+  justify-content: center;
+}
+
+.thumb_num_change {
+  padding: 6px 0 0 6px;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+}
 </style>

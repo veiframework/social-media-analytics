@@ -127,4 +127,21 @@ public class SocialMediaWorkVo implements Serializable, Z9CrudVo {
     @Dict(dictTable = "sys_user", nameColumn = "nick_name", valueColumn = "user_id")
     private String updater;
 
+
+    @ApiModelProperty("点赞变化量")
+    private Integer thumbNumChange;
+
+    @Excel(name = "点赞增长量",width = 15)
+    @ApiModelProperty("点赞增长量")
+    private Integer thumbNumUp;
+
+    @ApiModelProperty("播放变化量")
+    private Integer playNumChange;
+
+    @Excel(name = "播放增长量",width = 15)
+    @ApiModelProperty("播放增长量")
+    private Integer playNumUp;
+
+    @ApiModelProperty("来源 manual-手动, sync-同步")
+    private String source;
 }

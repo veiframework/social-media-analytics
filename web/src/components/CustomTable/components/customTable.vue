@@ -125,7 +125,7 @@
 					</el-table-column>
 					<!-- custom 自定义类型 -->
 					<el-table-column v-else-if="item.type == 'custom' && item.isShow" :label="item.label" align="center"
-						:min-width="item.width" :fixed="item.fixed">
+						:min-width="item.width" :fixed="item.fixed" :sortable="item.sortable">
 						<template #default="scope">
 							<slot name='custom' :row="scope.row" :prop="item.prop" :index="scope.$index"></slot>
 						</template>

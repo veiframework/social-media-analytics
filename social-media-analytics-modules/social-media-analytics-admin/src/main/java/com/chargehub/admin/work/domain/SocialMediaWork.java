@@ -93,6 +93,21 @@ public class SocialMediaWork implements Serializable, Z9CrudEntity {
     @TableField(exist = false)
     private Integer workNum;
 
+    @ApiModelProperty("来源 manual-手动, sync-同步")
+    private String source;
+
+    @ApiModelProperty("点赞变化量")
+    private Integer thumbNumChange;
+
+    @ApiModelProperty("点赞增长量")
+    private Integer thumbNumUp;
+
+    @ApiModelProperty("播放变化量")
+    private Integer playNumChange;
+
+    @ApiModelProperty("播放增长量")
+    private Integer playNumUp;
+
     @Override
     public String getUniqueId() {
         return this.id;
@@ -121,6 +136,9 @@ public class SocialMediaWork implements Serializable, Z9CrudEntity {
         updateWork.setId(this.getId());
         if (!this.getThumbNum().equals(newWork.getThumbNum())) {
             updateWork.setThumbNum(newWork.getThumbNum());
+            int upNum = newWork.getThumbNum() - this.getThumbNum();
+            updateWork.setThumbNumUp(upNum);
+            updateWork.setThumbNumChange(upNum - this.getThumbNumUp());
         }
         if (!this.getShareNum().equals(newWork.getShareNum())) {
             updateWork.setShareNum(newWork.getShareNum());
@@ -136,6 +154,9 @@ public class SocialMediaWork implements Serializable, Z9CrudEntity {
         }
         if (!this.getPlayNum().equals(newWork.getPlayNum())) {
             updateWork.setPlayNum(newWork.getPlayNum());
+            int upNum = newWork.getPlayNum() - this.getPlayNum();
+            updateWork.setPlayNumUp(upNum);
+            updateWork.setPlayNumChange(upNum - this.getPlayNumUp());
         }
         if (!this.getCustomType().equals(newWork.getCustomType())) {
             updateWork.setCustomType(newWork.getCustomType());
