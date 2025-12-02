@@ -78,3 +78,10 @@ export function syncAllWork() {
         method: 'get',
     })
 }
+
+export function updateAutoSync(value) {
+    return request({
+        url: `${prefix}/account/` + value.id + "/sync/" + value.autoSync,
+        method: 'get',
+    })
+}

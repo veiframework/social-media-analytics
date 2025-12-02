@@ -6,9 +6,13 @@ package com.chargehub.admin.playwright;
  */
 public interface PlaywrightCrawlHelper {
 
+    void saveSmsCode(String accountId, String smsCode);
+
     String checkSmsCode(String accountId);
 
     void saveLoginQrCode(String accountId, String src);
+
+    String getLoginQrCode(String accountId);
 
     void saveLoginState(String accountId, String content);
 

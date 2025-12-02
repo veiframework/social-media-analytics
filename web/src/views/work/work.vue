@@ -80,6 +80,25 @@
         :rowData="rowData"
         @cancel="infoVisible = false"
     />
+
+    <!-- 分享链接添加弹窗 -->
+    <CustomDialog
+        :form="shareLinkForm"
+        :option="optionShareLink"
+        :visible="shareLinkVisible"
+        @cancel="shareLinkVisible = false"
+        @save="handleShareLink"
+    />
+
+    <!-- 微信视频号名称 -->
+    <CustomDialog
+        :form="wechatVideoForm"
+        :option="wechatVideoOption"
+        :visible="wechatVideoVisible"
+        @cancel="wechatVideoVisible = false"
+        @save="handleWechatVideoForm"
+    />
+
   </div>
 </template>
 
@@ -93,7 +112,8 @@ import {ElMessage, ElMessageBox} from 'element-plus'
 import {
   getWorkListApi,
   getWorkApi,
-  exportWorkApi
+  exportWorkApi, createByWechatVideoId, createByWorkShareUrl,
+    delWork
 } from '@/api/work'
 import {getDicts} from '@/api/system/dict/data'
 import CustomTable from "@/components/CustomTable"
@@ -102,6 +122,8 @@ import settings from "@/settings.js";
 import {listSocialMediaAccount, syncAllWork} from "@/api/social-media-account.js";
 import {groupUserApi} from '@/api/group-user'
 import Template from "@/views/base/template.vue";
+import CustomDialog from "@/components/CustomDialog/index.vue";
+import {ElLoading} from 'element-plus'
 
 // 页面数据
 const tableData = ref([])
@@ -109,7 +131,11 @@ const total = ref(0)
 const pageNum = ref(1)
 const pageSize = ref(10)
 const loading = ref(false)
-
+let loadingOpt = {
+  lock: true,
+  text: '加载中……',
+  background: 'rgba(0, 0, 0, .1)',
+}
 // 查询参数
 const queryParams = ref({})
 
@@ -126,6 +152,48 @@ const accountListDict = ref([])
 // 详情弹窗
 const infoVisible = ref(false)
 const rowData = ref({})
+
+// 分享链接表单数据
+const shareLinkForm = ref({})
+const shareLinkVisible = ref(false)
+const wechatVideoForm = ref({})
+const wechatVideoVisible = ref(false)
+
+// 处理分享链接
+const handleShareLink = async (val) => {
+  let loading = ElLoading.service(loadingOpt)
+  try {
+    const formData = {...val}
+    let res = await createByWorkShareUrl(formData)
+    if (res.code === 200) {
+      ElMessage.success(res.msg || '通过主页分享链接添加成功')
+      shareLinkVisible.value = false
+      await getData()
+    } else {
+      ElMessage.error(res.msg || '操作失败')
+    }
+  } finally {
+    loading.close()
+  }
+}
+
+// 通过微信视频号名称添加
+const handleWechatVideoForm = async (val) => {
+  let loading = ElLoading.service(loadingOpt)
+  try {
+    const formData = {...val}
+    let res = await createByWechatVideoId(formData)
+    if (res.code === 200) {
+      ElMessage.success(res.msg || '通过微信视频ID添加成功')
+      wechatVideoVisible.value = false
+      await getData()
+    } else {
+      ElMessage.error(res.msg || '操作失败')
+    }
+  } finally {
+    loading.close()
+  }
+}
 
 // 获取字典数据
 const getDict = async () => {
@@ -240,6 +308,14 @@ const handleHeader = (key) => {
     case 'syncWork':
       handleSyncWork()
       break
+    case 'shareLink':
+      shareLinkForm.value = {}
+      shareLinkVisible.value = true
+      break
+    case 'wechatVideo':
+      wechatVideoForm.value = {}
+      wechatVideoVisible.value = true
+      break
   }
 }
 
@@ -287,6 +363,32 @@ const handleMenu = async (val) => {
     case 'detail':
       await showDetail(row.id)
       break
+    case 'delete':
+      await handleDelete(row.id)
+      break
+  }
+}
+
+const handleDelete = async (id) => {
+  try {
+    await ElMessageBox.confirm('确定要删除作品吗？', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+
+    const response = await delWork(id)
+    if (response.code === 200) {
+      ElMessage.success('删除成功')
+      await getData()
+    } else {
+      ElMessage.error(response.msg || '删除失败')
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('删除失败:', error)
+      ElMessage.error('删除失败')
+    }
   }
 }
 
@@ -435,6 +537,8 @@ const option = reactive({
   headerBtn: [
     {key: "export", text: "导出", icon: "Download", isShow: true, type: "primary", disabled: false},
     {key: "syncWork", text: "同步作品", icon: "Refresh", isShow: true, type: "primary", disabled: false},
+    {key: "shareLink", text: "通过主页分享链接添加", icon: "Link", isShow: true, type: "primary", disabled: false},
+    {key: "wechatVideo", text: "通过微信视频ID添加", icon: "Link", isShow: true, type: "success", disabled: false}
   ],
   /** 表格顶部右侧 toobar 配置项 */
   toolbar: {isShowToolbar: true, isShowSearch: true},
@@ -609,7 +713,13 @@ const option = reactive({
       icon: 'View',
       label: '详情',
       value: 'detail'
-    }
+    },{
+      type: 'danger',
+      isShow: true,
+      icon: 'Delete',
+      label: '删除',
+      value: 'delete'
+    },
   ],
   /** page 分页配置项 */
   isShowPage: true
@@ -740,6 +850,43 @@ const optionInfo = reactive({
     }
   ]
 })
+
+// 分享链接表单配置项
+const optionShareLink = reactive({
+  dialogTitle: '通过主页分享链接添加账号',
+  dialogClass: 'dialog_md',
+  labelWidth: '120px',
+  formitem: [
+    {
+      type: "input",
+      label: "分享链接",
+      prop: "shareLink",
+      placeholder: "请输入分享链接",
+    }
+  ],
+  rules: {
+    shareLink: [{required: true, message: '请输入分享链接', trigger: 'blur'}],
+  }
+})
+
+// 分享链接表单配置项
+const wechatVideoOption = reactive({
+  dialogTitle: '微信视频ID',
+  dialogClass: 'dialog_md',
+  labelWidth: '140px',
+  formitem: [
+    {
+      type: "input",
+      label: "微信视频ID",
+      prop: "shareLink",
+      placeholder: "请输入微信视频ID",
+    }
+  ],
+  rules: {
+    shareLink: [{required: true, message: '请输入微信视频ID', trigger: 'blur'}],
+  }
+})
+
 
 /**
  * 初始化数据

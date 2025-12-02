@@ -2,11 +2,13 @@ package com.chargehub.admin.datasync.tikhub;
 
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.map.MapUtil;
+import cn.hutool.core.util.URLUtil;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpStatus;
 import cn.hutool.http.HttpUtil;
 import com.chargehub.admin.account.vo.SocialMediaAccountVo;
 import com.chargehub.admin.datasync.DataSyncService;
+import com.chargehub.admin.datasync.domain.SocialMediaDetail;
 import com.chargehub.admin.datasync.domain.SocialMediaUserInfo;
 import com.chargehub.admin.datasync.domain.SocialMediaWorkResult;
 import com.chargehub.admin.enums.MediaTypeEnum;
@@ -28,6 +30,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
+import java.net.URI;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -51,6 +54,7 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
     @Autowired
     private RedisService redisService;
 
+    private static final String WORK_SHARE_URL = "/api/v1/xiaohongshu/web_v2/fetch_feed_notes_v2";
 
     private static final List<String> USER_INFO_URL = Stream.of(
             "/api/v1/xiaohongshu/web_v2/fetch_user_info_app",
@@ -128,6 +132,91 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
             Thread.currentThread().interrupt();
         }
         return atomicReference.get();
+    }
+
+    @Override
+    public SocialMediaDetail getSecUidByWorkUrl(String url) {
+        HubProperties.SocialMediaDataApi socialMediaDataApi = hubProperties.getSocialMediaDataApi().get("tikhub");
+        String token = socialMediaDataApi.getToken();
+        String host = socialMediaDataApi.getHost();
+        String location;
+        try (HttpResponse execute = HttpUtil.createGet(url).execute()) {
+            location = execute.header("Location");
+        }
+        if (StringUtils.isBlank(location)) {
+            return null;
+        }
+        URI uri = URLUtil.toURI(location);
+        String query = "?" + uri.getQuery();
+        String[] split = location.replace(query, "").split("/");
+        String workUid = split[split.length - 1];
+        try (HttpResponse execute = HttpUtil.createGet(host + WORK_SHARE_URL).bearerAuth(token).form("note_id", workUid).execute()) {
+            String body = execute.body();
+            JsonNode jsonNode = JacksonUtil.toObj(body);
+            int code = jsonNode.path("code").asInt(500);
+            Assert.isTrue(code == HttpStatus.HTTP_OK, "获取作品信息失败" + jsonNode);
+            String secUid = jsonNode.at("/data/user/id").asText();
+            SocialMediaDetail socialMediaDetail = new SocialMediaDetail();
+            socialMediaDetail.setWorkUid(workUid);
+            socialMediaDetail.setSecUid(secUid);
+            return socialMediaDetail;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> T getWork(String workUid) {
+        HubProperties.SocialMediaDataApi socialMediaDataApi = hubProperties.getSocialMediaDataApi().get("tikhub");
+        String token = socialMediaDataApi.getToken();
+        String host = socialMediaDataApi.getHost();
+        try (HttpResponse execute = HttpUtil.createGet(host + WORK_SHARE_URL).bearerAuth(token).form("note_id", workUid).execute()) {
+            String body = execute.body();
+            JsonNode jsonNode = JacksonUtil.toObj(body);
+            int code = jsonNode.path("code").asInt(500);
+            Assert.isTrue(code == HttpStatus.HTTP_OK, "获取作品信息失败" + jsonNode);
+            JsonNode dataNode = jsonNode.at("/data");
+            JsonNode node = dataNode.at("/note_list").get(0);
+            Date postTime = DateUtil.date(node.get("time").asLong(0) * 1000L);
+            //内容类型 （normal=图文笔记，video=视频笔记）
+            String workType = "normal".equals(node.get("type").asText()) ? WorkTypeEnum.RICH_TEXT.getType() : WorkTypeEnum.NORMAL_VIDEO.getType();
+            //媒体类型 (2=图片, 4=视频)
+            String mediaType = workType.equals(WorkTypeEnum.RICH_TEXT.getType()) ? MediaTypeEnum.PICTURE.getType() : MediaTypeEnum.VIDEO.getType();
+            int thumbNum = node.get("liked_count").asInt(0);
+            int collectNum = node.get("collected_count").asInt(0);
+            int shareNum = node.get("shared_count").asInt(0);
+            int commentNum = node.get("comments_count").asInt(0);
+            // 基于3.3%互动率估算,目前无法从 view_count获取浏览量
+            int playNum = (thumbNum + collectNum + shareNum + commentNum) * 10;
+            String desc = node.get("title").asText("");
+            String hashtagName = node.get("desc").asText("");
+            String customType = "";
+            Map<String, String> socialMediaCustomType = DictUtils.getDictLabelMap("social_media_custom_type");
+            for (Map.Entry<String, String> entry : socialMediaCustomType.entrySet()) {
+                String k = entry.getKey();
+                String v = entry.getValue();
+                if (hashtagName.contains(k)) {
+                    customType = v;
+                }
+            }
+            String shareUrl = "https://www.xiaohongshu.com/discovery/item/" + workUid;
+            SocialMediaWork socialMediaWork = new SocialMediaWork();
+            socialMediaWork.setUrl(shareUrl);
+            socialMediaWork.setPlatformId(this.platform().getDomain());
+            socialMediaWork.setDescription(desc);
+            socialMediaWork.setWorkUid(workUid);
+            socialMediaWork.setPostTime(postTime);
+            socialMediaWork.setMediaType(mediaType);
+            socialMediaWork.setType(workType);
+            socialMediaWork.setThumbNum(thumbNum);
+            socialMediaWork.setCollectNum(collectNum);
+            socialMediaWork.setShareNum(shareNum);
+            socialMediaWork.setCommentNum(commentNum);
+            socialMediaWork.setLikeNum(thumbNum);
+            socialMediaWork.setPlayNum(playNum);
+            socialMediaWork.setCustomType(customType);
+            socialMediaWork.setStatisticMd5(socialMediaWork.generateStatisticMd5());
+            return (T) socialMediaWork;
+        }
     }
 
     @SuppressWarnings("unchecked")

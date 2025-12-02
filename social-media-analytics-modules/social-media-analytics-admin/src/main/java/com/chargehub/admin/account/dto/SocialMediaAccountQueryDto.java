@@ -45,6 +45,10 @@ public class SocialMediaAccountQueryDto extends Pagination implements Z9CrudQuer
     @ApiModelProperty("平台id")
     private String platformId;
 
+    @CrudQueryField
+    @ApiModelProperty("是否启用自动同步")
+    private String autoSync;
+
     public SocialMediaAccountQueryDto() {
     }
 

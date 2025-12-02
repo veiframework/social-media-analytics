@@ -39,6 +39,19 @@ public enum SocialMediaPlatformEnum {
         this.secUserId = secUserId;
     }
 
+    public static SocialMediaPlatformEnum getPlatformByWorkUrl(String workUrl) {
+        String location;
+        try (HttpResponse execute = HttpUtil.createGet(workUrl).execute()) {
+            location = execute.header("Location");
+        }
+        if (StringUtils.isBlank(location)) {
+            return null;
+        }
+        URI uri = URLUtil.toURI(location);
+        String host = uri.getHost();
+        return Arrays.stream(values()).filter(i -> host.contains(i.domain)).findFirst().orElseThrow(() -> new IllegalArgumentException("不支持的平台类型"));
+    }
+
     public static SocialMediaPlatformEnum getByDomain(String domain) {
         SocialMediaPlatformEnum socialMediaPlatformEnum = Arrays.stream(values()).filter(i -> i.domain.equals(domain)).findFirst().orElse(null);
         Assert.notNull(socialMediaPlatformEnum, "不支持的社交平台类型");

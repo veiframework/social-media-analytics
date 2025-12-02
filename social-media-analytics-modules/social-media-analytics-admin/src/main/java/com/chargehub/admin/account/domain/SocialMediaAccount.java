@@ -1,6 +1,9 @@
 package com.chargehub.admin.account.domain;
 
-import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
 import com.chargehub.common.security.template.annotation.CrudSubUniqueId;
 import com.chargehub.common.security.template.domain.Z9CrudEntity;
 import io.swagger.annotations.ApiModelProperty;
@@ -72,6 +75,15 @@ public class SocialMediaAccount implements Serializable, Z9CrudEntity {
 
     @ApiModelProperty("同步作品日期")
     private Date syncWorkDate;
+
+    @ApiModelProperty("是否开启自动同步")
+    private String autoSync;
+
+    @ApiModelProperty("是否是爬虫")
+    private Integer crawler;
+
+    @ApiModelProperty("登录信息")
+    private String storageState;
 
     @Override
     public String getUniqueId() {

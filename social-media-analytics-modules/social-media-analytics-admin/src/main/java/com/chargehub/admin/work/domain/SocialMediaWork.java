@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.chargehub.common.security.template.annotation.CrudSubUniqueId;
 import com.chargehub.common.security.template.domain.Z9CrudEntity;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
@@ -41,6 +42,7 @@ public class SocialMediaWork implements Serializable, Z9CrudEntity {
     @ApiModelProperty("作品链接")
     private String url;
 
+    @CrudSubUniqueId
     @ApiModelProperty("第三方作品id")
     private String workUid;
 
@@ -160,6 +162,9 @@ public class SocialMediaWork implements Serializable, Z9CrudEntity {
         }
         if (!this.getCustomType().equals(newWork.getCustomType())) {
             updateWork.setCustomType(newWork.getCustomType());
+        }
+        if (!this.getWorkUid().equals(newWork.getWorkUid())) {
+            updateWork.setWorkUid(newWork.getWorkUid());
         }
         updateWork.setStatisticMd5(newWork.getStatisticMd5());
         return updateWork;

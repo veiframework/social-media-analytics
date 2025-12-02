@@ -77,4 +77,11 @@ public class SocialMediaAccountVo implements Serializable, Z9CrudVo {
 
     @ApiModelProperty("同步作品日期")
     private Date syncWorkDate;
+
+    @ApiModelProperty("是否开启自动同步")
+    private String autoSync;
+
+
+    @ApiModelProperty("是否是爬虫")
+    private Integer crawler;
 }

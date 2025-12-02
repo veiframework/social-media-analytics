@@ -16,6 +16,10 @@
       <template #table-top></template>
       <template #table-custom="{ row, prop, index }">
         <!-- 自定义模板 -->
+        <template v-if="prop == 'autoSync'">
+          <el-switch v-model="row.autoSync" active-value="enable" inactive-value="disable"
+                     @change="handleAutoSyncChange(row)"/>
+        </template>
       </template>
     </CustomTable>
 
@@ -60,12 +64,14 @@ import {
   updateSocialMediaAccount,
   delSocialMediaAccount,
   syncWork,
-  createByShareLink, createByWechatVideoNickname
+  createByShareLink, createByWechatVideoNickname,
+  updateAutoSync
 } from '@/api/social-media-account'
 import CustomTable from "@/components/CustomTable"
 import CustomDialog from "@/components/CustomDialog"
 import {getDicts} from "@/api/system/dict/data.js";
 import {groupUserApi} from "@/api/group-user.js";
+import Template from "@/views/base/template.vue";
 
 // 页面数据
 const tableData = ref([])
@@ -98,6 +104,8 @@ const socialMediaTypeDict = ref([])
 const syncWorkStatusDict = ref([])
 const socialMediaAccountTypeDict = ref([])
 const userDict = ref([])
+const autoSyncDict = ref([])
+
 
 const getUserList3 = async () => {
   const res = await groupUserApi().getUserQuerySelector()
@@ -137,6 +145,7 @@ const getDict = async () => {
     const typeRes = await getDicts('social_media_platform')
     const syncDictRes = await getDicts('sync_work_status')
     const socialMediaAccountTypeRes = await getDicts('social_media_account_type')
+    const autoSyncDictRes = await getDicts('social_media_account_auto_sync')
 
     socialMediaTypeDict.value = typeRes.data.map(i => ({
       label: i.dictLabel,
@@ -153,11 +162,21 @@ const getDict = async () => {
       value: i.dictValue,
       elTagType: i.listClass
     })) || []
+    autoSyncDict.value = autoSyncDictRes.data.map(i => ({
+      label: i.dictLabel,
+      value: i.dictValue,
+      elTagType: i.listClass
+    })) || []
   } catch (error) {
     console.error('获取字典数据失败:', error)
   }
 }
-
+const handleAutoSyncChange = async (value) => {
+  if (!value.id) {
+    return
+  }
+  await updateAutoSync(value)
+}
 // 搜索处理
 const handleSearch = (searchParams) => {
   queryParams.value = searchParams
@@ -350,14 +369,14 @@ const option = reactive({
       default: null,
       filterable: true,
       dicData: socialMediaAccountTypeDict
-    },{
+    }, {
       type: "select",
       label: "平台类型",
       prop: "platformId",
       default: null,
       filterable: true,
       dicData: socialMediaTypeDict
-    },{
+    }, {
       type: "select",
       label: "同步状态",
       prop: "syncWorkStatus",
@@ -445,6 +464,15 @@ const option = reactive({
       sortable: false,
       isShow: true,
       dicData: syncWorkStatusDict
+    }, {
+      type: 'custom',
+      label: '自动同步',
+      prop: 'autoSync',
+      width: 80,
+      fixed: false,
+      sortable: false,
+      isShow: true,
+      dicData: autoSyncDict
     },
     {
       type: 'text',

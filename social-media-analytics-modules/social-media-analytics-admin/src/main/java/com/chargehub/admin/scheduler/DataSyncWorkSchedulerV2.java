@@ -2,21 +2,20 @@ package com.chargehub.admin.scheduler;
 
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.StopWatch;
-import com.chargehub.admin.account.dto.SocialMediaAccountQueryDto;
 import com.chargehub.admin.account.service.SocialMediaAccountService;
-import com.chargehub.admin.account.vo.SocialMediaAccountVo;
 import com.chargehub.admin.datasync.DataSyncManager;
 import com.chargehub.admin.datasync.DataSyncMessageQueue;
-import com.chargehub.admin.datasync.domain.SocialMediaWorkResult;
-import com.chargehub.admin.enums.AutoSyncEnum;
 import com.chargehub.admin.enums.SyncWorkStatusEnum;
+import com.chargehub.admin.playwright.PlaywrightCrawlHelper;
 import com.chargehub.admin.work.domain.SocialMediaWork;
+import com.chargehub.admin.work.dto.SocialMediaWorkQueryDto;
 import com.chargehub.admin.work.service.SocialMediaWorkService;
+import com.chargehub.admin.work.vo.SocialMediaWorkVo;
 import com.chargehub.common.redis.service.RedisService;
-import com.google.common.collect.Sets;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -29,14 +28,16 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
- * @author : zhanghaowei
- * @since : 1.0
+ * @author zhanghaowei
+ * @since 1.0
  */
 @Slf4j
-@Component("dataSyncWorkScheduler")
-public class DataSyncWorkScheduler {
+@Component("dataSyncWorkSchedulerV2")
+public class DataSyncWorkSchedulerV2 {
+
 
     @Autowired
     private SocialMediaAccountService socialMediaAccountService;
@@ -49,6 +50,9 @@ public class DataSyncWorkScheduler {
 
     @Autowired
     private RedisService redisService;
+
+    @Autowired
+    private PlaywrightCrawlHelper playwrightCrawlHelper;
 
 
     private static final ExecutorService FIXED_THREAD_POOL = Executors.newFixedThreadPool(10);
@@ -76,16 +80,12 @@ public class DataSyncWorkScheduler {
                 if (BooleanUtils.isFalse(lock)) {
                     return null;
                 }
-                SocialMediaAccountQueryDto socialMediaAccountQueryDto = new SocialMediaAccountQueryDto();
-                socialMediaAccountQueryDto.setSyncWorkStatus(Sets.newHashSet(SyncWorkStatusEnum.WAIT.ordinal(), SyncWorkStatusEnum.COMPLETE.ordinal(), SyncWorkStatusEnum.ERROR.ordinal()));
-                socialMediaAccountQueryDto.setAutoSync(AutoSyncEnum.ENABLE.getDesc());
-                if (CollectionUtils.isNotEmpty(accountId)) {
-                    socialMediaAccountQueryDto.setId(accountId);
-                }
-                List<SocialMediaAccountVo> page = (List<SocialMediaAccountVo>) socialMediaAccountService.getAll(socialMediaAccountQueryDto);
+                SocialMediaWorkQueryDto queryDto = new SocialMediaWorkQueryDto();
+                queryDto.setAccountId(accountId);
+                List<SocialMediaWorkVo> page = (List<SocialMediaWorkVo>) socialMediaWorkService.getAll(queryDto);
                 List<CompletableFuture<Void>> allFutures = new ArrayList<>();
-                for (SocialMediaAccountVo socialMediaAccountVo : page) {
-                    CompletableFuture<Void> future = CompletableFuture.runAsync(() -> this.fetchWorks(socialMediaAccountVo), DataSyncMessageQueue.FIXED_THREAD_POOL);
+                for (SocialMediaWorkVo vo : page) {
+                    CompletableFuture<Void> future = CompletableFuture.runAsync(() -> this.fetchWorks(vo), DataSyncMessageQueue.FIXED_THREAD_POOL);
                     allFutures.add(future);
                 }
                 // 等待所有任务完成
@@ -106,33 +106,31 @@ public class DataSyncWorkScheduler {
         }
     }
 
-    private void fetchWorks(SocialMediaAccountVo socialMediaAccountVo) {
-        String accountId = socialMediaAccountVo.getId();
+    private void fetchWorks(SocialMediaWorkVo vo) {
+        String accountId = vo.getAccountId();
+        String workUid = vo.getWorkUid();
+        String platformId = vo.getPlatformId();
         try {
             this.socialMediaAccountService.updateSyncWorkStatus(accountId, SyncWorkStatusEnum.SYNCING);
-            boolean moreData = true;
-            String nextCursor = null;
-            while (moreData) {
-                SocialMediaWorkResult<SocialMediaWork> result = this.dataSyncManager.getWorks(socialMediaAccountVo, nextCursor, 20);
-                moreData = result.isHasMore();
-                nextCursor = result.getNextCursor();
-                List<SocialMediaWork> works = result.getWorks();
-                List<String> workUidList = works.stream().map(SocialMediaWork::getWorkUid).collect(Collectors.toList());
-                Map<String, SocialMediaWork> existMap = this.socialMediaWorkService.getByWorkUidList(workUidList);
-                List<SocialMediaWork> updateList = new ArrayList<>();
-                for (SocialMediaWork work : works) {
-                    SocialMediaWork existWork = existMap.get(work.getWorkUid());
-                    if (existWork == null) {
-                        updateList.add(work);
-                    } else {
-                        SocialMediaWork updateWork = existWork.computeMd5(work);
-                        if (updateWork != null) {
-                            updateList.add(updateWork);
-                        }
-                    }
-                }
-                this.socialMediaWorkService.saveOrUpdateBatch(updateList);
+            SocialMediaWork work;
+            String loginState = this.playwrightCrawlHelper.getLoginState(accountId);
+            if (StringUtils.isBlank(loginState)) {
+                work = this.dataSyncManager.getWork(platformId, workUid);
+            } else {
+                work = this.dataSyncManager.getWork(accountId, workUid, platformId);
             }
+            List<String> workUidList = Stream.of(workUid).collect(Collectors.toList());
+            Map<String, SocialMediaWork> existMap = this.socialMediaWorkService.getByWorkUidList(workUidList);
+            List<SocialMediaWork> updateList = new ArrayList<>();
+            SocialMediaWork existWork = existMap.get(workUid);
+            if (existWork == null) {
+                return;
+            }
+            SocialMediaWork updateWork = existWork.computeMd5(work);
+            if (updateWork != null) {
+                updateList.add(updateWork);
+            }
+            this.socialMediaWorkService.saveOrUpdateBatch(updateList);
         } catch (Exception e) {
             log.error("作品同步任务异常", e);
             this.socialMediaAccountService.updateSyncWorkStatus(accountId, SyncWorkStatusEnum.ERROR);
@@ -141,6 +139,5 @@ public class DataSyncWorkScheduler {
         this.socialMediaAccountService.updateSyncWorkStatus(accountId, SyncWorkStatusEnum.COMPLETE);
 
     }
-
 
 }

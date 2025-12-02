@@ -24,3 +24,26 @@ export function exportWorkApi(params) {
     params
   })
 }
+
+export function createByWechatVideoId(data) {
+  return request({
+    url: `${prefix}/wechat-video-id`,
+    method: 'post',
+    data: data
+  })
+}
+
+export function createByWorkShareUrl(data) {
+  return request({
+    url: `${prefix}/share-link`,
+    method: 'post',
+    data: data
+  })
+}
+
+export function delWork(id) {
+  return request({
+    url: `${prefix}/${id}`,
+    method: 'delete'
+  })
+}

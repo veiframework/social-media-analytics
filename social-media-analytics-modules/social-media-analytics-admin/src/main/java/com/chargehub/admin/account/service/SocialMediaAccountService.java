@@ -16,10 +16,14 @@ import com.chargehub.admin.account.vo.SocialMediaAccountStatisticVo;
 import com.chargehub.admin.account.vo.SocialMediaAccountVo;
 import com.chargehub.admin.datasync.DataSyncManager;
 import com.chargehub.admin.datasync.DataSyncMessageQueue;
+import com.chargehub.admin.datasync.domain.DataSyncParamContext;
+import com.chargehub.admin.datasync.domain.SocialMediaDetail;
 import com.chargehub.admin.datasync.domain.SocialMediaUserInfo;
 import com.chargehub.admin.enums.SocialMediaPlatformEnum;
 import com.chargehub.admin.enums.SyncWorkStatusEnum;
 import com.chargehub.admin.work.domain.SocialMediaWork;
+import com.chargehub.admin.work.dto.SocialMediaWorkDto;
+import com.chargehub.admin.work.dto.SocialMediaWorkShareLinkDto;
 import com.chargehub.admin.work.service.SocialMediaWorkService;
 import com.chargehub.common.security.service.ChargeExcelDictHandler;
 import com.chargehub.common.security.template.dto.Z9CrudDto;
@@ -60,6 +64,18 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
 
     public SocialMediaAccountService(SocialMediaAccountMapper baseMapper) {
         super(baseMapper);
+    }
+
+    public SocialMediaAccount getBySecUid(String secUid) {
+        return this.baseMapper.lambdaQuery().eq(SocialMediaAccount::getSecUid, secUid).one();
+    }
+
+
+    public void updateAutoSync(String id, String autoSync) {
+        this.baseMapper.lambdaUpdate()
+                .set(SocialMediaAccount::getAutoSync, autoSync)
+                .eq(SocialMediaAccount::getId, id)
+                .update();
     }
 
     @SuppressWarnings("unchecked")
@@ -182,6 +198,35 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
         socialMediaAccountDto.setType(type);
         this.create(socialMediaAccountDto);
     }
+
+    public void createWorkByShareUrl(SocialMediaWorkShareLinkDto dto) {
+        String shareLink = dto.getShareLink();
+        String userId = dto.getUserId();
+        SocialMediaPlatformEnum platformEnum = dto.getPlatformEnum();
+        SocialMediaDetail socialMediaDetail = platformEnum != null ? dataSyncManager.getSecUidByWorkUrl(platformEnum, shareLink) : dataSyncManager.getSecUidByWorkUrl(shareLink);
+        String secUid = socialMediaDetail.getSecUid();
+        String workUid = socialMediaDetail.getWorkUid();
+        SocialMediaAccount socialMediaAccount = this.getBySecUid(secUid);
+        Assert.notNull(socialMediaAccount, "请先添加账号");
+        String platformId = socialMediaAccount.getPlatformId();
+        SocialMediaWork socialMediaWork;
+        if (StringUtils.isBlank(socialMediaAccount.getStorageState())) {
+            socialMediaWork = dataSyncManager.getWork(platformId, workUid);
+        } else {
+            DataSyncParamContext dataSyncParamContext = new DataSyncParamContext();
+            dataSyncParamContext.setStorageState(socialMediaAccount.getStorageState());
+            dataSyncParamContext.setWorkUid(workUid);
+            socialMediaWork = dataSyncManager.getWork(dataSyncParamContext, platformId);
+        }
+        Assert.notNull(socialMediaWork, "获取作品失败,请联系管理员");
+        socialMediaWork.setUserId(userId);
+        socialMediaWork.setAccountId(socialMediaAccount.getId());
+        socialMediaWork.setTenantId(socialMediaAccount.getTenantId());
+        socialMediaWork.setAccountType(socialMediaAccount.getType());
+        SocialMediaWorkDto socialMediaWorkDto = BeanUtil.copyProperties(socialMediaWork, SocialMediaWorkDto.class);
+        socialMediaWorkService.create(socialMediaWorkDto);
+    }
+
 
     @Override
     public IExcelDictHandler getDictHandler() {

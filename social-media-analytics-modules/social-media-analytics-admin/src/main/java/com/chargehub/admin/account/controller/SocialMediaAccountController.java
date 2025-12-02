@@ -9,6 +9,7 @@ import com.chargehub.admin.account.service.SocialMediaAccountService;
 import com.chargehub.admin.account.vo.SocialMediaAccountVo;
 import com.chargehub.admin.scheduler.DataSyncWorkScheduler;
 import com.chargehub.admin.groupuser.service.GroupUserService;
+import com.chargehub.admin.scheduler.DataSyncWorkSchedulerV2;
 import com.chargehub.common.redis.service.RedisService;
 import com.chargehub.common.security.annotation.Debounce;
 import com.chargehub.common.security.annotation.RequiresLogin;
@@ -38,6 +39,9 @@ public class SocialMediaAccountController extends AbstractZ9Controller<SocialMed
 
     @Autowired
     private DataSyncWorkScheduler dataSyncWorkScheduler;
+
+    @Autowired
+    private DataSyncWorkSchedulerV2 dataSyncWorkSchedulerV2;
 
     @Autowired
     private GroupUserService groupUserService;
@@ -99,7 +103,16 @@ public class SocialMediaAccountController extends AbstractZ9Controller<SocialMed
         Assert.isTrue(set, "同步数据需要时间，请稍等");
         Set<String> userIds = groupUserService.checkPurview();
         Set<String> accountIds = this.getCrudService().getAccountIdsByUserIds(userIds);
-        this.dataSyncWorkScheduler.asyncExecute(accountIds);
+        this.dataSyncWorkSchedulerV2.asyncExecute(accountIds);
     }
+
+    @Debounce
+    @RequiresLogin
+    @GetMapping("/account/{id}/sync/{autoSync}")
+    @ApiOperation("是否启用自动同步")
+    public void updateAutoSync(@PathVariable String id, @PathVariable String autoSync) {
+        this.getCrudService().updateAutoSync(id, autoSync);
+    }
+
 
 }

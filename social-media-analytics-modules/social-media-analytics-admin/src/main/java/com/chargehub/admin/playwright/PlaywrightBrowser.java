@@ -71,7 +71,7 @@ public class PlaywrightBrowser implements AutoCloseable {
                 .setStorageState(storageState)
                 .setExtraHTTPHeaders(MapUtil.of("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8"))
                 .setViewportSize(1980, 1080)
-                .setUserAgent(browserConfig.getRandomUA());
+                .setUserAgent(browserConfig.getRandomUa());
         // 启动选项（可统一配置）
         BrowserContext browserContext = browserType.launch(new BrowserType.LaunchOptions()
 //                .setProxy("socks5://106.15.129.14:8081")

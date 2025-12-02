@@ -21,7 +21,7 @@ public class BrowserConfig {
 
     private Internet.UserAgent userAgent;
 
-    private String randomUA;
+    private String randomUa;
 
     public BrowserConfig(Internet.UserAgent userAgent) {
         this.userAgent = userAgent;
@@ -36,7 +36,7 @@ public class BrowserConfig {
         } else {
             this.browserType = playwright.firefox();
         }
-        this.randomUA = FAKER.internet().userAgent(this.getUserAgent());
+        this.randomUa = FAKER.internet().userAgent(this.getUserAgent());
     }
 
 
