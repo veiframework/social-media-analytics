@@ -48,6 +48,8 @@ public class PlaywrightBrowser implements AutoCloseable {
 
     private BrowserContext browserContext;
 
+    public static volatile boolean headless;
+
     public PlaywrightBrowser(String username, String password, String storageState) {
         this.username = username;
         this.password = password;
@@ -56,6 +58,10 @@ public class PlaywrightBrowser implements AutoCloseable {
 
     public PlaywrightBrowser(String storageState) {
         this.storageState = storageState;
+    }
+
+    public static void setHeadless(boolean headless) {
+        PlaywrightBrowser.headless = headless;
     }
 
     public void init() {
@@ -75,7 +81,7 @@ public class PlaywrightBrowser implements AutoCloseable {
         // 启动选项（可统一配置）
         BrowserContext browserContext = browserType.launch(new BrowserType.LaunchOptions()
 //                .setProxy("socks5://106.15.129.14:8081")
-                .setHeadless(false)
+                .setHeadless(headless)
                 .setArgs(Arrays.asList(
                         "--no-sandbox"
                         , "-private"

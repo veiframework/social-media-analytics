@@ -38,6 +38,8 @@ public class HubProperties {
 
     private long recentDays;
 
+    public boolean headless = false;
+
     @Data
     public static class SocialMediaDataApi {
 

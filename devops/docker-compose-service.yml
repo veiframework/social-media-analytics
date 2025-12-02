@@ -1,4 +1,4 @@
-version: '3'
+version: '3.7'
 ##使用指定网络
 networks:
   deploy_mynet:
@@ -67,6 +67,10 @@ services:
         max_attempts: 3
 
   admin:
+    # 解决僵尸进程问题
+    init: true
+    # 共享宿主机内存
+    ipc: host
     build:
       context: ../
       dockerfile: devops/Dockerfile
@@ -78,23 +82,26 @@ services:
       - deploy_mynet
     environment:
       JAVA_OPTS: -server -Xmx200M -Xms200M -XX:+UseG1GC -XX:MaxGCPauseMillis=20 -XX:InitiatingHeapOccupancyPercent=35 -XX:+DisableExplicitGC -Djava.net.preferIPv4Stack=true -Djava.security.egd=file:/dev/./urandom
-    ports:
-      - 9201:9201
+#    ports:
+#      - 9201:9201
     volumes:
       - ${DEPLOY_PATH}/logs/${COMPOSE_PROJECT_NAME}-admin:/${COMPOSE_PROJECT_NAME}-admin/logs/admin
       - /opt/resources:/opt/resources
+      - /opt/ms-playwright:/ms-playwright
 #    healthcheck:
 #      test: curl -f http://localhost:9201/admin-api/health/1992774542232305665 || exit 1
 #      interval: 30s
 #      timeout: 10s
 #      retries: 3
+    stop_grace_period: 30s
     deploy:
       replicas: 1
       update_config:
+        order: start-first
         parallelism: 1       # 每次更新一个容器
-        delay: 10s           # 每次更新间隔时间
+        delay: 35s           # 每次更新间隔时间
         failure_action: rollback  # 更新失败时回滚
-        monitor: 5s          # 监控更新状态的时间窗口
+        monitor: 60s          # 监控更新状态的时间窗口
         max_failure_ratio: 0.3
       restart_policy:
         condition: on-failure

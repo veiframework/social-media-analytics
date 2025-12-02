@@ -2,7 +2,9 @@ package com.chargehub.admin.playwright;
 
 import com.chargehub.admin.account.domain.SocialMediaAccount;
 import com.chargehub.admin.account.mapper.SocialMediaAccountMapper;
+import com.chargehub.common.core.properties.HubProperties;
 import com.chargehub.common.redis.service.RedisService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -10,6 +12,7 @@ import org.springframework.stereotype.Service;
  * @author zhanghaowei
  * @since 1.0
  */
+@Slf4j
 @Service
 public class PlaywrightCrawlHelperImpl implements PlaywrightCrawlHelper {
 
@@ -18,6 +21,15 @@ public class PlaywrightCrawlHelperImpl implements PlaywrightCrawlHelper {
 
     @Autowired
     private RedisService redisService;
+
+    public PlaywrightCrawlHelperImpl(HubProperties hubProperties) {
+        boolean headless = hubProperties.isHeadless();
+        PlaywrightBrowser.setHeadless(headless);
+        //项目启动时初始化playwright组件
+        try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(null)) {
+            playwrightBrowser.init();
+        }
+    }
 
     @Override
     public void saveSmsCode(String accountId, String smsCode) {

@@ -72,6 +72,7 @@ hub:
   job-service: localhost:9201
   standalone: true
   recent-days: 62
+  headless: true
   social-media-data-api:
     tikhub:
       token: 0qUYCOQC0W60m1SaMryO6UT+FTGQa7Rm4h3E62uRe8OH1HulI2KqbGq4Pw==
