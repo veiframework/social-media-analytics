@@ -93,9 +93,13 @@ public class DataSyncWechatVideoServiceImpl implements DataSyncService {
             Assert.isTrue(code == HttpStatus.HTTP_OK, "获取作品信息失败" + jsonNode);
             JsonNode dataNode = jsonNode.at("/data");
             String secUid = dataNode.get("username").asText();
+            String nickname = dataNode.get("nickname").asText();
             SocialMediaDetail socialMediaDetail = new SocialMediaDetail();
             socialMediaDetail.setSecUid(secUid);
             socialMediaDetail.setWorkUid(url);
+            socialMediaDetail.setNickname(nickname);
+            socialMediaDetail.setUid(secUid);
+            socialMediaDetail.setPlatformId(this.platform().getDomain());
             return socialMediaDetail;
         }
     }

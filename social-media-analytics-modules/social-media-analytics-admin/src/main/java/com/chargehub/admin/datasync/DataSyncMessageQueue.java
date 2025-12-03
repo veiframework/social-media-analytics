@@ -50,6 +50,18 @@ public class DataSyncMessageQueue {
         future.join();
     }
 
+    public <T> T syncBiliBiliExecute(Supplier<T> supplier) {
+        CompletableFuture<T> future = CompletableFuture.supplyAsync(() -> {
+            try {
+                return supplier.get();
+            } catch (Exception e) {
+                log.error("执行异步任务失败: ", e);
+                return null;
+            }
+        }, FIXED_BILIBILI_THREAD_POOL);
+        return future.join();
+    }
+
     public void syncDouyinExecute(Runnable runnable) {
         CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
             try {

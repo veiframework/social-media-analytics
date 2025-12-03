@@ -26,12 +26,12 @@
 
               <div class="thumb_num_change" style="color: green">
                 <el-icon>
-                  <arrow-up color="green" />
+                  <arrow-up color="green"/>
                 </el-icon>
                 {{ row.thumbNumChange }}
               </div>
             </template>
-            <template v-else>
+            <template v-if="row.thumbNumChange<0">
               <div class="thumb_num_change" style="color: red">
                 <el-icon>
                   <arrow-down color="red"/>
@@ -52,12 +52,12 @@
 
               <div class="thumb_num_change" style="color: green">
                 <el-icon>
-                  <arrow-up color="green" />
+                  <arrow-up color="green"/>
                 </el-icon>
                 {{ row.playNumChange }}
               </div>
             </template>
-            <template v-else>
+            <template v-if="row.thumbNumChange<0">
               <div class="thumb_num_change" style="color: red">
                 <el-icon>
                   <arrow-down color="red"/>
@@ -113,7 +113,7 @@ import {
   getWorkListApi,
   getWorkApi,
   exportWorkApi, createByWechatVideoId, createByWorkShareUrl,
-    delWork
+  delWork
 } from '@/api/work'
 import {getDicts} from '@/api/system/dict/data'
 import CustomTable from "@/components/CustomTable"
@@ -537,7 +537,7 @@ const option = reactive({
   headerBtn: [
     {key: "export", text: "导出", icon: "Download", isShow: true, type: "primary", disabled: false},
     {key: "syncWork", text: "同步作品", icon: "Refresh", isShow: true, type: "primary", disabled: false},
-    {key: "shareLink", text: "通过主页分享链接添加", icon: "Link", isShow: true, type: "primary", disabled: false},
+    {key: "shareLink", text: "通过作品分享链接添加", icon: "Link", isShow: true, type: "primary", disabled: false},
     {key: "wechatVideo", text: "通过微信视频ID添加", icon: "Link", isShow: true, type: "success", disabled: false}
   ],
   /** 表格顶部右侧 toobar 配置项 */
@@ -713,7 +713,7 @@ const option = reactive({
       icon: 'View',
       label: '详情',
       value: 'detail'
-    },{
+    }, {
       type: 'danger',
       isShow: true,
       icon: 'Delete',
@@ -853,7 +853,7 @@ const optionInfo = reactive({
 
 // 分享链接表单配置项
 const optionShareLink = reactive({
-  dialogTitle: '通过主页分享链接添加账号',
+  dialogTitle: '通过作品分享链接添加账号',
   dialogClass: 'dialog_md',
   labelWidth: '120px',
   formitem: [
@@ -862,10 +862,17 @@ const optionShareLink = reactive({
       label: "分享链接",
       prop: "shareLink",
       placeholder: "请输入分享链接",
+    }, {
+      type: "select",
+      label: "账号类型",
+      prop: "accountType",
+      placeholder: "请选择账号类型",
+      dicData: socialMediaAccountTypeDict
     }
   ],
   rules: {
     shareLink: [{required: true, message: '请输入分享链接', trigger: 'blur'}],
+    accountType: [{required: true, message: '请选择账号类型', trigger: 'blur'}]
   }
 })
 
@@ -880,10 +887,17 @@ const wechatVideoOption = reactive({
       label: "微信视频ID",
       prop: "shareLink",
       placeholder: "请输入微信视频ID",
-    }
+    }, {
+      type: "select",
+      label: "账号类型",
+      prop: "accountType",
+      placeholder: "请选择账号类型",
+      dicData: socialMediaAccountTypeDict
+    },
   ],
   rules: {
     shareLink: [{required: true, message: '请输入微信视频ID', trigger: 'blur'}],
+    accountType: [{required: true, message: '请选择账号类型', trigger: 'blur'}]
   }
 })
 

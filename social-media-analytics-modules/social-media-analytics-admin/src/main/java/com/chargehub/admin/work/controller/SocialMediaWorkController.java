@@ -8,6 +8,7 @@ import com.chargehub.admin.work.dto.SocialMediaWorkQueryDto;
 import com.chargehub.admin.work.dto.SocialMediaWorkShareLinkDto;
 import com.chargehub.admin.work.service.SocialMediaWorkService;
 import com.chargehub.admin.work.vo.SocialMediaWorkVo;
+import com.chargehub.common.security.annotation.Debounce;
 import com.chargehub.common.security.annotation.RequiresLogin;
 import com.chargehub.common.security.annotation.RequiresPermissions;
 import com.chargehub.common.security.annotation.UnifyResult;
@@ -68,6 +69,7 @@ public class SocialMediaWorkController {
         return this.socialMediaWorkService.exportExcel(queryDto);
     }
 
+    @Debounce
     @RequiresLogin
     @ApiOperation("通过分享链接添加作品")
     @Operation(summary = "通过分享链接添加作品")
@@ -78,6 +80,7 @@ public class SocialMediaWorkController {
         this.socialMediaAccountService.createWorkByShareUrl(dto);
     }
 
+    @Debounce
     @RequiresLogin
     @ApiOperation("微信视频号ID添加")
     @Operation(summary = "微信视频号ID添加")
@@ -90,6 +93,7 @@ public class SocialMediaWorkController {
     }
 
 
+    @Debounce
     @RequiresLogin
     @ApiOperation("删除作品")
     @Operation(summary = "删除作品")

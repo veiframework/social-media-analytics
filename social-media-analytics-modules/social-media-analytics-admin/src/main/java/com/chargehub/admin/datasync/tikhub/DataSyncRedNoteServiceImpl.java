@@ -156,9 +156,14 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
             int code = jsonNode.path("code").asInt(500);
             Assert.isTrue(code == HttpStatus.HTTP_OK, "获取作品信息失败" + jsonNode);
             String secUid = jsonNode.at("/data/user/id").asText();
+            String uid = jsonNode.at("/data/user/red_id").asText();
+            String nickname = jsonNode.at("/data/user/nickname").asText();
             SocialMediaDetail socialMediaDetail = new SocialMediaDetail();
             socialMediaDetail.setWorkUid(workUid);
             socialMediaDetail.setSecUid(secUid);
+            socialMediaDetail.setUid(uid);
+            socialMediaDetail.setNickname(nickname);
+            socialMediaDetail.setPlatformId(this.platform().getDomain());
             return socialMediaDetail;
         }
     }

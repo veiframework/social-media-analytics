@@ -47,7 +47,7 @@ public class DataSyncBiliBiliServiceImpl implements DataSyncService {
     private static final String GET_USER_PROFILE = "/api/v1/bilibili/web/fetch_user_profile";
     private static final String GET_USER_WORKS = "/api/v1/bilibili/web/fetch_user_post_videos";
     private static final String GET_WORKS_DETAIL = "/api/v1/bilibili/web/fetch_video_detail";
-    private static final String ONE_VIDEO = "/api/v1/bilibili/web/fetch_video_detail";
+    private static final String ONE_VIDEO = "/api/v1/bilibili/web/fetch_one_video";
 
     @Override
     public SocialMediaPlatformEnum platform() {
@@ -87,11 +87,14 @@ public class DataSyncBiliBiliServiceImpl implements DataSyncService {
         }
         URI uri = URLUtil.toURI(location);
         String query = "?" + uri.getQuery();
+        String path = uri.getPath();
         Map<String, String> paramMap = HttpUtil.decodeParamMap(query, StandardCharsets.UTF_8);
-        String[] split = location.replace(query, "").split("/");
+        String[] split = path.split("/");
         String workUid = split[split.length - 1];
         socialMediaDetail.setSecUid(paramMap.get("up_id"));
+        socialMediaDetail.setUid(paramMap.get("up_id"));
         socialMediaDetail.setWorkUid(workUid);
+        socialMediaDetail.setPlatformId(this.platform().getDomain());
         return socialMediaDetail;
     }
 
@@ -106,28 +109,24 @@ public class DataSyncBiliBiliServiceImpl implements DataSyncService {
             JsonNode jsonNode = JacksonUtil.toObj(body);
             int code = jsonNode.path("code").asInt(500);
             Assert.isTrue(code == HttpStatus.HTTP_OK, "获取作品信息失败" + jsonNode);
-            JsonNode dataNode = jsonNode.at("/data/data/View");
-            JsonNode statNode = dataNode.at("/stat");
+            JsonNode dataNode = jsonNode.at("/data/data");
+            JsonNode statNode = jsonNode.at("/data/data/stat");
             //媒体类型 (2=图片, 4=视频)
             String workType = WorkTypeEnum.NORMAL_VIDEO.getType();
             String mediaType = MediaTypeEnum.VIDEO.getType();
             int shareNum = statNode.get("share").asInt(0);
             int thumbNum = statNode.get("like").asInt(0);
             int collectNum = statNode.get("favorite").asInt(0);
-            int commentNum = statNode.get("comment").asInt(0);
-            int playNum = statNode.get("play").asInt(0);
+            int commentNum = statNode.get("reply").asInt(0);
+            int playNum = statNode.get("view").asInt(0);
             String desc = dataNode.get("title").asText("");
             Date postTime = DateUtil.date(dataNode.get("pubdate").asLong(0) * 1000L);
             String customType = "";
-            Set<String> tags = new HashSet<>();
-            for (JsonNode tagsNode : jsonNode.at("/data/data/Tags")) {
-                tags.add(tagsNode.get("tag_name").asText());
-            }
             Map<String, String> socialMediaCustomType = DictUtils.getDictLabelMap("social_media_custom_type");
             for (Map.Entry<String, String> entry : socialMediaCustomType.entrySet()) {
                 String k = entry.getKey();
                 String v = entry.getValue();
-                if (tags.contains(k)) {
+                if (desc.contains(k)) {
                     customType = v;
                 }
             }

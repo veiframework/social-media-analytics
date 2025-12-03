@@ -21,6 +21,10 @@ public class SocialMediaWorkShareLinkDto implements Serializable {
     @ApiModelProperty("分享链接")
     private String shareLink;
 
+    @NotBlank
+    @ApiModelProperty("账号类型")
+    private String accountType;
+
     private String userId;
 
     private SocialMediaPlatformEnum platformEnum;

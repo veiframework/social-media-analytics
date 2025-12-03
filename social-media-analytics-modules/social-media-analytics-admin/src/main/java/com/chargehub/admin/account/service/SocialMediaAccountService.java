@@ -25,6 +25,7 @@ import com.chargehub.admin.work.domain.SocialMediaWork;
 import com.chargehub.admin.work.dto.SocialMediaWorkDto;
 import com.chargehub.admin.work.dto.SocialMediaWorkShareLinkDto;
 import com.chargehub.admin.work.service.SocialMediaWorkService;
+import com.chargehub.common.redis.service.RedisService;
 import com.chargehub.common.security.service.ChargeExcelDictHandler;
 import com.chargehub.common.security.template.dto.Z9CrudDto;
 import com.chargehub.common.security.template.dto.Z9CrudQueryDto;
@@ -61,9 +62,35 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
     @Autowired
     private DataSyncMessageQueue dataSyncMessageQueue;
 
+    @Autowired
+    private RedisService redisService;
 
     public SocialMediaAccountService(SocialMediaAccountMapper baseMapper) {
         super(baseMapper);
+    }
+
+    public synchronized SocialMediaAccount getAndSave(SocialMediaDetail socialMediaDetail, String userId, String type) {
+        String uid = socialMediaDetail.getUid();
+        String secUid = socialMediaDetail.getSecUid();
+        String nickname = socialMediaDetail.getNickname();
+        String platformId = socialMediaDetail.getPlatformId();
+        return redisService.lock("lock:social-media-account:" + secUid, locked -> {
+            Assert.isTrue(locked, "操作人数过多请稍后再试");
+            SocialMediaAccount socialMediaAccount = this.getBySecUid(secUid);
+            if (socialMediaAccount == null) {
+                socialMediaAccount = new SocialMediaAccount();
+                socialMediaAccount.setPlatformId(platformId);
+                socialMediaAccount.setType(type);
+                socialMediaAccount.setUserId(userId);
+                socialMediaAccount.setNickname(nickname);
+                socialMediaAccount.setSecUid(secUid);
+                socialMediaAccount.setUid(uid);
+                this.baseMapper.insert(socialMediaAccount);
+            } else {
+                Assert.isTrue(userId.equals(socialMediaAccount.getUserId()), "该作品账号归属于其他人,请联系归属人");
+            }
+            return socialMediaAccount;
+        });
     }
 
     public SocialMediaAccount getBySecUid(String secUid) {
@@ -202,16 +229,15 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
     public void createWorkByShareUrl(SocialMediaWorkShareLinkDto dto) {
         String shareLink = dto.getShareLink();
         String userId = dto.getUserId();
+        String accountType = dto.getAccountType();
         SocialMediaPlatformEnum platformEnum = dto.getPlatformEnum();
         SocialMediaDetail socialMediaDetail = platformEnum != null ? dataSyncManager.getSecUidByWorkUrl(platformEnum, shareLink) : dataSyncManager.getSecUidByWorkUrl(shareLink);
-        String secUid = socialMediaDetail.getSecUid();
         String workUid = socialMediaDetail.getWorkUid();
-        SocialMediaAccount socialMediaAccount = this.getBySecUid(secUid);
-        Assert.notNull(socialMediaAccount, "请先添加账号");
+        SocialMediaAccount socialMediaAccount = this.getAndSave(socialMediaDetail, userId, accountType);
         String platformId = socialMediaAccount.getPlatformId();
         SocialMediaWork socialMediaWork;
         if (StringUtils.isBlank(socialMediaAccount.getStorageState())) {
-            socialMediaWork = dataSyncManager.getWork(platformId, workUid);
+            socialMediaWork = dataSyncMessageQueue.syncBiliBiliExecute(() -> dataSyncManager.getWork(platformId, workUid));
         } else {
             DataSyncParamContext dataSyncParamContext = new DataSyncParamContext();
             dataSyncParamContext.setStorageState(socialMediaAccount.getStorageState());

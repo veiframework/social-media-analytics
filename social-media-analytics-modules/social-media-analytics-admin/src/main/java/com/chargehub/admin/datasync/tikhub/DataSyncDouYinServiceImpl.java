@@ -163,9 +163,14 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
             JsonNode jsonNode = JacksonUtil.toObj(body);
             SocialMediaDetail socialMediaDetail = new SocialMediaDetail();
             String secUid = jsonNode.at("/aweme_detail/author/sec_uid").asText();
+            String uid = jsonNode.at("/aweme_detail/author/unique_id").asText();
+            String nickname = jsonNode.at("/aweme_detail/author/nickname").asText();
             String workUid = jsonNode.at("/aweme_detail/aweme_id").asText();
             socialMediaDetail.setSecUid(secUid);
             socialMediaDetail.setWorkUid(workUid);
+            socialMediaDetail.setNickname(nickname);
+            socialMediaDetail.setPlatformId(this.platform().getDomain());
+            socialMediaDetail.setUid(uid);
             return socialMediaDetail;
         }
     }

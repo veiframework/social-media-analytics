@@ -18,4 +18,10 @@ public class SocialMediaDetail {
     private String mediaType;
 
     private String workType;
+
+    private String uid;
+
+    private String nickname;
+
+    private String platformId;
 }
