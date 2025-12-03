@@ -123,7 +123,7 @@ public class DataSyncWorkScheduler {
                 for (SocialMediaWork work : works) {
                     SocialMediaWork existWork = existMap.get(work.getWorkUid());
                     if (existWork == null) {
-                        updateList.add(work);
+//                        updateList.add(work);
                     } else {
                         SocialMediaWork updateWork = existWork.computeMd5(work);
                         if (updateWork != null) {

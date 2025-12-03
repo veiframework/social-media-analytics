@@ -103,7 +103,7 @@ public class SocialMediaAccountController extends AbstractZ9Controller<SocialMed
         Assert.isTrue(set, "同步数据需要时间，请稍等");
         Set<String> userIds = groupUserService.checkPurview();
         Set<String> accountIds = this.getCrudService().getAccountIdsByUserIds(userIds);
-        this.dataSyncWorkSchedulerV2.asyncExecute(accountIds);
+        this.dataSyncWorkScheduler.asyncExecute(accountIds);
     }
 
     @Debounce
