@@ -8,7 +8,6 @@ import com.chargehub.admin.account.vo.SocialMediaAccountVo;
 import com.chargehub.admin.datasync.DataSyncManager;
 import com.chargehub.admin.datasync.DataSyncMessageQueue;
 import com.chargehub.admin.datasync.domain.SocialMediaWorkResult;
-import com.chargehub.admin.enums.AutoSyncEnum;
 import com.chargehub.admin.enums.SyncWorkStatusEnum;
 import com.chargehub.admin.work.domain.SocialMediaWork;
 import com.chargehub.admin.work.service.SocialMediaWorkService;
@@ -78,7 +77,7 @@ public class DataSyncWorkScheduler {
                 }
                 SocialMediaAccountQueryDto socialMediaAccountQueryDto = new SocialMediaAccountQueryDto();
                 socialMediaAccountQueryDto.setSyncWorkStatus(Sets.newHashSet(SyncWorkStatusEnum.WAIT.ordinal(), SyncWorkStatusEnum.COMPLETE.ordinal(), SyncWorkStatusEnum.ERROR.ordinal()));
-                socialMediaAccountQueryDto.setAutoSync(AutoSyncEnum.ENABLE.getDesc());
+//                socialMediaAccountQueryDto.setAutoSync(AutoSyncEnum.ENABLE.getDesc());
                 if (CollectionUtils.isNotEmpty(accountId)) {
                     socialMediaAccountQueryDto.setId(accountId);
                 }

@@ -20,7 +20,7 @@
         <template v-if="prop == 'thumbNumUp'">
           <div class="thumb_num_box">
             <div>
-              {{ row.thumbNumUp }}
+              {{ Math.abs(row.thumbNumUp) }}
             </div>
             <template v-if="row.thumbNumChange>0">
 
@@ -46,7 +46,7 @@
         <template v-if="prop == 'playNumUp'">
           <div class="thumb_num_box">
             <div>
-              {{ row.playNumUp }}
+              {{ Math.abs(row.playNumUp) }}
             </div>
             <template v-if="row.playNumChange>0">
 
@@ -57,7 +57,7 @@
                 {{ row.playNumChange }}
               </div>
             </template>
-            <template v-if="row.thumbNumChange<0">
+            <template v-if="row.playNumChange<0">
               <div class="thumb_num_change" style="color: red">
                 <el-icon>
                   <arrow-down color="red"/>

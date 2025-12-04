@@ -139,8 +139,11 @@ public class SocialMediaWork implements Serializable, Z9CrudEntity {
         if (!this.getThumbNum().equals(newWork.getThumbNum())) {
             updateWork.setThumbNum(newWork.getThumbNum());
             int upNum = newWork.getThumbNum() - this.getThumbNum();
-            updateWork.setThumbNumUp(upNum);
-            updateWork.setThumbNumChange(upNum - this.getThumbNumUp());
+            if (upNum >= 0) {
+                //有可能因为多线程问题读取到其他线程更改过的数据出现负数所以，出现负数跳过
+                updateWork.setThumbNumUp(upNum);
+                updateWork.setThumbNumChange(upNum - this.getThumbNumUp());
+            }
         }
         if (!this.getShareNum().equals(newWork.getShareNum())) {
             updateWork.setShareNum(newWork.getShareNum());
@@ -157,8 +160,10 @@ public class SocialMediaWork implements Serializable, Z9CrudEntity {
         if (!this.getPlayNum().equals(newWork.getPlayNum())) {
             updateWork.setPlayNum(newWork.getPlayNum());
             int upNum = newWork.getPlayNum() - this.getPlayNum();
-            updateWork.setPlayNumUp(upNum);
-            updateWork.setPlayNumChange(upNum - this.getPlayNumUp());
+            if (upNum >= 0) {
+                updateWork.setPlayNumUp(upNum);
+                updateWork.setPlayNumChange(upNum - this.getPlayNumUp());
+            }
         }
         if (!this.getCustomType().equals(newWork.getCustomType())) {
             updateWork.setCustomType(newWork.getCustomType());
