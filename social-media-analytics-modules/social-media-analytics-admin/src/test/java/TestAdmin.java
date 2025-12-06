@@ -1,5 +1,9 @@
 import com.chargehub.admin.AdminApplication;
 
+import com.chargehub.admin.datasync.DataSyncManager;
+import com.chargehub.admin.datasync.domain.SocialMediaWorkDetail;
+import com.chargehub.admin.enums.SocialMediaPlatformEnum;
+import com.chargehub.admin.work.domain.SocialMediaWork;
 import com.chargehub.biz.region.service.impl.RegionInitService;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -27,6 +31,15 @@ public class TestAdmin {
     @Test
     public void test(){
         regionInitService.addAddList();
+    }
+
+    @Autowired
+    private DataSyncManager dataSyncManager;
+
+    @Test
+    public void tests(){
+        SocialMediaWorkDetail<SocialMediaWork> socialMediaWorkDetail = this.dataSyncManager.getWork("", "https://www.xiaohongshu.com/discovery/item/682fbc340000000012005b99", new SocialMediaPlatformEnum.PlatformExtra(SocialMediaPlatformEnum.RED_NOTE));
+        System.out.println(socialMediaWorkDetail);
     }
 
 }

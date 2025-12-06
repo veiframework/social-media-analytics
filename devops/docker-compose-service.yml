@@ -82,12 +82,13 @@ services:
       - deploy_mynet
     environment:
       JAVA_OPTS: -server -Xmx200M -Xms200M -XX:+UseG1GC -XX:MaxGCPauseMillis=20 -XX:InitiatingHeapOccupancyPercent=35 -XX:+DisableExplicitGC -Djava.net.preferIPv4Stack=true -Djava.security.egd=file:/dev/./urandom
-#    ports:
-#      - 9201:9201
+    ports:
+      - 9201:9201
     volumes:
       - ${DEPLOY_PATH}/logs/${COMPOSE_PROJECT_NAME}-admin:/${COMPOSE_PROJECT_NAME}-admin/logs/admin
       - /opt/resources:/opt/resources
       - /opt/ms-playwright:/ms-playwright
+#      - E:\opt\ms-playwright:/ms-playwright
 #    healthcheck:
 #      test: curl -f http://localhost:9201/admin-api/health/1992774542232305665 || exit 1
 #      interval: 30s

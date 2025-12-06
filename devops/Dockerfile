@@ -40,5 +40,6 @@ RUN sed -i "s/{{APP_NAME}}/${APP_NAME}/g" start.sh
 ## EXPOSE  9201
 
 
+#ENTRYPOINT ["bash", "-c", "Xvfb :99 -screen 0 1920x1080x24 & export DISPLAY=:99 && bash -x start.sh"]
 
 ENTRYPOINT ["bash","-x","start.sh"]

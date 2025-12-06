@@ -49,6 +49,15 @@
         @cancel="wechatVideoVisible = false"
         @save="handleWechatVideoForm"
     />
+
+    <!-- 转移账号 -->
+    <CustomDialog
+        :form="transferAccountForm"
+        :option="transferAccountOption"
+        :visible="transferAccountVisible"
+        @cancel="transferAccountVisible = false"
+        @save="handleTransferAccountForm"
+    />
   </div>
 </template>
 
@@ -65,7 +74,7 @@ import {
   delSocialMediaAccount,
   syncWork,
   createByShareLink, createByWechatVideoNickname,
-  updateAutoSync
+  updateAutoSync, transferAccount
 } from '@/api/social-media-account'
 import CustomTable from "@/components/CustomTable"
 import CustomDialog from "@/components/CustomDialog"
@@ -89,6 +98,8 @@ const visible = ref(false)
 
 const wechatVideoForm = ref({})
 const wechatVideoVisible = ref(false)
+const transferAccountForm = ref({})
+const transferAccountVisible = ref(false)
 
 
 // 分享链接表单数据
@@ -222,6 +233,10 @@ const handleMenu = async (val) => {
     case 'syncWork':
       await handleSyncWork(row.id)
       break
+    case 'transferAccount':
+      transferAccountForm.value.accountId = row.id
+      transferAccountVisible.value = true
+      break
   }
 }
 
@@ -262,6 +277,21 @@ const handleDelete = async (id) => {
       console.error('删除失败:', error)
       ElMessage.error('删除失败')
     }
+  }
+}
+
+const handleTransferAccountForm = async (val) => {
+  let data = {
+    accountId: transferAccountForm.value.accountId,
+    userId: val.userId
+  }
+  let loading = ElLoading.service(loadingOpt)
+  try {
+    await transferAccount(data)
+    await getData();
+    transferAccountVisible.value = false
+  }finally {
+    loading.close()
   }
 }
 
@@ -524,6 +554,13 @@ const option = reactive({
         return row.syncWorkStatus !== '1'
       },
       value: 'syncWork'
+    },
+    {
+      type: 'primary',
+      isShow: true,
+      icon: 'Edit',
+      label: '交接账号',
+      value: 'transferAccount'
     }
   ],
   /** page 分页配置项 */
@@ -642,6 +679,24 @@ const wechatVideoOption = reactive({
   rules: {
     nickname: [{required: true, message: '请输入微信视频号名称', trigger: 'blur'}],
     type: [{required: true, message: '请选择账号类型', trigger: 'blur'}]
+  }
+})
+
+const transferAccountOption = reactive({
+  dialogTitle: '交接账号',
+  dialogClass: 'dialog_md',
+  labelWidth: '140px',
+  formitem: [
+    {
+      type: "select",
+      label: "员工",
+      prop: "userId",
+      dicData: userDict,
+      placeholder: "请选择员工",
+    }
+  ],
+  rules: {
+    userId: [{required: true, message: '请选择员工', trigger: 'blur'}]
   }
 })
 

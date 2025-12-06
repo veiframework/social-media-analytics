@@ -85,3 +85,11 @@ export function updateAutoSync(value) {
         method: 'get',
     })
 }
+
+export function transferAccount(data) {
+    return request({
+        url: `${prefix}/account/transfer`,
+        method: 'post',
+        data: data
+    })
+}

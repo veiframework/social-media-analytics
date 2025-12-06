@@ -39,7 +39,7 @@ public enum SocialMediaPlatformEnum {
         this.secUserId = secUserId;
     }
 
-    public static SocialMediaPlatformEnum getPlatformByWorkUrl(String workUrl) {
+    public static PlatformExtra getPlatformByWorkUrl(String workUrl) {
         String location;
         try (HttpResponse execute = HttpUtil.createGet(workUrl).execute()) {
             location = execute.header("Location");
@@ -49,7 +49,8 @@ public enum SocialMediaPlatformEnum {
         }
         URI uri = URLUtil.toURI(location);
         String host = uri.getHost();
-        return Arrays.stream(values()).filter(i -> host.contains(i.domain)).findFirst().orElseThrow(() -> new IllegalArgumentException("不支持的平台类型"));
+        SocialMediaPlatformEnum socialMediaPlatformEnum = Arrays.stream(values()).filter(i -> host.contains(i.domain)).findFirst().orElseThrow(() -> new IllegalArgumentException("不支持的平台类型"));
+        return new PlatformExtra(location, socialMediaPlatformEnum);
     }
 
     public static SocialMediaPlatformEnum getByDomain(String domain) {
@@ -95,6 +96,20 @@ public enum SocialMediaPlatformEnum {
         }
     }
 
+    @Data
+    public static class PlatformExtra {
+        private String location;
+        private SocialMediaPlatformEnum platformEnum;
+
+        public PlatformExtra(SocialMediaPlatformEnum platformEnum) {
+            this.platformEnum = platformEnum;
+        }
+
+        public PlatformExtra(String location, SocialMediaPlatformEnum platformEnum) {
+            this.location = location;
+            this.platformEnum = platformEnum;
+        }
+    }
 
     public static void main(String[] args) {
         SecUser redNote = SocialMediaPlatformEnum.parseSecUserId("https://xhslink.com/m/4LAAkBKkwiX");

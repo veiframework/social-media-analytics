@@ -85,6 +85,9 @@ public class SocialMediaWork implements Serializable, Z9CrudEntity {
     @ApiModelProperty("发布时间")
     private Date postTime;
 
+    @ApiModelProperty("分享链接")
+    private String shareLink;
+
     private Date createTime;
 
     private Date updateTime;
@@ -124,7 +127,6 @@ public class SocialMediaWork implements Serializable, Z9CrudEntity {
         return String.join("_",
                 this.thumbNum.toString(),
                 this.shareNum.toString(),
-                this.likeNum.toString(),
                 this.collectNum.toString(),
                 this.commentNum.toString(),
                 this.playNum.toString());
@@ -170,6 +172,9 @@ public class SocialMediaWork implements Serializable, Z9CrudEntity {
         }
         if (!this.getWorkUid().equals(newWork.getWorkUid())) {
             updateWork.setWorkUid(newWork.getWorkUid());
+        }
+        if (!this.getUrl().equals(newWork.getUrl())) {
+            updateWork.setUrl(newWork.getUrl());
         }
         updateWork.setStatisticMd5(newWork.getStatisticMd5());
         return updateWork;

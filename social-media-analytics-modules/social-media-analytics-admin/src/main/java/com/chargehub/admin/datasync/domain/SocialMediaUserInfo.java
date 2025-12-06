@@ -16,6 +16,7 @@ public class SocialMediaUserInfo implements Serializable {
 
     private String uid;
 
+    private String secUid;
 
 
 }

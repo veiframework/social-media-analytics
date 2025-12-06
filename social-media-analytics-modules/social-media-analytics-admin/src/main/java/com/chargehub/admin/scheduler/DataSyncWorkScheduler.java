@@ -8,6 +8,7 @@ import com.chargehub.admin.account.vo.SocialMediaAccountVo;
 import com.chargehub.admin.datasync.DataSyncManager;
 import com.chargehub.admin.datasync.DataSyncMessageQueue;
 import com.chargehub.admin.datasync.domain.SocialMediaWorkResult;
+import com.chargehub.admin.enums.SocialMediaPlatformEnum;
 import com.chargehub.admin.enums.SyncWorkStatusEnum;
 import com.chargehub.admin.work.domain.SocialMediaWork;
 import com.chargehub.admin.work.service.SocialMediaWorkService;
@@ -78,6 +79,7 @@ public class DataSyncWorkScheduler {
                 SocialMediaAccountQueryDto socialMediaAccountQueryDto = new SocialMediaAccountQueryDto();
                 socialMediaAccountQueryDto.setSyncWorkStatus(Sets.newHashSet(SyncWorkStatusEnum.WAIT.ordinal(), SyncWorkStatusEnum.COMPLETE.ordinal(), SyncWorkStatusEnum.ERROR.ordinal()));
 //                socialMediaAccountQueryDto.setAutoSync(AutoSyncEnum.ENABLE.getDesc());
+                socialMediaAccountQueryDto.setPlatformId(SocialMediaPlatformEnum.WECHAT_VIDEO.getDomain());
                 if (CollectionUtils.isNotEmpty(accountId)) {
                     socialMediaAccountQueryDto.setId(accountId);
                 }
@@ -122,7 +124,7 @@ public class DataSyncWorkScheduler {
                 for (SocialMediaWork work : works) {
                     SocialMediaWork existWork = existMap.get(work.getWorkUid());
                     if (existWork == null) {
-//                        updateList.add(work);
+                        updateList.add(work);
                     } else {
                         SocialMediaWork updateWork = existWork.computeMd5(work);
                         if (updateWork != null) {

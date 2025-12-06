@@ -26,8 +26,8 @@ public class PlaywrightCrawlHelperImpl implements PlaywrightCrawlHelper {
         boolean headless = hubProperties.isHeadless();
         PlaywrightBrowser.setHeadless(headless);
         //项目启动时初始化playwright组件
-        try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(null)) {
-            playwrightBrowser.init();
+        try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser("")) {
+            //nothing to do
         }
     }
 
@@ -66,5 +66,24 @@ public class PlaywrightCrawlHelperImpl implements PlaywrightCrawlHelper {
             return null;
         }
         return mediaAccount.getStorageState();
+    }
+
+    @Override
+    public String getCrawlerLoginState(String platform) {
+        SocialMediaAccount mediaAccount = this.socialMediaAccountMapper.lambdaQuery().select(SocialMediaAccount::getStorageState).eq(SocialMediaAccount::getPlatformId, platform)
+                .eq(SocialMediaAccount::getCrawler, 1).one();
+        if (mediaAccount == null) {
+            return null;
+        }
+        return mediaAccount.getStorageState();
+    }
+
+    @Override
+    public void updateCrawlerLoginState(String platform, String content) {
+        this.socialMediaAccountMapper.lambdaUpdate()
+                .set(SocialMediaAccount::getStorageState, content)
+                .eq(SocialMediaAccount::getPlatformId, platform)
+                .eq(SocialMediaAccount::getCrawler, 1)
+                .update();
     }
 }

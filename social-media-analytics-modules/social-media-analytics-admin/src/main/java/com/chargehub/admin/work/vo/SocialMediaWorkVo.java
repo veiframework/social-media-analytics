@@ -144,4 +144,8 @@ public class SocialMediaWorkVo implements Serializable, Z9CrudVo {
 
     @ApiModelProperty("来源 manual-手动, sync-同步")
     private String source;
+
+    @Excel(name = "分享链接",width = 15)
+    @ApiModelProperty("分享链接")
+    private String shareLink;
 }

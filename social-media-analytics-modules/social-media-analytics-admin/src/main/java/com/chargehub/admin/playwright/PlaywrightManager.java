@@ -1,9 +1,11 @@
 package com.chargehub.admin.playwright;
 
+import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import com.chargehub.admin.work.domain.SocialMediaWork;
 import com.chargehub.common.security.utils.JacksonUtil;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.microsoft.playwright.ElementHandle;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Response;
 import lombok.extern.slf4j.Slf4j;
@@ -32,7 +34,6 @@ public class PlaywrightManager {
 
     public void loginWebDouYin() {
         try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser("15514557561", "qwe6181513640031", null)) {
-            playwrightBrowser.init();
             Page page = playwrightBrowser.newPage();
             page.navigate("https://www.douyin.com", new Page.NavigateOptions().setTimeout(60_000));
             log.info("进入页面");
@@ -91,13 +92,25 @@ public class PlaywrightManager {
         }
     }
 
-    public String crawlDouYinWorkList(String enterUrl, String loginState, Consumer<String> consumer) {
+    public static void crawlRedNoteLogin() {
+        try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(new PlaywrightCrawlTestHelper().getLoginState(""))) {
+            Page page = playwrightBrowser.newPage();
+            page.navigate("https://www.xiaohongshu.com/", new Page.NavigateOptions().setTimeout(60_000));
+            log.info("进入页面");
+            page.waitForSelector("text='登录后推荐更懂你的笔记'");
+            ElementHandle element = page.querySelector(".qrcode-img");
+            String src = element.getAttribute("src");
+            System.out.println(src);
+            page.waitForSelector("a[title='我']", new Page.WaitForSelectorOptions().setTimeout(60_000));
+            String storageState = page.context().storageState();
+            FileUtil.writeUtf8String(storageState, "E:\\workspace\\social-media-analytics\\social-media-analytics-modules\\social-media-analytics-admin\\src\\main\\resources\\red_note_state.json");
+        }
+    }
+
+    public static String crawlDouYinWorkList(String enterUrl, String loginState, Consumer<String> consumer) {
         try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(loginState)) {
-            playwrightBrowser.init();
             Page page = playwrightBrowser.newPage();
             page.onResponse(res -> {
-                res.headersArray().stream().filter(h -> "set-cookie".equalsIgnoreCase(h.name)).map(i -> i.value)
-                        .findFirst().ifPresent(cookie -> log.debug("收到 Set-Cookie: " + cookie));
                 if (res.url().contains("/aweme/v1/web/aweme/post/")) {
                     consumer.accept(new String(res.body()));
                 }
@@ -123,7 +136,6 @@ public class PlaywrightManager {
     public static SocialMediaWork getWork(String workUrl) {
 
         try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(new PlaywrightCrawlTestHelper().getLoginState(""))) {
-            playwrightBrowser.init();
             Page page = playwrightBrowser.newPage();
             Response response = page.waitForResponse(res -> res.url().contains("/creator/item/mget"), new Page.WaitForResponseOptions().setTimeout(60_000), () -> {
                 page.navigate(workUrl, new Page.NavigateOptions().setTimeout(60_000));
@@ -135,54 +147,17 @@ public class PlaywrightManager {
         }
     }
 
-    public static SocialMediaWork getRedNoteWork(String workUrl) {
-        try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(new PlaywrightCrawlTestHelper().getLoginState(""))) {
-            playwrightBrowser.init();
-            Page page = playwrightBrowser.newPage();
-            page.route("**/*", route -> {
-                if (route.request().url().contains("login")) {
-                    // 阻止重定向
-                    route.abort();
-                } else {
-                    route.resume();
-                }
-            });
-            page.navigate(workUrl, new Page.NavigateOptions().setTimeout(60_000));
-//            if (page.isVisible("text=手机号登录")) {
-//                log.error("需要重新登录");
-//                return null;
-//            }
 
-            String thumbText = page.locator("span[class*='like-wrapper'] span.count").textContent();
-            System.out.println(thumbText);
-            String collectText = page.locator("span[class*='collect-wrapper'] span.count").textContent();
-            System.out.println(collectText);
-            String commentText = page.locator("span[class*='chat-wrapper'] span.count").textContent();
-            System.out.println(commentText);
-            Integer thumbNum = clearWord(thumbText);
-            Integer collectNum = clearWord(collectText);
-            Integer commentNum = clearWord(commentText);
-            return null;
-        }
-    }
 
-    public static Integer clearWord(String text) {
-        if (text.contains("万")) {
-            String replace = text.replace("万", "");
-            return Integer.parseInt(replace) * 10000;
-        }
-        return Integer.parseInt(text);
-    }
 
     public static void main(String[] args) {
         String douyin = "https://www.douyin.com/user/MS4wLjABAAAAhSaD3wD3rsLVCezq2LaPpCXrRDjBb8R8Np4SnAcZQE4";
         String realUrl = "https://www.douyin.com/video/7577294438381237403";
         String shareUrl = "https://v.douyin.com/BnP9rp9WtMw/ 11/28 nqR:/ x@s.eO";
         String xiaohongshu = "http://xhslink.com/o/6vwGmnLDROY";
-        getWork("https://creator.douyin.com/creator-micro/work-management/work-detail/7578754998953051121");
-//        getRedNoteWork(xiaohongshu);
+//        getWork("https://creator.douyin.com/creator-micro/work-management/work-detail/7578754998953051121");
+        //        crawlRedNoteLogin();
     }
-
 
 
 }

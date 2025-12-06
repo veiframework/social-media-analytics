@@ -1,13 +1,12 @@
 package com.chargehub.admin.datasync;
 
 import com.chargehub.admin.account.vo.SocialMediaAccountVo;
-import com.chargehub.admin.datasync.domain.DataSyncParamContext;
-import com.chargehub.admin.datasync.domain.SocialMediaDetail;
-import com.chargehub.admin.datasync.domain.SocialMediaUserInfo;
-import com.chargehub.admin.datasync.domain.SocialMediaWorkResult;
+import com.chargehub.admin.datasync.domain.*;
 import com.chargehub.admin.enums.SocialMediaPlatformEnum;
+import com.chargehub.admin.playwright.PlaywrightBrowser;
 import com.chargehub.admin.playwright.PlaywrightCrawlHelper;
-import com.chargehub.admin.work.domain.SocialMediaWork;
+import com.microsoft.playwright.BrowserContext;
+import com.microsoft.playwright.Playwright;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -49,56 +48,49 @@ public class DataSyncManager {
         return dataSyncService.getWorks(socialMediaAccount, cursor, count);
     }
 
-    public SocialMediaDetail getSecUidByWorkUrl(String url) {
-        SocialMediaPlatformEnum platform = SocialMediaPlatformEnum.getPlatformByWorkUrl(url);
-        DataSyncService dataSyncService = SERVICES.get(platform);
-        Assert.notNull(dataSyncService, "不支持的数据同步平台");
-        return dataSyncService.getSecUidByWorkUrl(url);
-    }
-
-    public SocialMediaDetail getSecUidByWorkUrl(SocialMediaPlatformEnum platform, String url) {
-        DataSyncService dataSyncService = SERVICES.get(platform);
-        Assert.notNull(dataSyncService, "不支持的数据同步平台");
-        return dataSyncService.getSecUidByWorkUrl(url);
-    }
-
-    public SocialMediaWork getWork(String accountId, String workUid, String platformId) {
-        String loginState = playwrightCrawlHelper.getLoginState(accountId);
-        if (StringUtils.isBlank(loginState)) {
-            return null;
-        }
-        SocialMediaPlatformEnum platform = SocialMediaPlatformEnum.getByDomain(platformId);
-        DataSyncService dataSyncService = SERVICES.get(platform);
-        Assert.notNull(dataSyncService, "不支持的数据同步平台");
+    public <T> SocialMediaWorkDetail<T> getWork(String accountId, String shareLink, SocialMediaPlatformEnum.PlatformExtra platformExtra) {
         DataSyncParamContext dataSyncParamContext = new DataSyncParamContext();
-        dataSyncParamContext.setWorkUid(workUid);
-        dataSyncParamContext.setAccountId(accountId);
-        dataSyncParamContext.setStorageState(loginState);
-        SocialMediaWork work = dataSyncService.getWork(dataSyncParamContext);
-        //更新登录状态
-        playwrightCrawlHelper.saveLoginState(accountId, dataSyncParamContext.getStorageState());
-        return work;
-    }
-
-    public SocialMediaWork getWork(DataSyncParamContext dataSyncParamContext, String platformId) {
-        String storageState = dataSyncParamContext.getStorageState();
-        if (StringUtils.isBlank(storageState)) {
-            return null;
+        SocialMediaPlatformEnum platform = platformExtra.getPlatformEnum();
+        String location = platformExtra.getLocation();
+        dataSyncParamContext.setRedirectUrl(location);
+        if (StringUtils.isBlank(accountId)) {
+            String crawlerLoginState = this.playwrightCrawlHelper.getCrawlerLoginState(platform.getDomain());
+            dataSyncParamContext.setStorageState(crawlerLoginState);
+        } else {
+            String loginState = this.playwrightCrawlHelper.getLoginState(accountId);
+            dataSyncParamContext.setStorageState(loginState);
         }
-        SocialMediaPlatformEnum platform = SocialMediaPlatformEnum.getByDomain(platformId);
-        DataSyncService dataSyncService = SERVICES.get(platform);
-        Assert.notNull(dataSyncService, "不支持的数据同步平台");
-        SocialMediaWork work = dataSyncService.getWork(dataSyncParamContext);
-        //更新登录状态
-        playwrightCrawlHelper.saveLoginState(dataSyncParamContext.getAccountId(), storageState);
-        return work;
+        Playwright playwright = Playwright.create();
+        BrowserContext browserContext;
+        if (platform == SocialMediaPlatformEnum.DOU_YIN) {
+            String redirectUrl = dataSyncParamContext.getRedirectUrl();
+            boolean isNote;
+            if (StringUtils.isBlank(redirectUrl)) {
+                isNote = shareLink.contains("note");
+            } else {
+                isNote = redirectUrl.contains("slides");
+            }
+            browserContext = PlaywrightBrowser.buildBrowserContext(isNote ? null : dataSyncParamContext.getStorageState(), playwright);
+        } else {
+            browserContext = PlaywrightBrowser.buildBrowserContext(dataSyncParamContext.getStorageState(), playwright);
+        }
+        try {
+            dataSyncParamContext.setAccountId(accountId);
+            dataSyncParamContext.setShareLink(shareLink);
+            dataSyncParamContext.setBrowserContext(browserContext);
+            return this.getWork(dataSyncParamContext, platform);
+        } finally {
+            browserContext.close();
+            playwright.close();
+        }
     }
 
-    public SocialMediaWork getWork(String platformId, String workUid) {
-        SocialMediaPlatformEnum platform = SocialMediaPlatformEnum.getByDomain(platformId);
+
+    public <T> SocialMediaWorkDetail<T> getWork(DataSyncParamContext dataSyncParamContext, SocialMediaPlatformEnum platform) {
         DataSyncService dataSyncService = SERVICES.get(platform);
         Assert.notNull(dataSyncService, "不支持的数据同步平台");
-        return dataSyncService.getWork(workUid);
+        return dataSyncService.getWork(dataSyncParamContext);
     }
+
 
 }

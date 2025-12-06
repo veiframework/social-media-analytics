@@ -114,6 +114,9 @@ public class SocialMediaWorkDto implements Serializable, Z9CrudDto<SocialMediaWo
     @ApiModelProperty("数据统计的md5")
     private String statisticMd5;
 
+    @ApiModelProperty("分享链接")
+    private String shareLink;
+
     private Date createTime;
 
     private Date updateTime;

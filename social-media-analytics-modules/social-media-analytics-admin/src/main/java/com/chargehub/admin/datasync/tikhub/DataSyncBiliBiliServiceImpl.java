@@ -1,32 +1,33 @@
 package com.chargehub.admin.datasync.tikhub;
 
 import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.util.URLUtil;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpStatus;
 import cn.hutool.http.HttpUtil;
 import com.chargehub.admin.account.vo.SocialMediaAccountVo;
 import com.chargehub.admin.datasync.DataSyncMessageQueue;
 import com.chargehub.admin.datasync.DataSyncService;
-import com.chargehub.admin.datasync.domain.SocialMediaDetail;
+import com.chargehub.admin.datasync.domain.DataSyncParamContext;
 import com.chargehub.admin.datasync.domain.SocialMediaUserInfo;
+import com.chargehub.admin.datasync.domain.SocialMediaWorkDetail;
 import com.chargehub.admin.datasync.domain.SocialMediaWorkResult;
 import com.chargehub.admin.enums.MediaTypeEnum;
 import com.chargehub.admin.enums.SocialMediaPlatformEnum;
 import com.chargehub.admin.enums.WorkTypeEnum;
+import com.chargehub.admin.playwright.PlaywrightBrowser;
 import com.chargehub.admin.work.domain.SocialMediaWork;
 import com.chargehub.common.core.properties.HubProperties;
 import com.chargehub.common.security.utils.DictUtils;
 import com.chargehub.common.security.utils.JacksonUtil;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.microsoft.playwright.BrowserContext;
+import com.microsoft.playwright.Page;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.MapUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -34,6 +35,7 @@ import java.util.stream.Collectors;
  * @author zhanghaowei
  * @since 1.0
  */
+@Slf4j
 @Service
 public class DataSyncBiliBiliServiceImpl implements DataSyncService {
 
@@ -75,81 +77,6 @@ public class DataSyncBiliBiliServiceImpl implements DataSyncService {
         }
     }
 
-    @Override
-    public SocialMediaDetail getSecUidByWorkUrl(String url) {
-        SocialMediaDetail socialMediaDetail = new SocialMediaDetail();
-        String location;
-        try (HttpResponse execute = HttpUtil.createGet(url).execute()) {
-            location = execute.header("Location");
-        }
-        if (StringUtils.isBlank(location)) {
-            return null;
-        }
-        URI uri = URLUtil.toURI(location);
-        String query = "?" + uri.getQuery();
-        String path = uri.getPath();
-        Map<String, String> paramMap = HttpUtil.decodeParamMap(query, StandardCharsets.UTF_8);
-        String[] split = path.split("/");
-        String workUid = split[split.length - 1];
-        socialMediaDetail.setSecUid(paramMap.get("up_id"));
-        socialMediaDetail.setUid(paramMap.get("up_id"));
-        socialMediaDetail.setWorkUid(workUid);
-        socialMediaDetail.setPlatformId(this.platform().getDomain());
-        return socialMediaDetail;
-    }
-
-    @SuppressWarnings("unchecked")
-    @Override
-    public <T> T getWork(String workUid) {
-        HubProperties.SocialMediaDataApi socialMediaDataApi = hubProperties.getSocialMediaDataApi().get("tikhub");
-        String token = socialMediaDataApi.getToken();
-        String host = socialMediaDataApi.getHost();
-        try (HttpResponse execute = HttpUtil.createGet(host + ONE_VIDEO).bearerAuth(token).form("bv_id", workUid).execute()) {
-            String body = execute.body();
-            JsonNode jsonNode = JacksonUtil.toObj(body);
-            int code = jsonNode.path("code").asInt(500);
-            Assert.isTrue(code == HttpStatus.HTTP_OK, "获取作品信息失败" + jsonNode);
-            JsonNode dataNode = jsonNode.at("/data/data");
-            JsonNode statNode = jsonNode.at("/data/data/stat");
-            //媒体类型 (2=图片, 4=视频)
-            String workType = WorkTypeEnum.NORMAL_VIDEO.getType();
-            String mediaType = MediaTypeEnum.VIDEO.getType();
-            int shareNum = statNode.get("share").asInt(0);
-            int thumbNum = statNode.get("like").asInt(0);
-            int collectNum = statNode.get("favorite").asInt(0);
-            int commentNum = statNode.get("reply").asInt(0);
-            int playNum = statNode.get("view").asInt(0);
-            String desc = dataNode.get("title").asText("");
-            Date postTime = DateUtil.date(dataNode.get("pubdate").asLong(0) * 1000L);
-            String customType = "";
-            Map<String, String> socialMediaCustomType = DictUtils.getDictLabelMap("social_media_custom_type");
-            for (Map.Entry<String, String> entry : socialMediaCustomType.entrySet()) {
-                String k = entry.getKey();
-                String v = entry.getValue();
-                if (desc.contains(k)) {
-                    customType = v;
-                }
-            }
-            String shareUrl = "https://www.bilibili.com/video/" + workUid;
-            SocialMediaWork socialMediaWork = new SocialMediaWork();
-            socialMediaWork.setUrl(shareUrl);
-            socialMediaWork.setDescription(desc);
-            socialMediaWork.setWorkUid(workUid);
-            socialMediaWork.setPostTime(postTime);
-            socialMediaWork.setMediaType(mediaType);
-            socialMediaWork.setType(workType);
-            socialMediaWork.setThumbNum(thumbNum);
-            socialMediaWork.setCollectNum(collectNum);
-            socialMediaWork.setShareNum(shareNum);
-            socialMediaWork.setCommentNum(commentNum);
-            socialMediaWork.setLikeNum(thumbNum);
-            socialMediaWork.setPlayNum(playNum);
-            socialMediaWork.setCustomType(customType);
-            socialMediaWork.setPlatformId(this.platform().getDomain());
-            socialMediaWork.setStatisticMd5(socialMediaWork.generateStatisticMd5());
-            return (T) socialMediaWork;
-        }
-    }
 
     @SuppressWarnings("unchecked")
     @Override
@@ -195,6 +122,76 @@ public class DataSyncBiliBiliServiceImpl implements DataSyncService {
         }).collect(Collectors.toList());
         socialMediaWorkResult.setWorks(socialMediaWorks);
         return (SocialMediaWorkResult<T>) socialMediaWorkResult;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> SocialMediaWorkDetail<T> getWork(DataSyncParamContext dataSyncParamContext) {
+        BrowserContext browserContext = dataSyncParamContext.getBrowserContext();
+        String shareLink = dataSyncParamContext.getShareLink();
+        try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(browserContext)) {
+            Page page = playwrightBrowser.getPage();
+            page.navigate(shareLink, new Page.NavigateOptions().setTimeout(60_000));
+            playwrightBrowser.randomMove();
+            String string;
+            try {
+                string = (String) page.evaluate("JSON.stringify(__INITIAL_STATE__.videoData)");
+            } catch (Exception e) {
+                log.warn("b站视频不存在了");
+                return null;
+            }
+            String tagsStr = (String) page.evaluate("JSON.stringify(__INITIAL_STATE__.tags)");
+            JsonNode tagsNode = JacksonUtil.toObj(tagsStr);
+            JsonNode jsonNode = JacksonUtil.toObj(string);
+            String nickname = jsonNode.at("/owner/name").asText();
+            String uid = jsonNode.at("/owner/mid").asText();
+            String workUid = jsonNode.get("bvid").asText();
+            JsonNode statNode = jsonNode.get("stat");
+            //媒体类型 (2=图片, 4=视频)
+            String workType = WorkTypeEnum.NORMAL_VIDEO.getType();
+            String mediaType = MediaTypeEnum.VIDEO.getType();
+            int shareNum = statNode.get("share").asInt(0);
+            int thumbNum = statNode.get("like").asInt(0);
+            int collectNum = statNode.get("favorite").asInt(0);
+            int commentNum = statNode.get("reply").asInt(0);
+            int playNum = statNode.get("view").asInt(0);
+            String desc = jsonNode.get("title").asText("");
+            Date postTime = DateUtil.date(jsonNode.get("pubdate").asLong(0) * 1000L);
+            String customType = "";
+            Map<String, String> socialMediaCustomType = DictUtils.getDictLabelMap("social_media_custom_type");
+            for (Map.Entry<String, String> entry : socialMediaCustomType.entrySet()) {
+                String k = entry.getKey();
+                String v = entry.getValue();
+                for (JsonNode tag : tagsNode) {
+                    if (tag.get("tag_name").asText().equals(k)) {
+                        customType = v;
+                    }
+                }
+            }
+            String shareUrl = "https://www.bilibili.com/video/" + workUid;
+            SocialMediaWork socialMediaWork = new SocialMediaWork();
+            socialMediaWork.setUrl(shareUrl);
+            socialMediaWork.setDescription(desc);
+            socialMediaWork.setWorkUid(workUid);
+            socialMediaWork.setPostTime(postTime);
+            socialMediaWork.setMediaType(mediaType);
+            socialMediaWork.setType(workType);
+            socialMediaWork.setThumbNum(thumbNum);
+            socialMediaWork.setCollectNum(collectNum);
+            socialMediaWork.setShareNum(shareNum);
+            socialMediaWork.setCommentNum(commentNum);
+            socialMediaWork.setLikeNum(0);
+            socialMediaWork.setPlayNum(playNum);
+            socialMediaWork.setCustomType(customType);
+            socialMediaWork.setPlatformId(SocialMediaPlatformEnum.BILI_BILI.getDomain());
+            socialMediaWork.setStatisticMd5(socialMediaWork.generateStatisticMd5());
+            SocialMediaUserInfo userInfo = new SocialMediaUserInfo();
+            userInfo.setNickname(nickname);
+            userInfo.setSecUid(uid);
+            userInfo.setUid(uid);
+            dataSyncParamContext.setStorageState(page.context().storageState());
+            return (SocialMediaWorkDetail<T>) new SocialMediaWorkDetail<>(socialMediaWork, userInfo);
+        }
     }
 
     public void buildWork(SocialMediaAccountVo socialMediaAccount, JsonNode node, Map<String, SocialMediaWork> socialMediaWorkMap) {

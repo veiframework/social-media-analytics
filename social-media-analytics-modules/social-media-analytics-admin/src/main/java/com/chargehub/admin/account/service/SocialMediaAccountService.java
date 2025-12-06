@@ -7,18 +7,14 @@ import cn.hutool.core.date.DateUtil;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.chargehub.admin.account.domain.SocialMediaAccount;
-import com.chargehub.admin.account.dto.SocialMediaAccountDto;
-import com.chargehub.admin.account.dto.SocialMediaAccountQueryDto;
-import com.chargehub.admin.account.dto.SocialMediaAccountShareLinkDto;
-import com.chargehub.admin.account.dto.SocialMediaAccountWechatVideoNicknameDto;
+import com.chargehub.admin.account.dto.*;
 import com.chargehub.admin.account.mapper.SocialMediaAccountMapper;
 import com.chargehub.admin.account.vo.SocialMediaAccountStatisticVo;
 import com.chargehub.admin.account.vo.SocialMediaAccountVo;
 import com.chargehub.admin.datasync.DataSyncManager;
 import com.chargehub.admin.datasync.DataSyncMessageQueue;
-import com.chargehub.admin.datasync.domain.DataSyncParamContext;
-import com.chargehub.admin.datasync.domain.SocialMediaDetail;
 import com.chargehub.admin.datasync.domain.SocialMediaUserInfo;
+import com.chargehub.admin.datasync.domain.SocialMediaWorkDetail;
 import com.chargehub.admin.enums.SocialMediaPlatformEnum;
 import com.chargehub.admin.enums.SyncWorkStatusEnum;
 import com.chargehub.admin.work.domain.SocialMediaWork;
@@ -69,17 +65,16 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
         super(baseMapper);
     }
 
-    public synchronized SocialMediaAccount getAndSave(SocialMediaDetail socialMediaDetail, String userId, String type) {
-        String uid = socialMediaDetail.getUid();
-        String secUid = socialMediaDetail.getSecUid();
-        String nickname = socialMediaDetail.getNickname();
-        String platformId = socialMediaDetail.getPlatformId();
+    public synchronized SocialMediaAccount getAndSave(SocialMediaUserInfo socialMediaUserInfo, String userId, String type, SocialMediaPlatformEnum platformEnum) {
+        String uid = socialMediaUserInfo.getUid();
+        String secUid = socialMediaUserInfo.getSecUid();
+        String nickname = socialMediaUserInfo.getNickname();
         return redisService.lock("lock:social-media-account:" + secUid, locked -> {
             Assert.isTrue(locked, "操作人数过多请稍后再试");
             SocialMediaAccount socialMediaAccount = this.getBySecUid(secUid);
             if (socialMediaAccount == null) {
                 socialMediaAccount = new SocialMediaAccount();
-                socialMediaAccount.setPlatformId(platformId);
+                socialMediaAccount.setPlatformId(platformEnum.getDomain());
                 socialMediaAccount.setType(type);
                 socialMediaAccount.setUserId(userId);
                 socialMediaAccount.setNickname(nickname);
@@ -134,6 +129,7 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
                 .set(SocialMediaAccount::getSyncWorkStatus, syncWorkStatusEnum.ordinal())
                 .set(SocialMediaAccount::getSyncWorkDate, new Date())
                 .eq(SocialMediaAccount::getId, accountId)
+                .ne(SocialMediaAccount::getSyncWorkStatus, syncWorkStatusEnum.ordinal())
                 .update();
     }
 
@@ -230,27 +226,27 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
         String shareLink = dto.getShareLink();
         String userId = dto.getUserId();
         String accountType = dto.getAccountType();
-        SocialMediaPlatformEnum platformEnum = dto.getPlatformEnum();
-        SocialMediaDetail socialMediaDetail = platformEnum != null ? dataSyncManager.getSecUidByWorkUrl(platformEnum, shareLink) : dataSyncManager.getSecUidByWorkUrl(shareLink);
-        String workUid = socialMediaDetail.getWorkUid();
-        SocialMediaAccount socialMediaAccount = this.getAndSave(socialMediaDetail, userId, accountType);
-        String platformId = socialMediaAccount.getPlatformId();
-        SocialMediaWork socialMediaWork;
-        if (StringUtils.isBlank(socialMediaAccount.getStorageState())) {
-            socialMediaWork = dataSyncMessageQueue.syncBiliBiliExecute(() -> dataSyncManager.getWork(platformId, workUid));
-        } else {
-            DataSyncParamContext dataSyncParamContext = new DataSyncParamContext();
-            dataSyncParamContext.setStorageState(socialMediaAccount.getStorageState());
-            dataSyncParamContext.setWorkUid(workUid);
-            socialMediaWork = dataSyncManager.getWork(dataSyncParamContext, platformId);
-        }
-        Assert.notNull(socialMediaWork, "获取作品失败,请联系管理员");
+        SocialMediaPlatformEnum.PlatformExtra platformEnum = dto.getPlatformEnum() == null ? SocialMediaPlatformEnum.getPlatformByWorkUrl(shareLink) : new SocialMediaPlatformEnum.PlatformExtra(dto.getPlatformEnum());
+        SocialMediaWorkDetail<SocialMediaWork> socialMediaWorkDetail = this.dataSyncManager.getWork("", shareLink, platformEnum);
+        Assert.notNull(socialMediaWorkDetail, "获取作品失败,请重试");
+        SocialMediaUserInfo socialMediaUserInfo = socialMediaWorkDetail.getSocialMediaUserInfo();
+        SocialMediaAccount socialMediaAccount = this.getAndSave(socialMediaUserInfo, userId, accountType, platformEnum.getPlatformEnum());
+        SocialMediaWork socialMediaWork = socialMediaWorkDetail.getWork();
         socialMediaWork.setUserId(userId);
         socialMediaWork.setAccountId(socialMediaAccount.getId());
         socialMediaWork.setTenantId(socialMediaAccount.getTenantId());
         socialMediaWork.setAccountType(socialMediaAccount.getType());
+        socialMediaWork.setShareLink(shareLink);
         SocialMediaWorkDto socialMediaWorkDto = BeanUtil.copyProperties(socialMediaWork, SocialMediaWorkDto.class);
         socialMediaWorkService.create(socialMediaWorkDto);
+    }
+
+    public void transferAccount(SocialMediaTransferAccountDto transferAccountDto) {
+        this.baseMapper.lambdaUpdate()
+                .set(SocialMediaAccount::getUserId, transferAccountDto.getUserId())
+                .eq(SocialMediaAccount::getId, transferAccountDto.getAccountId())
+                .update();
+        this.socialMediaWorkService.transferAccount(transferAccountDto);
     }
 
 

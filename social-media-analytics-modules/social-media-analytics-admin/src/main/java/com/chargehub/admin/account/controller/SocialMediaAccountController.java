@@ -1,14 +1,12 @@
 package com.chargehub.admin.account.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.chargehub.admin.account.dto.SocialMediaAccountDto;
-import com.chargehub.admin.account.dto.SocialMediaAccountQueryDto;
-import com.chargehub.admin.account.dto.SocialMediaAccountShareLinkDto;
-import com.chargehub.admin.account.dto.SocialMediaAccountWechatVideoNicknameDto;
+import com.chargehub.admin.account.dto.*;
 import com.chargehub.admin.account.service.SocialMediaAccountService;
 import com.chargehub.admin.account.vo.SocialMediaAccountVo;
-import com.chargehub.admin.scheduler.DataSyncWorkScheduler;
+import com.chargehub.admin.enums.SocialMediaPlatformEnum;
 import com.chargehub.admin.groupuser.service.GroupUserService;
+import com.chargehub.admin.scheduler.DataSyncWorkScheduler;
 import com.chargehub.admin.scheduler.DataSyncWorkSchedulerV2;
 import com.chargehub.common.redis.service.RedisService;
 import com.chargehub.common.security.annotation.Debounce;
@@ -21,12 +19,10 @@ import com.google.common.collect.Sets;
 import io.swagger.annotations.ApiOperation;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.util.Assert;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author : zhanghaowei
@@ -90,20 +86,24 @@ public class SocialMediaAccountController extends AbstractZ9Controller<SocialMed
     @GetMapping("/sync/work/{accountId}")
     @ApiOperation("同步作品")
     public void syncWorkData(@PathVariable("accountId") String accountId) {
-        this.dataSyncWorkScheduler.asyncExecute(Sets.newHashSet(accountId));
+        SocialMediaAccountVo detailById = (SocialMediaAccountVo) this.getCrudService().getDetailById(accountId);
+        if (detailById == null) {
+            return;
+        }
+        if (detailById.getPlatformId().equals(SocialMediaPlatformEnum.WECHAT_VIDEO.getDomain())) {
+            this.dataSyncWorkScheduler.asyncExecute(Sets.newHashSet(accountId));
+        } else {
+            this.dataSyncWorkSchedulerV2.asyncExecute(Sets.newHashSet(accountId));
+        }
     }
 
     @RequiresLogin
     @GetMapping("/sync/work")
     @ApiOperation("同步全部作品")
     public void syncWorkData() {
-        Long userId = SecurityUtils.getUserId();
-        String lockName = "lock:sync-work:user:" + userId;
-        Boolean set = redisService.setNx(lockName, 1, 1L, TimeUnit.MINUTES);
-        Assert.isTrue(set, "同步数据需要时间，请稍等");
         Set<String> userIds = groupUserService.checkPurview();
         Set<String> accountIds = this.getCrudService().getAccountIdsByUserIds(userIds);
-        this.dataSyncWorkScheduler.asyncExecute(accountIds);
+        this.dataSyncWorkSchedulerV2.asyncExecute(accountIds);
     }
 
     @Debounce
@@ -114,5 +114,12 @@ public class SocialMediaAccountController extends AbstractZ9Controller<SocialMed
         this.getCrudService().updateAutoSync(id, autoSync);
     }
 
+    @Debounce
+    @RequiresLogin
+    @PostMapping("/account/transfer")
+    @ApiOperation("是否启用自动同步")
+    public void transferAccount(@RequestBody @Validated SocialMediaTransferAccountDto transferAccountDto) {
+        this.getCrudService().transferAccount(transferAccountDto);
+    }
 
 }

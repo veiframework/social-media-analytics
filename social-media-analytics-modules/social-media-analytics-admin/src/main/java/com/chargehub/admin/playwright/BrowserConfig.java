@@ -1,12 +1,13 @@
 package com.chargehub.admin.playwright;
 
+import cn.hutool.core.util.RandomUtil;
+import com.google.common.collect.Lists;
 import com.microsoft.playwright.BrowserType;
 import com.microsoft.playwright.Playwright;
 import lombok.Data;
-import net.datafaker.Faker;
 import net.datafaker.providers.base.Internet;
 
-import java.util.Locale;
+import java.util.List;
 
 /**
  * @author Zhanghaowei
@@ -15,7 +16,12 @@ import java.util.Locale;
 @Data
 public class BrowserConfig {
 
-    private static final Faker FAKER = new Faker(Locale.SIMPLIFIED_CHINESE);
+
+    private static final List<String> UA = Lists.newArrayList(
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.100 Safari/537.36",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36"
+    );
 
     private BrowserType browserType;
 
@@ -36,7 +42,7 @@ public class BrowserConfig {
         } else {
             this.browserType = playwright.firefox();
         }
-        this.randomUa = FAKER.internet().userAgent(this.getUserAgent());
+        this.randomUa = RandomUtil.randomEle(UA);
     }
 
 

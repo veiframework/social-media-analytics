@@ -48,5 +48,15 @@ public class PlaywrightCrawlTestHelper implements PlaywrightCrawlHelper {
         }
     }
 
+    @Override
+    public String getCrawlerLoginState(String platform) {
+        return "";
+    }
+
+    @Override
+    public void updateCrawlerLoginState(String platform, String content) {
+
+    }
+
 
 }

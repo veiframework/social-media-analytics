@@ -17,4 +17,9 @@ public interface PlaywrightCrawlHelper {
     void saveLoginState(String accountId, String content);
 
     String getLoginState(String accountId);
+
+
+    String getCrawlerLoginState(String platform);
+
+    void updateCrawlerLoginState(String platform, String content);
 }

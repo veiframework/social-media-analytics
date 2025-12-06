@@ -1,5 +1,6 @@
 package com.chargehub.admin.datasync.domain;
 
+import com.microsoft.playwright.BrowserContext;
 import lombok.Data;
 
 /**
@@ -13,6 +14,12 @@ public class DataSyncParamContext {
 
     private String storageState;
 
-    private String workUid;
+    private String shareLink;
 
+    private boolean isScheduler;
+
+    private BrowserContext browserContext;
+
+
+    private String redirectUrl;
 }

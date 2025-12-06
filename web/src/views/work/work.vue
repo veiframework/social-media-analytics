@@ -531,6 +531,13 @@ const option = reactive({
       prop: "description",
       default: null,
       placeholder: "请输入作品描述"
+    },
+    {
+      type: "input",
+      label: "分享链接",
+      prop: "shareLink",
+      default: null,
+      placeholder: "请输入分享链接"
     }
   ],
   /** 表格顶部左侧 button 配置项 */
@@ -538,7 +545,7 @@ const option = reactive({
     {key: "export", text: "导出", icon: "Download", isShow: true, type: "primary", disabled: false},
     {key: "syncWork", text: "同步作品", icon: "Refresh", isShow: true, type: "primary", disabled: false},
     {key: "shareLink", text: "通过作品分享链接添加", icon: "Link", isShow: true, type: "primary", disabled: false},
-    {key: "wechatVideo", text: "通过微信视频ID添加", icon: "Link", isShow: true, type: "success", disabled: false}
+    {key: "wechatVideo", text: "通过微信视频ID添加(不稳定,可以在社交帐号同步账号数据)", icon: "Link", isShow: true, type: "success", disabled: false}
   ],
   /** 表格顶部右侧 toobar 配置项 */
   toolbar: {isShowToolbar: true, isShowSearch: true},
@@ -780,6 +787,12 @@ const optionInfo = reactive({
           type: 'text',
           label: '作品链接',
           prop: 'url',
+          isShow: true,
+          span: 2
+        },{
+          type: 'text',
+          label: '分享链接',
+          prop: 'shareLink',
           isShow: true,
           span: 2
         },

@@ -130,12 +130,15 @@ public class WorkAlarmIntervalScheduler {
         if (count == 1 && startInterval != null) {
             alarmExp = alarmExpression.replaceAll("\\d+", startInterval + "");
         }
+        Integer oldValue = lastRecordValue.getValue();
+        int diffValue = currentFieldValue - oldValue;
         Map<String, Object> evalContextMap = MapUtil.builder(new HashMap<String, Object>()).put(alarmField, currentFieldValue).build();
         evalContextMap.putAll(BeanUtil.beanToMap(socialMediaWorkAlarm));
         evalContextMap.put("alarmExpression", alarmExp);
-        evalContextMap.put("oldValue", lastRecordValue.getValue());
+        evalContextMap.put("oldValue", oldValue);
+        evalContextMap.put("diffValue", diffValue);
         StandardEvaluationContext evaluationContext = createEvaluationContext(evalContextMap);
-        Boolean evalResult = PARSER.parseExpression(StringPool.HASH + alarmField + alarmExp).getValue(evaluationContext, Boolean.class);
+        Boolean evalResult = PARSER.parseExpression(StringPool.HASH + "diffValue" + alarmExp).getValue(evaluationContext, Boolean.class);
         if (BooleanUtils.isTrue(evalResult)) {
             String userId = socialMediaWorkVo.getUserId();
             List<AlarmNotificationConfig> leadershipWebhook = alarmNotificationManager.getLeadershipWebhook(userId);

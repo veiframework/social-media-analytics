@@ -1,5 +1,7 @@
 package com.chargehub.common.core.utils;
 
+import cn.hutool.core.text.CharSequenceUtil;
+
 import java.text.MessageFormat;
 import java.util.Collection;
 import java.util.List;
@@ -17,7 +19,7 @@ public class MessageFormatUtils {
     }
 
     public static String formatMsg(String message, Object... arguments) {
-        return MessageFormat.format(message,arguments);
+        return MessageFormat.format(message, arguments);
     }
 
     public static String formatMsg(String message, Collection<?> arguments) {
@@ -27,6 +29,7 @@ public class MessageFormatUtils {
     public static void main(String[] args) {
         List<Object> collect = Stream.of("可以", "2", 3, "4").collect(Collectors.toList());
         System.out.println(formatMsg("在 {0} 的充电订单已结束充电，请及时关注。订单尾号：{1}，充电时长：{2} 分钟，消费金额：{3} 元。", collect));
+        String format = CharSequenceUtil.format("在 {} 的充电订单已结束充电，请及时关注。订单尾号：{}，充电时长：{} 分钟，消费金额：{} 元。", collect.toArray());
+        System.out.println(format);
     }
-
 }
