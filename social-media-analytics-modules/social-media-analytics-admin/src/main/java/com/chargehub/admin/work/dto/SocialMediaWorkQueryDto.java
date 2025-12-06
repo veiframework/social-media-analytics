@@ -65,6 +65,9 @@ public class SocialMediaWorkQueryDto extends Pagination implements Serializable,
     @CrudQueryField(queryType = Z9QueryTypeEnum.LIKE)
     private String shareLink;
 
+    @CrudQueryField(queryType = Z9QueryTypeEnum.IN)
+    private Set<Integer> syncWorkStatus;
+
     @Override
     public Page<SocialMediaWork> buildPageObj() {
         return page();

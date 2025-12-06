@@ -2,8 +2,6 @@ package com.chargehub.admin.datasync.tikhub;
 
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.map.MapUtil;
-import cn.hutool.core.thread.ThreadUtil;
-import cn.hutool.core.util.RandomUtil;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpStatus;
 import cn.hutool.http.HttpUtil;
@@ -200,7 +198,7 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
                     double x = box.x + box.width / 2;
                     double y = box.y + box.height / 2;
                     page.mouse().move(x, y);
-                    ThreadUtil.safeSleep(RandomUtil.randomInt(300, 1000));
+//                    ThreadUtil.safeSleep(RandomUtil.randomInt(300, 1000));
                     page.mouse().click(x, y);
                 });
                 popupPage.waitForLoadState();

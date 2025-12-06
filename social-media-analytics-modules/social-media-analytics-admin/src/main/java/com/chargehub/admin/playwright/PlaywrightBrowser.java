@@ -1,7 +1,6 @@
 package com.chargehub.admin.playwright;
 
 import cn.hutool.core.map.MapUtil;
-import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.RandomUtil;
 import com.google.common.collect.Lists;
 import com.microsoft.playwright.*;
@@ -160,6 +159,6 @@ public class PlaywrightBrowser implements AutoCloseable {
         // 生成50到(maxY-50)之间的随机浮点数
         double y = RandomUtil.randomDouble(50, maxY - 50);
         page.mouse().move(x, y);
-        ThreadUtil.safeSleep(RandomUtil.randomInt(300, 1000));
+//        ThreadUtil.safeSleep(RandomUtil.randomInt(300, 1000));
     }
 }

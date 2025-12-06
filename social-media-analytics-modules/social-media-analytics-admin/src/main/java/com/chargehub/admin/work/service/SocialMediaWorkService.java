@@ -5,6 +5,7 @@ import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.toolkit.Db;
 import com.chargehub.admin.account.dto.SocialMediaTransferAccountDto;
+import com.chargehub.admin.enums.SyncWorkStatusEnum;
 import com.chargehub.admin.scheduler.DataSyncWorkSchedulerV2;
 import com.chargehub.admin.work.domain.SocialMediaWork;
 import com.chargehub.admin.work.dto.SocialMediaWorkDto;
@@ -89,7 +90,7 @@ public class SocialMediaWorkService extends AbstractZ9CrudServiceImpl<SocialMedi
     public List<SocialMediaWork> getWorkIds(Set<String> accountIds) {
         long recentDays = hubProperties.getRecentDays();
         return this.baseMapper.lambdaQuery()
-                .select(SocialMediaWork::getId, SocialMediaWork::getPlatformId, SocialMediaWork::getMediaType)
+                .select(SocialMediaWork::getId, SocialMediaWork::getPlatformId, SocialMediaWork::getMediaType, SocialMediaWork::getAccountId)
                 .in(accountIds != null, SocialMediaWork::getAccountId, accountIds)
                 .apply("TIMESTAMPDIFF(DAY, post_time, NOW()) <= " + recentDays)
                 .list();
@@ -122,6 +123,33 @@ public class SocialMediaWorkService extends AbstractZ9CrudServiceImpl<SocialMedi
     public IPage<SocialMediaWorkVo> getPurviewPage(SocialMediaWorkQueryDto queryDto) {
         return this.baseMapper.doGetPage(queryDto).convert(i -> BeanUtil.copyProperties(i, voClass()));
     }
+
+    public void updateSyncWorkStatus(String workId, SyncWorkStatusEnum syncWorkStatusEnum) {
+        this.baseMapper.lambdaUpdate()
+                .set(SocialMediaWork::getSyncWorkStatus, syncWorkStatusEnum.ordinal())
+                .set(SocialMediaWork::getSyncWorkDate, new Date())
+                .eq(SocialMediaWork::getId, workId)
+                .ne(SocialMediaWork::getSyncWorkStatus, syncWorkStatusEnum.ordinal())
+                .update();
+
+//        Runnable runnable = () -> this.baseMapper.lambdaUpdate()
+//                .set(SocialMediaWork::getSyncWorkStatus, syncWorkStatusEnum.ordinal())
+//                .set(SocialMediaWork::getSyncWorkDate, new Date())
+//                .eq(SocialMediaWork::getId, workId)
+//                .ne(SocialMediaWork::getSyncWorkStatus, syncWorkStatusEnum.ordinal())
+//                .update();
+//        if (TransactionSynchronizationManager.isActualTransactionActive()) {
+//            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+//                @Override
+//                public void afterCompletion(int status) {
+//                    runnable.run();
+//                }
+//            });
+//            return;
+//        }
+//        runnable.run();
+    }
+
 
     @Override
     public IExcelDictHandler getDictHandler() {

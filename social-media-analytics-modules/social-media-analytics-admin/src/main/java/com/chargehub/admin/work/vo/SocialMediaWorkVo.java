@@ -148,4 +148,10 @@ public class SocialMediaWorkVo implements Serializable, Z9CrudVo {
     @Excel(name = "分享链接",width = 15)
     @ApiModelProperty("分享链接")
     private String shareLink;
+
+    @ApiModelProperty("同步作品状态 0-待同步，1-同步中，2已同步")
+    private Integer syncWorkStatus;
+
+    @ApiModelProperty("同步作品日期")
+    private Date syncWorkDate;
 }

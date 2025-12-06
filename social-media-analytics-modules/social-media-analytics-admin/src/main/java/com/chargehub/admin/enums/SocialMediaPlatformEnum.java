@@ -1,6 +1,7 @@
 package com.chargehub.admin.enums;
 
 import cn.hutool.core.util.URLUtil;
+import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpUtil;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -40,17 +41,14 @@ public enum SocialMediaPlatformEnum {
     }
 
     public static PlatformExtra getPlatformByWorkUrl(String workUrl) {
-        String location;
-        try (HttpResponse execute = HttpUtil.createGet(workUrl).execute()) {
-            location = execute.header("Location");
+        HttpRequest httpRequest = HttpUtil.createGet(workUrl);
+        try (HttpResponse execute = httpRequest.setFollowRedirects(true).execute()) {
+            String location = httpRequest.getUrl();
+            URI uri = URLUtil.toURI(location);
+            String host = uri.getHost();
+            SocialMediaPlatformEnum socialMediaPlatformEnum = Arrays.stream(values()).filter(i -> host.contains(i.domain)).findFirst().orElseThrow(() -> new IllegalArgumentException("不支持的平台类型"));
+            return new PlatformExtra(location, socialMediaPlatformEnum);
         }
-        if (StringUtils.isBlank(location)) {
-            return null;
-        }
-        URI uri = URLUtil.toURI(location);
-        String host = uri.getHost();
-        SocialMediaPlatformEnum socialMediaPlatformEnum = Arrays.stream(values()).filter(i -> host.contains(i.domain)).findFirst().orElseThrow(() -> new IllegalArgumentException("不支持的平台类型"));
-        return new PlatformExtra(location, socialMediaPlatformEnum);
     }
 
     public static SocialMediaPlatformEnum getByDomain(String domain) {

@@ -68,7 +68,7 @@ public class DataSyncManager {
             if (StringUtils.isBlank(redirectUrl)) {
                 isNote = shareLink.contains("note");
             } else {
-                isNote = redirectUrl.contains("slides");
+                isNote = redirectUrl.contains("note");
             }
             browserContext = PlaywrightBrowser.buildBrowserContext(isNote ? null : dataSyncParamContext.getStorageState(), playwright);
         } else {

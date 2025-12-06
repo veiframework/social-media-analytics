@@ -2,7 +2,6 @@ package com.chargehub.admin.scheduler;
 
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.StopWatch;
-import com.chargehub.admin.account.service.SocialMediaAccountService;
 import com.chargehub.admin.datasync.DataSyncManager;
 import com.chargehub.admin.datasync.DataSyncMessageQueue;
 import com.chargehub.admin.datasync.domain.DataSyncParamContext;
@@ -23,14 +22,10 @@ import org.apache.commons.lang3.BooleanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -43,8 +38,6 @@ public class DataSyncWorkSchedulerV2 {
 
     public static final String LOCK_WORK_KEY = "lock:work:sync:";
 
-    @Autowired
-    private SocialMediaAccountService socialMediaAccountService;
 
     @Autowired
     private SocialMediaWorkService socialMediaWorkService;
@@ -98,12 +91,7 @@ public class DataSyncWorkSchedulerV2 {
             if (allFutures.isEmpty()) {
                 return;
             }
-            try {
-                CompletableFuture.allOf(allFutures.toArray(new CompletableFuture[0])).get(1, TimeUnit.HOURS);
-            } catch (Exception e) {
-                Thread.currentThread().interrupt();
-                log.error("作品同步任务v2异常", e);
-            }
+            CompletableFuture.allOf(allFutures.toArray(new CompletableFuture[0])).join();
         } finally {
             stopWatch.stop();
             log.info("作品同步任务v2结束 {}秒", stopWatch.getTotalTimeSeconds());
@@ -171,7 +159,7 @@ public class DataSyncWorkSchedulerV2 {
                 shareLink = vo.getWorkUid();
             }
             try {
-                this.socialMediaAccountService.updateSyncWorkStatus(accountId, SyncWorkStatusEnum.SYNCING);
+                this.socialMediaWorkService.updateSyncWorkStatus(workId, SyncWorkStatusEnum.SYNCING);
                 DataSyncParamContext dataSyncParamContext = new DataSyncParamContext();
                 dataSyncParamContext.setShareLink(shareLink);
                 dataSyncParamContext.setBrowserContext(browserContext);
@@ -179,6 +167,7 @@ public class DataSyncWorkSchedulerV2 {
                 dataSyncParamContext.setScheduler(true);
                 SocialMediaWorkDetail<SocialMediaWork> socialMediaWorkDetail = this.dataSyncManager.getWork(dataSyncParamContext, platformEnum);
                 if (socialMediaWorkDetail == null) {
+                    this.socialMediaWorkService.updateSyncWorkStatus(workId, SyncWorkStatusEnum.COMPLETE);
                     return crawlerLoginState;
                 }
                 SocialMediaWork socialMediaWork = socialMediaWorkDetail.getWork();
@@ -187,13 +176,16 @@ public class DataSyncWorkSchedulerV2 {
                 socialMediaWork.setAccountType(vo.getType());
                 SocialMediaWork updateWork = vo.computeMd5(socialMediaWork);
                 if (updateWork != null) {
+                    updateWork.setSyncWorkDate(new Date());
+                    updateWork.setSyncWorkStatus(SyncWorkStatusEnum.COMPLETE.ordinal());
                     this.socialMediaWorkService.updateOne(updateWork);
+                } else {
+                    this.socialMediaWorkService.updateSyncWorkStatus(workId, SyncWorkStatusEnum.COMPLETE);
                 }
-                this.socialMediaAccountService.updateSyncWorkStatus(accountId, SyncWorkStatusEnum.COMPLETE);
                 return dataSyncParamContext.getStorageState();
             } catch (Exception e) {
-                log.error("作品同步任务异常", e);
-                this.socialMediaAccountService.updateSyncWorkStatus(accountId, SyncWorkStatusEnum.ERROR);
+                log.error(workId + ":作品同步任务异常", e);
+                this.socialMediaWorkService.updateSyncWorkStatus(workId, SyncWorkStatusEnum.ERROR);
                 return crawlerLoginState;
             }
         });

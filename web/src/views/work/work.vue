@@ -145,6 +145,7 @@ const mediaTypeDict = ref([])
 const platformDict = ref([])
 const statusDict = ref([])
 const userDict = ref([])
+const syncWorkStatusDict = ref([])
 
 const socialMediaAccountTypeDict = ref([])
 const socialMediaCustomTypeDict = ref([])
@@ -198,13 +199,14 @@ const handleWechatVideoForm = async (val) => {
 // 获取字典数据
 const getDict = async () => {
   try {
-    const [typeRes, mediaTypeRes, platformRes, statusRes, socialMediaAccountTypeRes, socialMediaCustomTypeRes] = await Promise.all([
+    const [typeRes, mediaTypeRes, platformRes, statusRes, socialMediaAccountTypeRes, socialMediaCustomTypeRes, syncDictRes] = await Promise.all([
       getDicts('work_type'),
       getDicts('media_type'),
       getDicts('social_media_platform'),
       getDicts('work_status'),
       getDicts("social_media_account_type"),
-      getDicts("social_media_custom_type")
+      getDicts("social_media_custom_type"),
+      getDicts('sync_work_status')
     ])
 
     typeDict.value = typeRes.data.map(i => ({label: i.dictLabel, value: i.dictValue, elTagType: i.listClass})) || []
@@ -229,6 +231,11 @@ const getDict = async () => {
       value: i.dictValue,
       elTagType: i.listClass
     }))
+    syncWorkStatusDict.value = syncDictRes.data.map(i => ({
+      label: i.dictLabel,
+      value: i.dictValue,
+      elTagType: i.listClass
+    })) || []
   } catch (error) {
     console.error('获取字典数据失败:', error)
     // 如果字典获取失败，使用默认值
@@ -538,14 +545,28 @@ const option = reactive({
       prop: "shareLink",
       default: null,
       placeholder: "请输入分享链接"
-    }
+    },{
+      type: "select",
+      label: "同步状态",
+      prop: "syncWorkStatus",
+      default: null,
+      filterable: true,
+      dicData: syncWorkStatusDict
+    },
   ],
   /** 表格顶部左侧 button 配置项 */
   headerBtn: [
     {key: "export", text: "导出", icon: "Download", isShow: true, type: "primary", disabled: false},
     {key: "syncWork", text: "同步作品", icon: "Refresh", isShow: true, type: "primary", disabled: false},
     {key: "shareLink", text: "通过作品分享链接添加", icon: "Link", isShow: true, type: "primary", disabled: false},
-    {key: "wechatVideo", text: "通过微信视频ID添加(不稳定,可以在社交帐号同步账号数据)", icon: "Link", isShow: true, type: "success", disabled: false}
+    {
+      key: "wechatVideo",
+      text: "通过微信视频ID添加(不稳定,可以在社交帐号同步账号数据)",
+      icon: "Link",
+      isShow: true,
+      type: "success",
+      disabled: false
+    }
   ],
   /** 表格顶部右侧 toobar 配置项 */
   toolbar: {isShowToolbar: true, isShowSearch: true},
@@ -706,6 +727,16 @@ const option = reactive({
       isShow: true,
       dicData: typeDict
     },
+    {
+      type: 'tag',
+      label: '作品同步状态',
+      prop: 'syncWorkStatus',
+      width: 120,
+      fixed: false,
+      sortable: false,
+      isShow: true,
+      dicData: syncWorkStatusDict
+    }
   ],
   /** 操作菜单配置项 */
   menu: {
@@ -789,7 +820,7 @@ const optionInfo = reactive({
           prop: 'url',
           isShow: true,
           span: 2
-        },{
+        }, {
           type: 'text',
           label: '分享链接',
           prop: 'shareLink',

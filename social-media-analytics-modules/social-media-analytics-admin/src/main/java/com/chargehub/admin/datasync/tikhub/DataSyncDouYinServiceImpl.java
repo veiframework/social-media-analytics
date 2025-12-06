@@ -1,8 +1,6 @@
 package com.chargehub.admin.datasync.tikhub;
 
 import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.thread.ThreadUtil;
-import cn.hutool.core.util.RandomUtil;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpStatus;
 import cn.hutool.http.HttpUtil;
@@ -168,7 +166,7 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
             if (StringUtils.isBlank(redirectUrl)) {
                 isNote = shareLink.contains("note");
             } else {
-                isNote = redirectUrl.contains("slides");
+                isNote = redirectUrl.contains("note");
             }
             page.route(url -> url.contains(".jpeg") || url.contains(".webp"), Route::abort);
             if (isNote) {
@@ -241,6 +239,9 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
                     socialMediaWork.setPlayNum(playNum);
                 }
             });
+            if (socialMediaWork.getPlayNum() == null) {
+                return null;
+            }
             socialMediaWork.setStatisticMd5(socialMediaWork.generateStatisticMd5());
             SocialMediaUserInfo socialMediaUserInfo = new SocialMediaUserInfo();
             socialMediaUserInfo.setNickname(nickname);
@@ -334,10 +335,6 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
         JsonNode arrayNode = JacksonUtil.toObj(array);
         JsonNode readNode = arrayNode.get(arrayNode.size() - 1);
         String workUid = readNode.get("awemeId").asText();
-        boolean isSpider = readNode.get("isSpider").asBoolean();
-        if (isSpider) {
-            log.warn("抖音检测到我方爬虫!");
-        }
         JsonNode detailNode = readNode.at("/aweme/detail");
         JsonNode authorInfo = detailNode.get("authorInfo");
         String nickname = authorInfo.get("nickname").asText();
@@ -350,7 +347,7 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
                 double x = box.x + box.width / 2;
                 double y = box.y + box.height / 2;
                 page.mouse().move(x, y);
-                ThreadUtil.safeSleep(RandomUtil.randomInt(300, 1000));
+//                ThreadUtil.safeSleep(RandomUtil.randomInt(300, 1000));
                 page.mouse().click(x, y);
             });
             popupPage.waitForSelector("input[placeholder='请输入手机号']");
@@ -409,6 +406,9 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
                 socialMediaWork.setPlayNum(playNum);
             }
         });
+        if (socialMediaWork.getPlayNum() == null) {
+            return null;
+        }
         socialMediaWork.setStatisticMd5(socialMediaWork.generateStatisticMd5());
         SocialMediaUserInfo socialMediaUserInfo = new SocialMediaUserInfo();
         socialMediaUserInfo.setNickname(nickname);

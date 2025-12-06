@@ -113,6 +113,12 @@ public class SocialMediaWork implements Serializable, Z9CrudEntity {
     @ApiModelProperty("播放增长量")
     private Integer playNumUp;
 
+    @ApiModelProperty("同步作品状态 0-待同步，1-同步中，2已同步")
+    private Integer syncWorkStatus;
+
+    @ApiModelProperty("同步作品日期")
+    private Date syncWorkDate;
+
     @Override
     public String getUniqueId() {
         return this.id;

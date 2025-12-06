@@ -1,5 +1,6 @@
 package com.chargehub.admin.datasync;
 
+import cn.hutool.core.thread.ThreadUtil;
 import com.chargehub.admin.datasync.domain.SocialMediaUserInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -24,7 +25,7 @@ public class DataSyncMessageQueue {
 
     private static final ExecutorService FIXED_BILIBILI_THREAD_POOL = Executors.newFixedThreadPool(10);
 
-    private static final ExecutorService FIXED_DOUYIN_DETAIL_THREAD_POOL = Executors.newFixedThreadPool(10);
+    private static final ExecutorService FIXED_DOUYIN_DETAIL_THREAD_POOL = Executors.newFixedThreadPool(5);
 
 
     public SocialMediaUserInfo syncExecute(Supplier<SocialMediaUserInfo> runnable) {
@@ -65,6 +66,7 @@ public class DataSyncMessageQueue {
     public void syncDouyinExecute(Runnable runnable) {
         CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
             try {
+                ThreadUtil.safeSleep(200);
                 runnable.run();
             } catch (Exception e) {
                 log.error("执行异步任务失败: ", e);

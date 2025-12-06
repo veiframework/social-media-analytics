@@ -7,9 +7,9 @@ package com.chargehub.common.core.constant;
  */
 public class CacheConstants {
     /**
-     * 缓存有效期，默认180（分钟）
+     * 缓存有效期，默认720（分钟）
      */
-    public final static long EXPIRATION = 180;
+    public final static long EXPIRATION = 720;
 
     /**
      * 缓存有效期
