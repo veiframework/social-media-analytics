@@ -1,6 +1,7 @@
 package com.chargehub.admin.datasync.tikhub;
 
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.io.FileUtil;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpStatus;
 import cn.hutool.http.HttpUtil;
@@ -334,6 +335,10 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
         String array = split[1];
         JsonNode arrayNode = JacksonUtil.toObj(array);
         JsonNode readNode = arrayNode.get(arrayNode.size() - 1);
+        if (!readNode.has("awemeId")) {
+            log.warn("抖音笔记异常!" + read);
+            return null;
+        }
         String workUid = readNode.get("awemeId").asText();
         JsonNode detailNode = readNode.at("/aweme/detail");
         JsonNode authorInfo = detailNode.get("authorInfo");
@@ -416,5 +421,17 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
         socialMediaUserInfo.setSecUid(secUid);
         return (SocialMediaWorkDetail<T>) new SocialMediaWorkDetail<>(socialMediaWork, socialMediaUserInfo);
     }
+
+    public static void main(String[] args) {
+        String read = FileUtil.readUtf8String("E:\\workspace\\social-media-analytics\\social-media-analytics-modules\\social-media-analytics-admin\\src\\main\\resources\\dddd.json");
+        String[] split = read.split(":", 2);
+        String array = split[1];
+        JsonNode arrayNode = JacksonUtil.toObj(array);
+        JsonNode readNode = arrayNode.get(arrayNode.size() - 1);
+        if (readNode.has("awemeId")) {
+            String workUid = readNode.get("awemeId").asText();
+        }
+    }
+
 
 }

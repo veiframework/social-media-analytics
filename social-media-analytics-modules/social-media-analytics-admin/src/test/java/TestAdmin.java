@@ -38,7 +38,7 @@ public class TestAdmin {
 
     @Test
     public void tests(){
-        SocialMediaWorkDetail<SocialMediaWork> socialMediaWorkDetail = this.dataSyncManager.getWork("", "https://www.xiaohongshu.com/discovery/item/682fbc340000000012005b99", new SocialMediaPlatformEnum.PlatformExtra(SocialMediaPlatformEnum.RED_NOTE));
+        SocialMediaWorkDetail<SocialMediaWork> socialMediaWorkDetail = this.dataSyncManager.getWork("", "https://www.douyin.com/note/7567620465126195045", new SocialMediaPlatformEnum.PlatformExtra(SocialMediaPlatformEnum.DOU_YIN));
         System.out.println(socialMediaWorkDetail);
     }
 

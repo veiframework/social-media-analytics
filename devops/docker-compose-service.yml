@@ -81,7 +81,7 @@ services:
     networks:
       - deploy_mynet
     environment:
-      JAVA_OPTS: -server -Xmx200M -Xms200M -XX:+UseG1GC -XX:MaxGCPauseMillis=20 -XX:InitiatingHeapOccupancyPercent=35 -XX:+DisableExplicitGC -Djava.net.preferIPv4Stack=true -Djava.security.egd=file:/dev/./urandom
+      JAVA_OPTS: -server -Xmx500M -Xms500M -XX:+UseG1GC -XX:MaxGCPauseMillis=20 -XX:InitiatingHeapOccupancyPercent=35 -XX:+DisableExplicitGC -Djava.net.preferIPv4Stack=true -Djava.security.egd=file:/dev/./urandom
     ports:
       - 9201:9201
     volumes:

@@ -151,6 +151,11 @@ public class DataSyncWorkSchedulerV2 {
             if (vo == null) {
                 return crawlerLoginState;
             }
+            long betweenMs = DateUtil.betweenMs(vo.getSyncWorkDate(), new Date());
+            if (betweenMs <= 1000 * 60 * 30) {
+                log.debug("发现作品同步任务最近执行过 {}-{}", workId, betweenMs);
+                return crawlerLoginState;
+            }
             String accountId = vo.getAccountId();
             String platformId = vo.getPlatformId();
             SocialMediaPlatformEnum platformEnum = SocialMediaPlatformEnum.getByDomain(platformId);
