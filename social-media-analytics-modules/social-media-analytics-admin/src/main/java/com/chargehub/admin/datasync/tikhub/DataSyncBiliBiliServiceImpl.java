@@ -7,10 +7,7 @@ import cn.hutool.http.HttpUtil;
 import com.chargehub.admin.account.vo.SocialMediaAccountVo;
 import com.chargehub.admin.datasync.DataSyncMessageQueue;
 import com.chargehub.admin.datasync.DataSyncService;
-import com.chargehub.admin.datasync.domain.DataSyncParamContext;
-import com.chargehub.admin.datasync.domain.SocialMediaUserInfo;
-import com.chargehub.admin.datasync.domain.SocialMediaWorkDetail;
-import com.chargehub.admin.datasync.domain.SocialMediaWorkResult;
+import com.chargehub.admin.datasync.domain.*;
 import com.chargehub.admin.enums.MediaTypeEnum;
 import com.chargehub.admin.enums.SocialMediaPlatformEnum;
 import com.chargehub.admin.enums.WorkTypeEnum;
@@ -121,6 +118,15 @@ public class DataSyncBiliBiliServiceImpl implements DataSyncService {
             return i;
         }).collect(Collectors.toList());
         socialMediaWorkResult.setWorks(socialMediaWorks);
+        return (SocialMediaWorkResult<T>) socialMediaWorkResult;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> SocialMediaWorkResult<T> getWorks(DataSyncWorksParams params) {
+        SocialMediaWorkResult<SocialMediaWork> socialMediaWorkResult = new SocialMediaWorkResult<>();
+        socialMediaWorkResult.setWorks(new ArrayList<>());
+        //TODO 等待实现
         return (SocialMediaWorkResult<T>) socialMediaWorkResult;
     }
 

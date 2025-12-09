@@ -545,14 +545,15 @@ const option = reactive({
       prop: "shareLink",
       default: null,
       placeholder: "请输入分享链接"
-    },{
-      type: "select",
-      label: "同步状态",
-      prop: "syncWorkStatus",
-      default: null,
-      filterable: true,
-      dicData: syncWorkStatusDict
     },
+    // {
+    //   type: "select",
+    //   label: "同步状态",
+    //   prop: "syncWorkStatus",
+    //   default: null,
+    //   filterable: true,
+    //   dicData: syncWorkStatusDict
+    // },
   ],
   /** 表格顶部左侧 button 配置项 */
   headerBtn: [
@@ -727,16 +728,16 @@ const option = reactive({
       isShow: true,
       dicData: typeDict
     },
-    {
-      type: 'tag',
-      label: '作品同步状态',
-      prop: 'syncWorkStatus',
-      width: 120,
-      fixed: false,
-      sortable: false,
-      isShow: true,
-      dicData: syncWorkStatusDict
-    }
+    // {
+    //   type: 'tag',
+    //   label: '作品同步状态',
+    //   prop: 'syncWorkStatus',
+    //   width: 120,
+    //   fixed: false,
+    //   sortable: false,
+    //   isShow: true,
+    //   dicData: syncWorkStatusDict
+    // }
   ],
   /** 操作菜单配置项 */
   menu: {

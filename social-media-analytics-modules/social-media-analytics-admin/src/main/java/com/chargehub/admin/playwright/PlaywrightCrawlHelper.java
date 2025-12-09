@@ -1,5 +1,7 @@
 package com.chargehub.admin.playwright;
 
+import java.util.Map;
+
 /**
  * @author Zhanghaowei
  * @since 2025-11-29 23:34
@@ -22,4 +24,7 @@ public interface PlaywrightCrawlHelper {
     String getCrawlerLoginState(String platform);
 
     void updateCrawlerLoginState(String platform, String content);
+
+
+    Map<String, String> getCrawlerLoginStateMap();
 }

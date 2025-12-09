@@ -1,5 +1,7 @@
 package com.chargehub.admin.datasync;
 
+import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.RandomUtil;
 import com.chargehub.admin.account.vo.SocialMediaAccountVo;
 import com.chargehub.admin.datasync.domain.*;
 import com.chargehub.admin.enums.SocialMediaPlatformEnum;
@@ -12,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
+import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +27,8 @@ import java.util.Map;
 public class DataSyncManager {
 
     private static final Map<SocialMediaPlatformEnum, DataSyncService> SERVICES = new EnumMap<>(SocialMediaPlatformEnum.class);
+
+    private static final boolean TEST = false;
 
     @Autowired
     private PlaywrightCrawlHelper playwrightCrawlHelper;
@@ -92,5 +97,16 @@ public class DataSyncManager {
         return dataSyncService.getWork(dataSyncParamContext);
     }
 
-
+    public <T> SocialMediaWorkResult<T> getWorks(String platformId, DataSyncWorksParams dataSyncWorksParams) {
+        if (TEST) {
+            ThreadUtil.safeSleep(RandomUtil.randomInt(5_000, 30_000));
+            SocialMediaWorkResult<T> result = new SocialMediaWorkResult<>();
+            result.setWorks(new ArrayList<>());
+            return result;
+        }
+        SocialMediaPlatformEnum platform = SocialMediaPlatformEnum.getByDomain(platformId);
+        DataSyncService dataSyncService = SERVICES.get(platform);
+        Assert.notNull(dataSyncService, "不支持的数据同步平台");
+        return dataSyncService.getWorks(dataSyncWorksParams);
+    }
 }

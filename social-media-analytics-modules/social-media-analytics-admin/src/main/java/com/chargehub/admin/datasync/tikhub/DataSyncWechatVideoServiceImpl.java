@@ -21,10 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -126,6 +123,26 @@ public class DataSyncWechatVideoServiceImpl implements DataSyncService {
             socialMediaWorkResult.setWorks(socialMediaWorks);
             return (SocialMediaWorkResult<T>) socialMediaWorkResult;
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> SocialMediaWorkResult<T> getWorks(DataSyncWorksParams params) {
+        boolean moreData = true;
+        String nextCursor = null;
+        SocialMediaWorkResult<SocialMediaWork> socialMediaWorkResult = new SocialMediaWorkResult<>();
+        List<SocialMediaWork> socialMediaWorks = new ArrayList<>();
+        SocialMediaAccountVo socialMediaAccountVo = new SocialMediaAccountVo();
+        socialMediaAccountVo.setSecUid(params.getSecUid());
+        while (moreData) {
+            SocialMediaWorkResult<SocialMediaWork> result = this.getWorks(socialMediaAccountVo, nextCursor, null);
+            moreData = result.isHasMore();
+            nextCursor = result.getNextCursor();
+            List<SocialMediaWork> works = result.getWorks();
+            socialMediaWorks.addAll(works);
+        }
+        socialMediaWorkResult.setWorks(socialMediaWorks);
+        return (SocialMediaWorkResult<T>) socialMediaWorkResult;
     }
 
     @Override

@@ -8,6 +8,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 /**
  * @author zhanghaowei
  * @since 1.0
@@ -85,5 +89,15 @@ public class PlaywrightCrawlHelperImpl implements PlaywrightCrawlHelper {
                 .eq(SocialMediaAccount::getPlatformId, platform)
                 .eq(SocialMediaAccount::getCrawler, 1)
                 .update();
+    }
+
+    @Override
+    public Map<String, String> getCrawlerLoginStateMap() {
+        List<SocialMediaAccount> list = this.socialMediaAccountMapper.lambdaQuery().eq(SocialMediaAccount::getCrawler, 1).list();
+        Map<String, String> map = new HashMap<>();
+        for (SocialMediaAccount mediaAccount : list) {
+            map.put(mediaAccount.getPlatformId(), mediaAccount.getStorageState());
+        }
+        return map;
     }
 }

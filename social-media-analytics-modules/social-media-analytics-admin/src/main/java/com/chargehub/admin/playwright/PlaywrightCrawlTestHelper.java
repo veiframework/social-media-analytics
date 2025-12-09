@@ -4,6 +4,9 @@ import cn.hutool.core.io.FileUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.Collections;
+import java.util.Map;
+
 /**
  * @author Zhanghaowei
  * @since 2025-11-29 23:37
@@ -56,6 +59,11 @@ public class PlaywrightCrawlTestHelper implements PlaywrightCrawlHelper {
     @Override
     public void updateCrawlerLoginState(String platform, String content) {
 
+    }
+
+    @Override
+    public Map<String, String> getCrawlerLoginStateMap() {
+        return Collections.emptyMap();
     }
 
 

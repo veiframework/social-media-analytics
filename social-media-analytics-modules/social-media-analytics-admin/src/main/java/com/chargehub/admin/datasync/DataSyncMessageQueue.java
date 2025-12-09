@@ -25,7 +25,7 @@ public class DataSyncMessageQueue {
 
     private static final ExecutorService FIXED_BILIBILI_THREAD_POOL = Executors.newFixedThreadPool(10);
 
-    private static final ExecutorService FIXED_DOUYIN_DETAIL_THREAD_POOL = Executors.newFixedThreadPool(5);
+    private static final ExecutorService FIXED_DOUYIN_DETAIL_THREAD_POOL = Executors.newFixedThreadPool(3);
 
 
     public SocialMediaUserInfo syncExecute(Supplier<SocialMediaUserInfo> runnable) {

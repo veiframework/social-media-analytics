@@ -19,4 +19,5 @@ public class SocialMediaWorkResult<T> {
 
     private String nextCursor;
 
+    private String storageState;
 }

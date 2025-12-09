@@ -7,10 +7,7 @@ import cn.hutool.http.HttpStatus;
 import cn.hutool.http.HttpUtil;
 import com.chargehub.admin.account.vo.SocialMediaAccountVo;
 import com.chargehub.admin.datasync.DataSyncService;
-import com.chargehub.admin.datasync.domain.DataSyncParamContext;
-import com.chargehub.admin.datasync.domain.SocialMediaUserInfo;
-import com.chargehub.admin.datasync.domain.SocialMediaWorkDetail;
-import com.chargehub.admin.datasync.domain.SocialMediaWorkResult;
+import com.chargehub.admin.datasync.domain.*;
 import com.chargehub.admin.enums.MediaTypeEnum;
 import com.chargehub.admin.enums.SocialMediaPlatformEnum;
 import com.chargehub.admin.enums.WorkTypeEnum;
@@ -36,10 +33,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import java.math.BigDecimal;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -282,6 +276,32 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
             i.setStatisticMd5(md5);
             return i;
         }).collect(Collectors.toList());
+        socialMediaWorkResult.setWorks(socialMediaWorks);
+        return (SocialMediaWorkResult<T>) socialMediaWorkResult;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> SocialMediaWorkResult<T> getWorks(DataSyncWorksParams params) {
+        Map<String, String> workUids = params.getWorkUids();
+        BrowserContext browserContext = params.getBrowserContext();
+        SocialMediaWorkResult<SocialMediaWork> socialMediaWorkResult = new SocialMediaWorkResult<>();
+        List<SocialMediaWork> socialMediaWorks = new ArrayList<>();
+        String storageState = null;
+        for (Map.Entry<String, String> entry : workUids.entrySet()) {
+            String url = entry.getValue();
+            DataSyncParamContext dataSyncParamContext = new DataSyncParamContext();
+            dataSyncParamContext.setShareLink(url);
+            dataSyncParamContext.setBrowserContext(browserContext);
+            dataSyncParamContext.setScheduler(true);
+            SocialMediaWorkDetail<SocialMediaWork> workDetail = this.getWork(dataSyncParamContext);
+            if (workDetail == null) {
+                continue;
+            }
+            storageState = dataSyncParamContext.getStorageState();
+            socialMediaWorks.add(workDetail.getWork());
+        }
+        socialMediaWorkResult.setStorageState(storageState);
         socialMediaWorkResult.setWorks(socialMediaWorks);
         return (SocialMediaWorkResult<T>) socialMediaWorkResult;
     }

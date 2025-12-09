@@ -1,17 +1,16 @@
 package com.chargehub.admin.datasync.tikhub;
 
 import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.map.MapUtil;
+import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.RandomUtil;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpStatus;
 import cn.hutool.http.HttpUtil;
 import com.chargehub.admin.account.vo.SocialMediaAccountVo;
 import com.chargehub.admin.datasync.DataSyncMessageQueue;
 import com.chargehub.admin.datasync.DataSyncService;
-import com.chargehub.admin.datasync.domain.DataSyncParamContext;
-import com.chargehub.admin.datasync.domain.SocialMediaUserInfo;
-import com.chargehub.admin.datasync.domain.SocialMediaWorkDetail;
-import com.chargehub.admin.datasync.domain.SocialMediaWorkResult;
+import com.chargehub.admin.datasync.domain.*;
 import com.chargehub.admin.enums.MediaTypeEnum;
 import com.chargehub.admin.enums.SocialMediaPlatformEnum;
 import com.chargehub.admin.enums.WorkTypeEnum;
@@ -21,6 +20,7 @@ import com.chargehub.common.core.properties.HubProperties;
 import com.chargehub.common.security.utils.DictUtils;
 import com.chargehub.common.security.utils.JacksonUtil;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.Lists;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.BoundingBox;
 import lombok.extern.slf4j.Slf4j;
@@ -30,10 +30,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 /**
@@ -149,6 +147,107 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
         }).collect(Collectors.toList());
         socialMediaWorkResult.setWorks(socialMediaWorks);
         return (SocialMediaWorkResult<T>) socialMediaWorkResult;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> SocialMediaWorkResult<T> getWorks(DataSyncWorksParams params) {
+        HubProperties.SocialMediaDataApi socialMediaDataApi = hubProperties.getSocialMediaDataApi().get("tikhub");
+        String token = socialMediaDataApi.getToken();
+        String host = socialMediaDataApi.getHost();
+        Map<String, String> workUids = params.getWorkUids();
+        String secUid = params.getSecUid();
+        SocialMediaAccountVo socialMediaAccountVo = new SocialMediaAccountVo();
+        socialMediaAccountVo.setSecUid(secUid);
+        SocialMediaWorkResult<SocialMediaWork> socialMediaWorkResult = new SocialMediaWorkResult<>();
+        Map<String, SocialMediaWork> socialMediaWorkMap = new HashMap<>();
+        BrowserContext browserContext = params.getBrowserContext();
+        try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(browserContext)) {
+            Page page = playwrightBrowser.getPage();
+            page.route(url -> url.contains(".jpeg") || url.contains(".webp"), Route::abort);
+            AtomicBoolean stop = new AtomicBoolean(false);
+            page.onResponse(res -> {
+                if (!(res.url().contains("/aweme/v1/web/aweme/post/") && res.ok())) {
+                    return;
+                }
+                String body = new String(res.body());
+                JsonNode jsonNode = JacksonUtil.toObj(body);
+                JsonNode node = jsonNode.get("aweme_list");
+                if (node.isEmpty() || node.isNull()) {
+                    log.warn("抖音获取主页数据空了" + body);
+                    return;
+                }
+                for (JsonNode item : node) {
+                    String workUid = item.get("aweme_id").asText("");
+                    if (!workUids.containsKey(workUid)) {
+                        continue;
+                    }
+                    this.buildWork(socialMediaAccountVo, item, socialMediaWorkMap);
+                }
+                JsonNode lastNode = node.get(node.size() - 1);
+                long lastTime = lastNode.get("create_time").asLong() * 1000;
+                stop.set(hubProperties.isValidDate(lastTime));
+            });
+            String enterUrl = "https://www.douyin.com/user/" + secUid;
+            page.navigate(enterUrl, new Page.NavigateOptions().setTimeout(60_000));
+            log.debug("抖音开始滚动加载数据");
+            for (int i = 0; i < 600; i++) {
+                if (page.isVisible("text=暂时没有更多了") || stop.get()) {
+                    break;
+                }
+                ThreadUtil.safeSleep(100);
+                int randomInt = RandomUtil.randomInt(600, 800);
+                page.mouse().wheel(0, randomInt);
+                try {
+                    page.evaluate("const container = document.querySelector(\"div[class*='parent-route-container']\"); container.scrollBy(0," + randomInt + ")");
+                } catch (Exception e) {
+                    //nothing to do
+                }
+            }
+            if (MapUtil.isNotEmpty(socialMediaWorkMap)) {
+                List<String> strings = new ArrayList<>(socialMediaWorkMap.keySet());
+                String url = strings.size() > 2 ? GET_WORK_STATISTIC : GET_ONE_WORK_STATISTIC;
+                List<List<String>> partition = Lists.partition(strings, 50);
+                for (List<String> awemeIds : partition) {
+                    dataSyncMessageQueue.syncDouyinExecute(() -> {
+                        try (HttpResponse multiWorksExecute = HttpUtil.createGet(host + url).bearerAuth(token).form("aweme_ids", awemeIds).execute()) {
+                            String result = multiWorksExecute.body();
+                            JsonNode multiWorkNode = JacksonUtil.toObj(result);
+                            int code = multiWorkNode.path("code").asInt(500);
+                            if (code != HttpStatus.HTTP_OK) {
+                                log.warn("抖音api获取作品详情失败" + result);
+                                for (String awemeId : awemeIds) {
+                                    SocialMediaWork socialMediaWork = socialMediaWorkMap.get(awemeId);
+                                    socialMediaWork.setPlayNum(-1);
+                                }
+                            } else {
+                                JsonNode statisticsNode = multiWorkNode.at("/data/statistics_list");
+                                for (JsonNode node : statisticsNode) {
+                                    String workUid = node.get("aweme_id").asText("");
+                                    int playNum = node.at("/play_count").asInt(0);
+                                    SocialMediaWork socialMediaWork = socialMediaWorkMap.get(workUid);
+                                    if (socialMediaWork == null) {
+                                        continue;
+                                    }
+                                    socialMediaWork.setPlayNum(playNum);
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+            List<SocialMediaWork> socialMediaWorks = socialMediaWorkMap.values().stream().map(i -> {
+                if (i.getPlayNum() == -1) {
+                    return null;
+                }
+                String md5 = i.generateStatisticMd5();
+                i.setStatisticMd5(md5);
+                return i;
+            }).filter(Objects::nonNull).collect(Collectors.toList());
+            socialMediaWorkResult.setWorks(socialMediaWorks);
+            socialMediaWorkResult.setStorageState(page.context().storageState());
+            return (SocialMediaWorkResult<T>) socialMediaWorkResult;
+        }
     }
 
 
@@ -420,17 +519,6 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
         socialMediaUserInfo.setUid(uid);
         socialMediaUserInfo.setSecUid(secUid);
         return (SocialMediaWorkDetail<T>) new SocialMediaWorkDetail<>(socialMediaWork, socialMediaUserInfo);
-    }
-
-    public static void main(String[] args) {
-        String read = FileUtil.readUtf8String("E:\\workspace\\social-media-analytics\\social-media-analytics-modules\\social-media-analytics-admin\\src\\main\\resources\\dddd.json");
-        String[] split = read.split(":", 2);
-        String array = split[1];
-        JsonNode arrayNode = JacksonUtil.toObj(array);
-        JsonNode readNode = arrayNode.get(arrayNode.size() - 1);
-        if (readNode.has("awemeId")) {
-            String workUid = readNode.get("awemeId").asText();
-        }
     }
 
 

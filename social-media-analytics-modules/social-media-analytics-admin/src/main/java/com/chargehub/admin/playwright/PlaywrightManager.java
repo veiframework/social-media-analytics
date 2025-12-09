@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 /**
@@ -112,22 +113,19 @@ public class PlaywrightManager {
             Page page = playwrightBrowser.newPage();
             page.onResponse(res -> {
                 if (res.url().contains("/aweme/v1/web/aweme/post/")) {
-                    consumer.accept(new String(res.body()));
+                    String s = new String(res.body());
+                    consumer.accept(s);
                 }
             });
             page.navigate(enterUrl, new Page.NavigateOptions().setTimeout(60_000));
-            boolean visible = page.isVisible("text=登录");
-            if (visible) {
-                log.error("需要重新登陆了");
-                return null;
-            }
             log.info("开始滚动加载数据");
-            for (int i = 0; i < 6000; i++) {
+            for (int i = 0; i < 600; i++) {
                 if (page.isVisible("text=暂时没有更多了")) {
                     break;
                 }
-                page.evaluate("window.scrollTo(0, document.body.scrollHeight)");
-                page.waitForTimeout(10);
+                page.mouse().wheel(0, 600);
+                page.evaluate("const container = document.querySelector(\"div[class*='parent-route-container']\"); container.scrollBy(0, 600)");
+                ThreadUtil.safeSleep(100);
             }
             return page.context().storageState();
         }
@@ -148,8 +146,6 @@ public class PlaywrightManager {
     }
 
 
-
-
     public static void main(String[] args) {
         String douyin = "https://www.douyin.com/user/MS4wLjABAAAAhSaD3wD3rsLVCezq2LaPpCXrRDjBb8R8Np4SnAcZQE4";
         String realUrl = "https://www.douyin.com/video/7577294438381237403";
@@ -157,6 +153,11 @@ public class PlaywrightManager {
         String xiaohongshu = "http://xhslink.com/o/6vwGmnLDROY";
 //        getWork("https://creator.douyin.com/creator-micro/work-management/work-detail/7578754998953051121");
         //        crawlRedNoteLogin();
+        String read = FileUtil.readUtf8String("E:\\workspace\\social-media-analytics\\social-media-analytics-modules\\social-media-analytics-admin\\src\\main\\resources\\login_state.json");
+        AtomicInteger a = new AtomicInteger();
+        crawlDouYinWorkList("https://www.douyin.com/user/MS4wLjABAAAAJ6GUXA-U_4pDM-vPq_Xl2onTfM-MFA2j9WEjH9mzk-BOiM2MoNcRp56juY9Pbb_c", read, (res) -> {
+            System.out.println(a.getAndIncrement());
+        });
     }
 
 

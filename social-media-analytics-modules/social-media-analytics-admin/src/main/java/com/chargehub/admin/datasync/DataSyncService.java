@@ -16,6 +16,16 @@ public interface DataSyncService {
 
     <T> SocialMediaWorkResult<T> getWorks(SocialMediaAccountVo socialMediaAccount, String cursor, Integer count);
 
+    /**
+     * v3版本数据同步
+     * 返回的作品list如果是空则不更新cookie
+     *
+     * @param params
+     * @param <T>
+     * @return
+     */
+    <T> SocialMediaWorkResult<T> getWorks(DataSyncWorksParams params);
+
 
     <T> SocialMediaWorkDetail<T> getWork(DataSyncParamContext dataSyncParamContext);
 

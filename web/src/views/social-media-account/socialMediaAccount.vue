@@ -425,7 +425,7 @@ const option = reactive({
   /** 表格顶部左侧 button 配置项 */
   headerBtn: [
     // {key: "add", text: "新增账号", icon: "Plus", isShow: true, type: "primary", disabled: false},
-    {key: "shareLink", text: "通过主页分享链接添加", icon: "Link", isShow: true, type: "primary", disabled: false},
+    // {key: "shareLink", text: "通过主页分享链接添加", icon: "Link", isShow: true, type: "primary", disabled: false},
     {key: "wechatVideo", text: "通过微信视频号名称添加", icon: "Link", isShow: true, type: "success", disabled: false}
 
   ],

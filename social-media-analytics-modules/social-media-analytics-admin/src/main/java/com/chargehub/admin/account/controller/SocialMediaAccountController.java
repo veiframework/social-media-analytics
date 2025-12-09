@@ -4,11 +4,8 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.chargehub.admin.account.dto.*;
 import com.chargehub.admin.account.service.SocialMediaAccountService;
 import com.chargehub.admin.account.vo.SocialMediaAccountVo;
-import com.chargehub.admin.enums.SocialMediaPlatformEnum;
 import com.chargehub.admin.groupuser.service.GroupUserService;
-import com.chargehub.admin.scheduler.DataSyncWorkScheduler;
-import com.chargehub.admin.scheduler.DataSyncWorkSchedulerV2;
-import com.chargehub.common.redis.service.RedisService;
+import com.chargehub.admin.scheduler.DataSyncWorkSchedulerV3;
 import com.chargehub.common.security.annotation.Debounce;
 import com.chargehub.common.security.annotation.RequiresLogin;
 import com.chargehub.common.security.annotation.UnifyResult;
@@ -34,16 +31,10 @@ import java.util.Set;
 public class SocialMediaAccountController extends AbstractZ9Controller<SocialMediaAccountDto, SocialMediaAccountQueryDto, SocialMediaAccountVo, SocialMediaAccountService> {
 
     @Autowired
-    private DataSyncWorkScheduler dataSyncWorkScheduler;
-
-    @Autowired
-    private DataSyncWorkSchedulerV2 dataSyncWorkSchedulerV2;
-
-    @Autowired
     private GroupUserService groupUserService;
 
     @Autowired
-    private RedisService redisService;
+    private DataSyncWorkSchedulerV3 dataSyncWorkSchedulerV3;
 
     protected SocialMediaAccountController(SocialMediaAccountService crudService) {
         super(crudService);
@@ -60,6 +51,7 @@ public class SocialMediaAccountController extends AbstractZ9Controller<SocialMed
         return (IPage<SocialMediaAccountVo>) this.getCrudService().getPage(queryDto);
     }
 
+    @Deprecated
     @RequiresLogin
     @Debounce
     @PostMapping("/share-link")
@@ -86,15 +78,7 @@ public class SocialMediaAccountController extends AbstractZ9Controller<SocialMed
     @GetMapping("/sync/work/{accountId}")
     @ApiOperation("同步作品")
     public void syncWorkData(@PathVariable("accountId") String accountId) {
-        SocialMediaAccountVo detailById = (SocialMediaAccountVo) this.getCrudService().getDetailById(accountId);
-        if (detailById == null) {
-            return;
-        }
-        if (detailById.getPlatformId().equals(SocialMediaPlatformEnum.WECHAT_VIDEO.getDomain())) {
-            this.dataSyncWorkScheduler.asyncExecute(Sets.newHashSet(accountId));
-        } else {
-            this.dataSyncWorkSchedulerV2.asyncExecute(Sets.newHashSet(accountId));
-        }
+        this.dataSyncWorkSchedulerV3.asyncExecute(Sets.newHashSet(accountId));
     }
 
     @RequiresLogin
@@ -103,7 +87,7 @@ public class SocialMediaAccountController extends AbstractZ9Controller<SocialMed
     public void syncWorkData() {
         Set<String> userIds = groupUserService.checkPurview();
         Set<String> accountIds = this.getCrudService().getAccountIdsByUserIds(userIds);
-        this.dataSyncWorkSchedulerV2.asyncExecute(accountIds);
+        this.dataSyncWorkSchedulerV3.asyncExecute(accountIds);
     }
 
     @Debounce

@@ -17,6 +17,7 @@ import com.chargehub.admin.datasync.domain.SocialMediaUserInfo;
 import com.chargehub.admin.datasync.domain.SocialMediaWorkDetail;
 import com.chargehub.admin.enums.SocialMediaPlatformEnum;
 import com.chargehub.admin.enums.SyncWorkStatusEnum;
+import com.chargehub.admin.scheduler.DataSyncWorkSchedulerV3;
 import com.chargehub.admin.work.domain.SocialMediaWork;
 import com.chargehub.admin.work.dto.SocialMediaWorkDto;
 import com.chargehub.admin.work.dto.SocialMediaWorkShareLinkDto;
@@ -29,6 +30,7 @@ import com.chargehub.common.security.template.service.AbstractZ9CrudServiceImpl;
 import com.chargehub.common.security.utils.SecurityUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -111,8 +113,20 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
 
     @Override
     public void deleteByIds(String ids) {
-        super.deleteByIds(ids);
-//        this.socialMediaWorkService.deleteByAccountIds(ids);
+        redisService.lock(DataSyncWorkSchedulerV3.SYNC_ACCOUNT_LOCK + ids, locked -> {
+            Assert.isTrue(locked, "账号正在同步数据,请稍后操作");
+            String[] split = ids.split(",");
+            if (ArrayUtils.isEmpty(split)) {
+                return null;
+            }
+            List<String> idList = Arrays.stream(split).collect(Collectors.toList());
+            for (String s : idList) {
+                SocialMediaAccount mediaAccount = this.baseMapper.lambdaQuery().eq(SocialMediaAccount::getId, s).eq(SocialMediaAccount::getCrawler, 1).one();
+                Assert.isNull(mediaAccount, "该账号被设置无法删除，如有疑问请联系管理员");
+                this.baseMapper.deleteById(s);
+            }
+            return null;
+        });
     }
 
     @SuppressWarnings("unchecked")
@@ -124,10 +138,14 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
         return mediaAccount.getUid();
     }
 
+    public SocialMediaAccount getById(String id) {
+        return this.baseMapper.doGetDetailById(id);
+    }
+
     public void updateSyncWorkStatus(String accountId, SyncWorkStatusEnum syncWorkStatusEnum) {
         this.baseMapper.lambdaUpdate()
                 .set(SocialMediaAccount::getSyncWorkStatus, syncWorkStatusEnum.ordinal())
-                .set(SocialMediaAccount::getSyncWorkDate, new Date())
+                .set(syncWorkStatusEnum != SyncWorkStatusEnum.SYNCING, SocialMediaAccount::getSyncWorkDate, new Date())
                 .eq(SocialMediaAccount::getId, accountId)
                 .ne(SocialMediaAccount::getSyncWorkStatus, syncWorkStatusEnum.ordinal())
                 .update();
@@ -141,6 +159,20 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
                 .isNotNull(SocialMediaAccount::getSyncWorkDate)
                 .apply("TIMESTAMPDIFF(MINUTE, sync_work_date, '" + now + "') > " + minute)
                 .update();
+    }
+
+    @SuppressWarnings("unchecked")
+    public List<SocialMediaAccount> getAccountIds(SocialMediaAccountQueryDto dto) {
+        Set<String> ids = dto.getId();
+        Set<Integer> syncWorkStatus = dto.getSyncWorkStatus();
+        Integer crawler = dto.getCrawler();
+        Set<String> platformId = dto.getPlatformId();
+        return this.baseMapper.lambdaQuery().select(SocialMediaAccount::getId, SocialMediaAccount::getPlatformId)
+                .in(CollectionUtils.isNotEmpty(ids), SocialMediaAccount::getId, ids)
+                .in(CollectionUtils.isNotEmpty(syncWorkStatus), SocialMediaAccount::getSyncWorkStatus, syncWorkStatus)
+                .in(CollectionUtils.isNotEmpty(platformId), SocialMediaAccount::getPlatformId, platformId)
+                .eq(crawler != null, SocialMediaAccount::getCrawler, crawler)
+                .list();
     }
 
     public IPage<SocialMediaAccountStatisticVo> getAccountStatistic(SocialMediaAccountQueryDto queryDto) {

@@ -6,7 +6,6 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.toolkit.Db;
 import com.chargehub.admin.account.dto.SocialMediaTransferAccountDto;
 import com.chargehub.admin.enums.SyncWorkStatusEnum;
-import com.chargehub.admin.scheduler.DataSyncWorkSchedulerV2;
 import com.chargehub.admin.work.domain.SocialMediaWork;
 import com.chargehub.admin.work.dto.SocialMediaWorkDto;
 import com.chargehub.admin.work.dto.SocialMediaWorkQueryDto;
@@ -22,7 +21,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.Assert;
 
 import java.util.*;
 import java.util.function.Function;
@@ -96,13 +94,12 @@ public class SocialMediaWorkService extends AbstractZ9CrudServiceImpl<SocialMedi
                 .list();
     }
 
-    @Override
-    public void deleteByIds(String ids) {
-        redisService.lock(DataSyncWorkSchedulerV2.LOCK_WORK_KEY + ids, locked -> {
-            Assert.isTrue(locked, "作品正在同步数据,请稍后删除");
-            super.deleteByIds(ids);
-            return null;
-        });
+    @SuppressWarnings("all")
+    public List<SocialMediaWork> getLatestWork(String accountId) {
+        long recentDays = hubProperties.getRecentDays();
+        return this.baseMapper.lambdaQuery().eq(SocialMediaWork::getAccountId, accountId)
+                .apply("TIMESTAMPDIFF(DAY, post_time, NOW()) <= " + recentDays)
+                .list();
     }
 
     public void updateOne(SocialMediaWork socialMediaWork) {
