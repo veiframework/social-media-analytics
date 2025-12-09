@@ -428,7 +428,6 @@ const init = () => {
     // 等字典数据获取完成后再获取平台统计数据
     getPlatformStats()
   })
-  getData()
   getUserList2()
 }
 

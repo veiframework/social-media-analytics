@@ -29,7 +29,6 @@ import com.chargehub.common.security.template.dto.Z9CrudQueryDto;
 import com.chargehub.common.security.template.service.AbstractZ9CrudServiceImpl;
 import com.chargehub.common.security.utils.SecurityUtils;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +37,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -177,11 +177,11 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
 
     public IPage<SocialMediaAccountStatisticVo> getAccountStatistic(SocialMediaAccountQueryDto queryDto) {
         Set<String> userId = queryDto.getUserId();
-        Map<String, SocialMediaWork> socialMediaWorkMap = socialMediaWorkService.groupByAccountId(userId, queryDto.getAscFields(), queryDto.getDescFields());
-        if (MapUtils.isEmpty(socialMediaWorkMap)) {
+        List<SocialMediaWork> socialMediaWorks = socialMediaWorkService.groupByAccountId(userId, queryDto.getAscFields(), queryDto.getDescFields());
+        if (CollectionUtils.isEmpty(socialMediaWorks)) {
             return new Page<>();
         }
-        Set<String> accountIds = socialMediaWorkMap.keySet();
+        Set<String> accountIds = socialMediaWorks.stream().map(SocialMediaWork::getAccountId).collect(Collectors.toSet());
         queryDto.setUserId(null);
         queryDto.setId(accountIds);
         queryDto.setAscFields(null);
@@ -191,15 +191,17 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
         if (CollectionUtils.isEmpty(records)) {
             return page;
         }
-        for (SocialMediaAccountStatisticVo statisticVo : records) {
-            String accountId = statisticVo.getId();
-            SocialMediaWork socialMediaWork = socialMediaWorkMap.get(accountId);
-            if (socialMediaWork == null) {
-                continue;
+        Map<String, SocialMediaAccountStatisticVo> collect = records.stream().collect(Collectors.toMap(SocialMediaAccountStatisticVo::getId, Function.identity()));
+        List<SocialMediaAccountStatisticVo> list = new ArrayList<>();
+        socialMediaWorks.forEach(socialMediaWork -> {
+            SocialMediaAccountStatisticVo statisticVo = collect.get(socialMediaWork.getAccountId());
+            if (statisticVo == null) {
+                return;
             }
             BeanUtil.copyProperties(socialMediaWork, statisticVo, CopyOptions.create().setIgnoreNullValue(true));
-        }
-        records.sort(Comparator.comparing(SocialMediaAccountStatisticVo::getPlayNum).reversed());
+            list.add(statisticVo);
+        });
+        page.setRecords(list);
         return page;
     }
 

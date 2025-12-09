@@ -2,7 +2,7 @@
 const config = {
     // API配置
     api: {
-        baseURL: 'http://127.0.0.1:9201', // 根据实际后端地址修改
+        baseURL: 'https://www.lumengshop.com', // 根据实际后端地址修改
         timeout: 10000
     },
 

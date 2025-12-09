@@ -303,7 +303,7 @@ const disabledDate = (time, now, disabledFun) => {
 watch(() => appStore.device, (news) => {
 	isShow.value = news == 'desktop' ? false : true;
 }, { deep: true, immediate: true })
-onActivated(() => {
+onMounted(() => {
 	changeParams();
 	searchChange();
 })

@@ -39,3 +39,8 @@ from-source: inner
   "msgFields": ["alarmName","workDesc","nickname","thumbNum"],
   "msgTemplate": "提醒：{0} \r\n作品：{1}\r\n用户：{2}\r\n点赞数：{3} \r\n"
 }
+
+
+
+###
+WEBSOCKET wss://www.lumengshop.com/websocket-endpoint

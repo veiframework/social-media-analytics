@@ -706,7 +706,6 @@ const transferAccountOption = reactive({
 const init = () => {
   getDict()
   getUserList3()
-  getData()
 }
 
 // 初始化
