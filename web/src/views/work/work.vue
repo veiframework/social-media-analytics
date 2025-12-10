@@ -419,7 +419,7 @@ const showDetail = async (id) => {
 const option = reactive({
   showSearch: true,
   searchLabelWidth: 90,
-  descFields: new Set(["postTime", "thumbNum"]),
+  descFields: new Set(["createTime"]),
   /** 搜索字段配置项 */
   searchItem: [
     {
@@ -635,17 +635,34 @@ const option = reactive({
       sortable: false,
       isShow: true,
       dicData: socialMediaCustomTypeDict
+    }, {
+      type: 'tag',
+      label: '作品类型',
+      prop: 'type',
+      width: 120,
+      fixed: false,
+      sortable: false,
+      isShow: true,
+      dicData: typeDict
+    },
+    {
+      type: 'text',
+      label: '创建时间',
+      prop: 'createTime',
+      width: 160,
+      fixed: false,
+      sortable: true,
+      isShow: true
     },
     {
       type: 'text',
       label: '发布时间',
       prop: 'postTime',
-      width: 180,
+      width: 160,
       fixed: false,
       sortable: true,
       isShow: true
     },
-
     // {
     //   type: 'tag',
     //   label: '作品状态',
@@ -718,16 +735,7 @@ const option = reactive({
       isShow: true
     },
 
-    {
-      type: 'tag',
-      label: '作品类型',
-      prop: 'type',
-      width: 120,
-      fixed: false,
-      sortable: false,
-      isShow: true,
-      dicData: typeDict
-    },
+
     // {
     //   type: 'tag',
     //   label: '作品同步状态',

@@ -31,6 +31,12 @@
 			"style": {
 				"navigationBarTitleText": "账号"
 			}
+		},
+		{
+			"path": "pages/work/work-detail",
+			"style": {
+				"navigationBarTitleText": "作品详情"
+			}
 		}
 
 	],

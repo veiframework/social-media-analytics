@@ -38,14 +38,18 @@ const request = (options) => {
                         resolve(res.data.data || res.data);
                     } else if (res.data.code === 401) {
                         // 认证失败，清除本地token并提示重新登录
-                        uni.removeStorageSync('token');
-                        uni.removeStorageSync('userInfo');
+                        store.logout()
 
                         if (options.showError !== false) {
                             uni.showToast({
                                 title: '登录已过期，请重新登录',
                                 icon: 'none',
-                                duration: 2000
+                                duration: 2000,
+                                success: res => {
+                                    uni.redirectTo({
+                                        url: '/pages/login/login',
+                                    })
+                                }
                             });
                         }
 
@@ -70,19 +74,20 @@ const request = (options) => {
                     }
                 } else if (res.statusCode === 401) {
                     // 认证失败，清除本地token并提示重新登录
-                    uni.removeStorageSync('token');
-                    uni.removeStorageSync('userInfo');
-
+                    store.logout()
                     if (options.showError !== false) {
                         uni.showToast({
                             title: '登录已过期，请重新登录',
                             icon: 'none',
-                            duration: 2000
+                            duration: 2000,
+                            success: res => {
+                                uni.redirectTo({
+                                    url: '/pages/login/login',
+                                })
+                            }
                         });
                     }
-                    uni.navigateTo({
-                        url: '/pages/login/login',
-                    })
+
                     // 可以在这里触发重新登录逻辑
                     // 或者跳转到登录页面
                     reject({code: 401, message: '登录已过期'});

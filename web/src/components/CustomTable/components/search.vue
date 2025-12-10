@@ -142,7 +142,7 @@
 				</template>
 				<el-col :xs="24" :sm="12" :md="8" :lg="6" :xl="6">
 					<el-form-item label-width="10">
-						<el-button type="primary" icon="search" @click="searchChange">搜索</el-button>
+						<el-button type="primary" icon="search" @keydown.enter.native="searchChange" @click="searchChange">搜索</el-button>
 						<el-button icon="refresh" @click="resetChange">重置</el-button>
 						<slot name='custom-button'></slot>
 						<el-button @click="isShow = !isShow" :icon="isShow ? 'ArrowDown' : 'ArrowUp'" circle />
@@ -153,7 +153,7 @@
 	</el-card>
 </template>
 <script setup>
-import { onActivated, onMounted, ref, watch } from "vue";
+import { onActivated, onMounted, ref, watch,onBeforeUnmount } from "vue";
 import useAppStore from '@/store/modules/app';
 import moment from "moment";
 const appStore = useAppStore();
@@ -303,7 +303,19 @@ const disabledDate = (time, now, disabledFun) => {
 watch(() => appStore.device, (news) => {
 	isShow.value = news == 'desktop' ? false : true;
 }, { deep: true, immediate: true })
+
+const handleKeyDown = (e) => {
+  if (e.code === 'Enter') {
+    searchChange();
+  }
+};
+
+onBeforeUnmount(() => {
+  document.removeEventListener('keydown', handleKeyDown);
+})
+
 onMounted(() => {
+  document.addEventListener('keydown', handleKeyDown)
 	changeParams();
 	searchChange();
 })

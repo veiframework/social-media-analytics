@@ -35,7 +35,7 @@ const service = axios.create({
     // axios中请求配置有baseURL选项，表示请求URL公共部分
     baseURL: import.meta.env.VITE_APP_BASE_API,
     // 超时
-    timeout: 60000
+    timeout: 120000
 })
 
 // 生产环境同步设置baseURL
@@ -115,7 +115,7 @@ service.interceptors.response.use(res => {
             ElMessageBox.confirm('登录状态已过期，您可以继续留在该页面，或者重新登录', '系统提示', { confirmButtonText: '重新登录', cancelButtonText: '取消', type: 'warning' }).then(() => {
                 isRelogin.show = false;
                 useUserStore().logOut().then(() => {
-                    location.href = '/index';
+                    location.href = '/index.html';
                 })
             }).catch(() => {
                 isRelogin.show = false;

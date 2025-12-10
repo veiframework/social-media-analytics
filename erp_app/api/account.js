@@ -61,5 +61,7 @@ export function updateAutoSync(id, autoSync) {
  * @returns {Promise | Promise<unknown>}
  */
 export function syncWork(id) {
-    return post(prefix + "/sync/work/" + id, {}, {});
+    return get(prefix + "/sync/work/" + id, {}, {
+        showLoading: false
+    });
 }
