@@ -45,7 +45,7 @@ export default {
 	 */
 	errorLog: 'production',
 
-	uploadHost: 'http://39.106.154.254',
+	uploadHost: 'https://www.lumengshop.com',
 
 	appUser:{
 	    score: false,

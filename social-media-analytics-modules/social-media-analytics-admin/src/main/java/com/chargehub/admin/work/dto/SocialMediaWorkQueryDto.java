@@ -10,12 +10,14 @@ import com.chargehub.common.security.template.enums.Z9QueryTypeEnum;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * @author : zhanghaowei
@@ -29,22 +31,24 @@ public class SocialMediaWorkQueryDto extends Pagination implements Serializable,
     @CrudQueryField(queryType = Z9QueryTypeEnum.IN)
     private Set<String> userId;
 
-    @CrudQueryField
-    private String type;
+    @CrudQueryField(queryType = Z9QueryTypeEnum.IN)
+    private Set<String> type;
 
-    @CrudQueryField
-    private String status;
+    @CrudQueryField(queryType = Z9QueryTypeEnum.IN)
+    private Set<String> status;
 
-    @CrudQueryField
-    private String platformId;
+    @CrudQueryField(queryType = Z9QueryTypeEnum.IN)
+    private Set<String> platformId;
 
-    @CrudQueryField
+    @CrudQueryField(queryType = Z9QueryTypeEnum.IN)
     @ApiModelProperty("业务类型")
-    private String customType;
+    private Set<String> customType;
+
 
     @CrudQueryField(queryType = Z9QueryTypeEnum.LIKE)
     @ApiModelProperty("描述")
-    private String description;
+    private Set<String> description;
+
 
     @ApiModelProperty("发布时间开始")
     private String startPostTime;
@@ -55,9 +59,9 @@ public class SocialMediaWorkQueryDto extends Pagination implements Serializable,
     @CrudQueryField(queryType = Z9QueryTypeEnum.IN)
     private Set<String> accountId;
 
-    @CrudQueryField
+    @CrudQueryField(queryType = Z9QueryTypeEnum.IN)
     @ApiModelProperty("社交账号类型 个人- individual, 素人- amateur")
-    private String accountType;
+    private Set<String> accountType;
 
     @CrudQueryField(queryType = Z9QueryTypeEnum.GE)
     private String updateTime;
@@ -67,6 +71,10 @@ public class SocialMediaWorkQueryDto extends Pagination implements Serializable,
 
     @CrudQueryField(queryType = Z9QueryTypeEnum.IN)
     private Set<Integer> syncWorkStatus;
+
+    private Set<String> accountId_dictText;
+
+    private Set<String> userId_dictText;
 
     @Override
     public Page<SocialMediaWork> buildPageObj() {
@@ -87,6 +95,20 @@ public class SocialMediaWorkQueryDto extends Pagination implements Serializable,
             condition2.setValue(endPostTime);
             z9CrudQueryConditions.add(condition);
             z9CrudQueryConditions.add(condition2);
+        }
+        if (CollectionUtils.isNotEmpty(accountId_dictText)) {
+            Z9CrudQueryCondition<SocialMediaWork> condition = new Z9CrudQueryCondition<>();
+            condition.setField(SocialMediaWork::getAccountId);
+            condition.setQueryType(Z9QueryTypeEnum.IN_SQL);
+            condition.setValue("select id from social_media_account where nickname in (" + accountId_dictText.stream().map(i -> "'" + i + "'").collect(Collectors.joining(",")) + ")");
+            z9CrudQueryConditions.add(condition);
+        }
+        if (CollectionUtils.isNotEmpty(userId_dictText)) {
+            Z9CrudQueryCondition<SocialMediaWork> condition = new Z9CrudQueryCondition<>();
+            condition.setField(SocialMediaWork::getUserId);
+            condition.setQueryType(Z9QueryTypeEnum.IN_SQL);
+            condition.setValue("select user_id from sys_user where nick_name in (" + userId_dictText.stream().map(i -> "'" + i + "'").collect(Collectors.joining(",")) + ")");
+            z9CrudQueryConditions.add(condition);
         }
         return z9CrudQueryConditions;
     }

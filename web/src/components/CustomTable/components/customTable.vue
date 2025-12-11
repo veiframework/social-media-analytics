@@ -61,7 +61,7 @@
 		<template v-if="appStore.device == 'desktop'">
 			<el-table ref="tableRef" border @select-all="handleSelectionAllChange" @select="handleSelectionChange"
 				:span-method="tableOption.methods" :data="props.data" :max-height="tableOption.maxHeight"
-				@sort-change="sortChange" :header-cell-class-name="handleHeaderCellClass">
+				@sort-change="sortChange" :header-cell-class-name="handleHeaderCellClass" @filter-change="columnFilterChange">
 				<!-- 是否开启多选 -->
 				<el-table-column v-if="tableOption.openSelection" type="selection" width="40" />
 				<!-- 是否开启序号 -->
@@ -77,7 +77,7 @@
 					<!-- tag 标签类型 -->
 					<el-table-column v-if="item.type == 'tag' && item.isShow" :sortable="item.sortable"
 						:label="item.label" align="center" :min-width="item.width" show-overflow-tooltip
-						:fixed="item.fixed">
+						:fixed="item.fixed" :filters="columnFilterData(item)" :column-key="item.prop" >
 						<template #default="scope">
 							<template v-for="itm, indx in item.dicData">
 								<template v-if="itm.elTagType && itm.elTagType != 'default'">
@@ -133,7 +133,7 @@
 					<!-- text 文本类型 -->
 					<el-table-column v-else-if="item.type == 'text' && item.isShow" align="center"
 						:sortable="item.sortable" :fixed="item.fixed" :label="item.label" :min-width="item.width"
-						show-overflow-tooltip>
+						show-overflow-tooltip :filters="item.noFilter? null :columnFilterTextData(item)" :column-key="item.prop">
 						<template #default="scope">
 							<span :style="{ color: item.color }">{{ scope.row[item.prop] }}</span>
 						</template>
@@ -392,7 +392,7 @@ const props = defineProps({
 });
 const emits = defineEmits([
 	'headerchange', 'bodychange', 'refresh', 'isShowSearch', 'sortChange', 'selectChange', 'selectAllChange', 'menuChange', 'currentChange', 'allData',
-	'operationChange', 'selectData'
+	'operationChange', 'selectData','columnFilterChange'
 ])
 const tableOption = reactive(props.option);
 const tableRef = ref();
@@ -407,6 +407,23 @@ const showCode = (code) => {
 	QRCode.value = code;
 	dialogVisible.value = true
 }
+
+const columnFilterData = (item) => {
+ return item.dicData.map(i=> {return {text:i.label,value:i.value}})
+}
+
+const columnFilterTextData = (item) => {
+  const uniqueValues = [...new Set(props.data.map(i => i[item.prop]))];
+  return uniqueValues
+      .filter(value => value !== null && value !== undefined) // 过滤空值
+      .map(value => ({ text: value, value: value }));
+}
+
+const columnFilterChange = (filters) =>{
+  emits("columnFilterChange", filters)
+}
+
+
 /**
  * 自定义校验规则
  */

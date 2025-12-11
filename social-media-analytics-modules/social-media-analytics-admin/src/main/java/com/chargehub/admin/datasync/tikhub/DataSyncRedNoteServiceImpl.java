@@ -2,6 +2,9 @@ package com.chargehub.admin.datasync.tikhub;
 
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.map.MapUtil;
+import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.RandomUtil;
+import cn.hutool.core.util.URLUtil;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpStatus;
 import cn.hutool.http.HttpUtil;
@@ -33,6 +36,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import java.math.BigDecimal;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
@@ -53,7 +58,19 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
     @Autowired
     private RedisService redisService;
 
+    private static final boolean TEST = false;
+
+    private static final boolean TEST_DETAIL = true;
+
+
     private static final String WORK_SHARE_URL = "/api/v1/xiaohongshu/web_v2/fetch_feed_notes_v2";
+
+    public static final List<String> ONE_NOTE_URLS = Stream.of(
+            "/api/v1/xiaohongshu/web/get_note_info_v4",
+            "/api/v1/xiaohongshu/web/get_note_info"
+    ).collect(Collectors.toList());
+
+    public static final String ONE_NOTE_V7 = "/api/v1/xiaohongshu/web/get_note_info_v7";
 
     private static final List<String> USER_INFO_URL = Stream.of(
             "/api/v1/xiaohongshu/web_v2/fetch_user_info_app",
@@ -136,6 +153,110 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
     @Override
     @SuppressWarnings("unchecked")
     public <T> SocialMediaWorkDetail<T> getWork(DataSyncParamContext dataSyncParamContext) {
+        if (TEST_DETAIL) {
+            return this.getWork0(dataSyncParamContext);
+        }
+        HubProperties.SocialMediaDataApi socialMediaDataApi = hubProperties.getSocialMediaDataApi().get("tikhub");
+        String token = socialMediaDataApi.getToken();
+        String host = socialMediaDataApi.getHost();
+        String shareLink = dataSyncParamContext.getShareLink();
+        String redirectUrl = dataSyncParamContext.getRedirectUrl();
+        URI uri = URLUtil.toURI(redirectUrl);
+        String query = uri.getQuery();
+        String noteId;
+        String xsecToken;
+        if (query.startsWith("redirectPath")) {
+            Map<String, String> paramMap = HttpUtil.decodeParamMap(redirectUrl, StandardCharsets.UTF_8);
+            URI redirectPath = URLUtil.toURI(paramMap.get("redirectPath"));
+            String path = redirectPath.getPath();
+            String[] split = path.split("/");
+            noteId = split[split.length - 1];
+            String redirectPathQuery = redirectPath.getQuery();
+            Map<String, String> redirectParam = HttpUtil.decodeParamMap(redirectPathQuery, StandardCharsets.UTF_8);
+            xsecToken = redirectParam.get("xsec_token");
+        } else {
+            Map<String, String> paramMap = HttpUtil.decodeParamMap(query, StandardCharsets.UTF_8);
+            String path = uri.getPath();
+            String[] split = path.split("/");
+            noteId = split[split.length - 1];
+            xsecToken = paramMap.get("xsec_token");
+        }
+
+
+        JsonNode jsonNode = this.request(host, ONE_NOTE_V7, token, MapUtil.of("share_text", shareLink));
+        int code = jsonNode.path("code").asInt(500);
+        if (code != HttpStatus.HTTP_OK) {
+            log.error(" {} 获取作品失败: {}", noteId, jsonNode);
+            return null;
+        }
+        JsonNode data = jsonNode.at("/data");
+        if (data.isEmpty()) {
+            log.error(" {} 获取作品空了: {}", noteId, jsonNode);
+            return null;
+        }
+        JsonNode node = data.get(0);
+        JsonNode userNode = node.get("user");
+        String nickname = userNode.get("nickname").asText();
+        String secUid = userNode.get("userid").asText();
+        String redId = userNode.get("red_id").asText();
+
+        JsonNode noteListNode = node.get("note_list");
+        if (noteListNode.isEmpty()) {
+            log.error(" {} 获取作品空了: {}", noteId, jsonNode);
+            return null;
+        }
+        JsonNode noteNode = noteListNode.get(0);
+        String desc = noteNode.get("desc").asText();
+        int thumbNum = noteNode.get("liked_count").asInt(0);
+        int collectNum = noteNode.get("collected_count").asInt(0);
+        int shareNum = noteNode.get("shared_count").asInt(0);
+        int commentNum = noteNode.get("comments_count").asInt(0);
+        // 基于3.3%互动率估算,目前无法从 view_count获取浏览量
+        int playNum = (thumbNum + collectNum + shareNum + commentNum) * 10;
+
+        String customType = "";
+        Map<String, String> socialMediaCustomType = DictUtils.getDictLabelMap("social_media_custom_type");
+        for (Map.Entry<String, String> entry : socialMediaCustomType.entrySet()) {
+            String k = entry.getKey();
+            String v = entry.getValue();
+            if (desc.contains(k)) {
+                customType = v;
+            }
+        }
+
+        //内容类型 （normal=图文笔记，video=视频笔记）
+        String workType = "normal".equals(noteNode.get("type").asText()) ? WorkTypeEnum.RICH_TEXT.getType() : WorkTypeEnum.NORMAL_VIDEO.getType();
+        //媒体类型 (2=图片, 4=视频)
+        String mediaType = workType.equals(WorkTypeEnum.RICH_TEXT.getType()) ? MediaTypeEnum.PICTURE.getType() : MediaTypeEnum.VIDEO.getType();
+        Date postTime = DateUtil.date(noteNode.get("time").asLong(0) * 1000L);
+        String shareUrl = "https://www.xiaohongshu.com/explore/" + noteId + "?xsec_token=" + xsecToken;
+
+        SocialMediaUserInfo socialMediaUserInfo = new SocialMediaUserInfo();
+        socialMediaUserInfo.setSecUid(secUid);
+        socialMediaUserInfo.setNickname(nickname);
+        socialMediaUserInfo.setUid(redId);
+
+
+        SocialMediaWork socialMediaWork = new SocialMediaWork();
+        socialMediaWork.setUrl(shareUrl);
+        socialMediaWork.setPlatformId(SocialMediaPlatformEnum.RED_NOTE.getDomain());
+        socialMediaWork.setDescription(desc);
+        socialMediaWork.setWorkUid(noteId);
+        socialMediaWork.setPostTime(postTime);
+        socialMediaWork.setMediaType(mediaType);
+        socialMediaWork.setType(workType);
+        socialMediaWork.setThumbNum(thumbNum);
+        socialMediaWork.setCollectNum(collectNum);
+        socialMediaWork.setShareNum(shareNum);
+        socialMediaWork.setCommentNum(commentNum);
+        socialMediaWork.setLikeNum(thumbNum);
+        socialMediaWork.setPlayNum(playNum);
+        socialMediaWork.setCustomType(customType);
+        socialMediaWork.setStatisticMd5(socialMediaWork.generateStatisticMd5());
+        return (SocialMediaWorkDetail<T>) new SocialMediaWorkDetail<>(socialMediaWork, socialMediaUserInfo);
+    }
+
+    public <T> SocialMediaWorkDetail<T> getWork0(DataSyncParamContext dataSyncParamContext) {
         BrowserContext browserContext = dataSyncParamContext.getBrowserContext();
         String shareLink = dataSyncParamContext.getShareLink();
         try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(browserContext)) {
@@ -146,13 +267,14 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
                 dataSyncParamContext.setStorageState(null);
                 return null;
             }
+            page.waitForFunction("typeof __INITIAL_STATE__ !== 'undefined'");
             String string = (String) page.evaluate("JSON.stringify(__INITIAL_STATE__.note.noteDetailMap)");
             JsonNode jsonNode = JacksonUtil.toObj(string);
 
             JsonNode detailNode = jsonNode.get(jsonNode.fieldNames().next());
             JsonNode noteNode = detailNode.get("note");
             if (noteNode.isEmpty()) {
-                log.warn("小红书笔记不存在");
+                log.error("小红书笔记不存在" + shareLink);
                 return null;
             }
             JsonNode userNode = noteNode.get("user");
@@ -205,7 +327,7 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
             SocialMediaWork socialMediaWork = new SocialMediaWork();
             socialMediaWork.setUrl(shareUrl);
             socialMediaWork.setPlatformId(SocialMediaPlatformEnum.RED_NOTE.getDomain());
-            socialMediaWork.setDescription(desc);
+            socialMediaWork.setDescription(StringUtils.isBlank(desc) ? hashtagName : desc);
             socialMediaWork.setWorkUid(workUid);
             socialMediaWork.setPostTime(postTime);
             socialMediaWork.setMediaType(mediaType);
@@ -283,12 +405,40 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
     @SuppressWarnings("unchecked")
     @Override
     public <T> SocialMediaWorkResult<T> getWorks(DataSyncWorksParams params) {
+        if (TEST) {
+            return getWorksV0(params);
+        }
+        boolean moreData = true;
+        String nextCursor = null;
+        SocialMediaWorkResult<SocialMediaWork> socialMediaWorkResult = new SocialMediaWorkResult<>();
+        List<SocialMediaWork> socialMediaWorks = new ArrayList<>();
+        SocialMediaAccountVo socialMediaAccountVo = new SocialMediaAccountVo();
+        socialMediaAccountVo.setSecUid(params.getSecUid());
+        Map<String, String> workUids = params.getWorkUids();
+        while (moreData) {
+            SocialMediaWorkResult<SocialMediaWork> result = this.getWorks(socialMediaAccountVo, nextCursor, null);
+            moreData = result.isHasMore();
+            nextCursor = result.getNextCursor();
+            List<SocialMediaWork> works = result.getWorks();
+            for (SocialMediaWork work : works) {
+                if (workUids.containsKey(work.getWorkUid())) {
+                    socialMediaWorks.add(work);
+                }
+            }
+        }
+        socialMediaWorkResult.setWorks(socialMediaWorks);
+        return (SocialMediaWorkResult<T>) socialMediaWorkResult;
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T> SocialMediaWorkResult<T> getWorksV0(DataSyncWorksParams params) {
         Map<String, String> workUids = params.getWorkUids();
         BrowserContext browserContext = params.getBrowserContext();
         SocialMediaWorkResult<SocialMediaWork> socialMediaWorkResult = new SocialMediaWorkResult<>();
         List<SocialMediaWork> socialMediaWorks = new ArrayList<>();
         String storageState = null;
         for (Map.Entry<String, String> entry : workUids.entrySet()) {
+            ThreadUtil.safeSleep(RandomUtil.randomInt(200, 500));
             String url = entry.getValue();
             DataSyncParamContext dataSyncParamContext = new DataSyncParamContext();
             dataSyncParamContext.setShareLink(url);

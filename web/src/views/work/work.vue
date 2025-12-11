@@ -164,6 +164,8 @@ const wechatVideoVisible = ref(false)
 const handleShareLink = async (val) => {
   let loading = ElLoading.service(loadingOpt)
   try {
+    let shareLink = val.shareLink
+    val.shareLink = extractUrlFromText(shareLink)
     const formData = {...val}
     let res = await createByWorkShareUrl(formData)
     if (res.code === 200) {
@@ -271,7 +273,10 @@ const getData = async () => {
       pageSize: pageSize.value,
       ...queryParams.value
     }
-
+    let url = params.shareLink
+    if (url) {
+      params.shareLink = extractUrlFromText(url)
+    }
     const response = await getWorkListApi(params)
     if (response.code === 200) {
       tableData.value = response.data.records || []
@@ -415,6 +420,18 @@ const showDetail = async (id) => {
   }
 }
 
+
+const extractUrlFromText = (text) => {
+  // 使用正则表达式匹配 URL
+  const urlRegex = /(https?:\/\/[^\s]+)/;
+  const match = text.match(urlRegex);
+  if (match) {
+    return match[1]; // 返回匹配到的链接
+  } else {
+    return null; // 没有找到链接时返回 null
+  }
+}
+
 // 表格配置项
 const option = reactive({
   showSearch: true,
@@ -422,29 +439,7 @@ const option = reactive({
   descFields: new Set(["createTime"]),
   /** 搜索字段配置项 */
   searchItem: [
-    {
-      type: "select",
-      label: "作品类型",
-      prop: "type",
-      default: null,
-      filterable: true,
-      dicData: typeDict
-    },
-    {
-      type: "select",
-      label: "业务类型",
-      prop: "customType",
-      default: null,
-      filterable: true,
-      dicData: socialMediaCustomTypeDict
-    }, {
-      type: "select",
-      label: "账号类型",
-      prop: "accountType",
-      default: null,
-      filterable: true,
-      dicData: socialMediaAccountTypeDict
-    }, {
+      {
       type: "select",
       label: "社交帐号",
       prop: "accountId",
@@ -516,22 +511,16 @@ const option = reactive({
           }
         }
       ]
-    }, {
-      type: "select",
-      label: "员工账号",
-      prop: "userId",
-      default: null,
-      filterable: true,
-      dicData: userDict
     },
-    {
-      type: "select",
-      label: "平台",
-      prop: "platformId",
-      default: null,
-      filterable: true,
-      dicData: platformDict
-    },
+    // {
+    //   type: "select",
+    //   label: "员工账号",
+    //   prop: "userId",
+    //   default: null,
+    //   filterable: true,
+    //   dicData: userDict
+    // },
+
     {
       type: "input",
       label: "描述",
@@ -544,7 +533,8 @@ const option = reactive({
       label: "分享链接",
       prop: "shareLink",
       default: null,
-      placeholder: "请输入分享链接"
+      placeholder: "请输入分享链接",
+      max: 5000
     },
     // {
     //   type: "select",
@@ -560,14 +550,14 @@ const option = reactive({
     {key: "export", text: "导出", icon: "Download", isShow: true, type: "primary", disabled: false},
     {key: "syncWork", text: "同步作品", icon: "Refresh", isShow: true, type: "primary", disabled: false},
     {key: "shareLink", text: "通过作品分享链接添加", icon: "Link", isShow: true, type: "primary", disabled: false},
-    {
-      key: "wechatVideo",
-      text: "通过微信视频ID添加(不稳定,可以在社交帐号同步账号数据)",
-      icon: "Link",
-      isShow: true,
-      type: "success",
-      disabled: false
-    }
+    // {
+    //   key: "wechatVideo",
+    //   text: "通过微信视频ID添加(不稳定,可以在社交帐号同步账号数据)",
+    //   icon: "Link",
+    //   isShow: true,
+    //   type: "success",
+    //   disabled: false
+    // }
   ],
   /** 表格顶部右侧 toobar 配置项 */
   toolbar: {isShowToolbar: true, isShowSearch: true},
@@ -590,23 +580,24 @@ const option = reactive({
       isShow: true,
       showOverflowTooltip: true
     }, {
-      type: 'text',
+      type: 'tag',
       label: '昵称',
-      prop: 'accountId_dictText',
+      prop: 'accountId',
       width: 120,
       fixed: false,
       sortable: false,
       isShow: true,
-      showOverflowTooltip: true
-    }, {
-      type: 'text',
+      dicData: accountListDict
+    },
+    {
+      type: 'tag',
       label: '员工',
-      prop: 'userId_dictText',
-      width: 120,
+      prop: 'userId',
+      width: 180,
       fixed: false,
       sortable: false,
       isShow: true,
-      showOverflowTooltip: true
+      dicData: userDict
     },
     {
       type: 'tag',
@@ -652,7 +643,8 @@ const option = reactive({
       width: 160,
       fixed: false,
       sortable: true,
-      isShow: true
+      isShow: true,
+      noFilter: true
     },
     {
       type: 'text',
@@ -661,7 +653,8 @@ const option = reactive({
       width: 160,
       fixed: false,
       sortable: true,
-      isShow: true
+      isShow: true,
+      noFilter: true
     },
     // {
     //   type: 'tag',
@@ -680,7 +673,8 @@ const option = reactive({
       width: 100,
       fixed: false,
       sortable: true,
-      isShow: true
+      isShow: true,
+      noFilter: true
     }, {
       type: 'custom',
       label: '点赞增长量',
@@ -688,7 +682,8 @@ const option = reactive({
       width: 100,
       fixed: false,
       sortable: true,
-      isShow: true
+      isShow: true,
+      noFilter: true
     }, {
       type: 'text',
       label: '播放量',
@@ -696,7 +691,8 @@ const option = reactive({
       width: 100,
       fixed: false,
       sortable: true,
-      isShow: true
+      isShow: true,
+      noFilter: true
     }, {
       type: 'custom',
       label: '播放增长量',
@@ -704,7 +700,8 @@ const option = reactive({
       width: 100,
       fixed: false,
       sortable: true,
-      isShow: true
+      isShow: true,
+      noFilter: true
     },
     {
       type: 'text',
@@ -713,7 +710,8 @@ const option = reactive({
       width: 100,
       fixed: false,
       sortable: true,
-      isShow: true
+      isShow: true,
+      noFilter: true
     },
     {
       type: 'text',
@@ -722,7 +720,8 @@ const option = reactive({
       width: 100,
       fixed: false,
       sortable: true,
-      isShow: true
+      isShow: true,
+      noFilter: true
     },
 
     {
@@ -732,7 +731,8 @@ const option = reactive({
       width: 100,
       fixed: false,
       sortable: true,
-      isShow: true
+      isShow: true,
+      noFilter: true
     },
 
 
@@ -914,6 +914,7 @@ const optionShareLink = reactive({
       type: "input",
       label: "分享链接",
       prop: "shareLink",
+      category: "textarea",
       placeholder: "请输入分享链接",
     }, {
       type: "select",

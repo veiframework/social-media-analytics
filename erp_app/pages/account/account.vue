@@ -39,7 +39,7 @@
           </view>
         </view>
         <view class="account-actions">
-          <button class="action-btn sync-btn" @tap="handleSync(item.id)">同步作品</button>
+          <button v-if="computeButton(item)" class="action-btn sync-btn" @tap="handleSync(item.id)">同步作品</button>
         </view>
       </view>
 
@@ -90,6 +90,17 @@ export default {
     // 刷新状态
     const refreshing = ref(true)
     const triggered = ref(false)
+
+    const computeButton = ((item) => {
+      if (item.syncWorkStatus === '2') {
+        return true
+      } else if (item.syncWorkStatus === '0') {
+        return true
+      }else{
+        return false
+      }
+    })
+
     const computeStatus = ((item) => {
       if (item.syncWorkStatus === '0') {
         return {color: 'grey'}
@@ -240,7 +251,8 @@ export default {
       onPulling,
       handleSync,
       handleToggleAutoSync,
-      computeStatus
+      computeStatus,
+      computeButton
     }
   }
 }

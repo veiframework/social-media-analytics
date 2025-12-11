@@ -297,6 +297,14 @@ const disabledDate = (time, now, disabledFun) => {
 	}
 	return false;
 }
+
+const handleColumnChange = (filters) => {
+    for (let i in filters) {
+      queryParams.value[i] = filters[i].join(',');
+    }
+    searchChange();
+}
+
 /**
  * 监听设备
  */
@@ -319,7 +327,7 @@ onMounted(() => {
 	changeParams();
 	searchChange();
 })
-defineExpose({ orderBy });
+defineExpose({ orderBy,handleColumnChange });
 </script>
 <style lang="scss" scoped>
 :deep(.el-card__body) {

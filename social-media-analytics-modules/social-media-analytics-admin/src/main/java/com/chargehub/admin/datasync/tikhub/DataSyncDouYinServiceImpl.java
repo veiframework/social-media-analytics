@@ -174,7 +174,7 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
                 JsonNode jsonNode = JacksonUtil.toObj(body);
                 JsonNode node = jsonNode.get("aweme_list");
                 if (node.isEmpty() || node.isNull()) {
-                    log.warn("抖音获取主页数据空了" + body);
+                    log.error("抖音获取主页数据空了: " + secUid);
                     return;
                 }
                 for (JsonNode item : node) {
@@ -190,7 +190,6 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
             });
             String enterUrl = "https://www.douyin.com/user/" + secUid;
             page.navigate(enterUrl, new Page.NavigateOptions().setTimeout(60_000));
-            log.debug("抖音开始滚动加载数据");
             for (int i = 0; i < 600; i++) {
                 if (page.isVisible("text=暂时没有更多了") || stop.get()) {
                     break;
@@ -206,8 +205,9 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
             }
             if (MapUtil.isNotEmpty(socialMediaWorkMap)) {
                 List<String> strings = new ArrayList<>(socialMediaWorkMap.keySet());
-                String url = strings.size() > 2 ? GET_WORK_STATISTIC : GET_ONE_WORK_STATISTIC;
-                List<List<String>> partition = Lists.partition(strings, 50);
+                boolean over = strings.size() > 50;
+                String url = over ? GET_WORK_STATISTIC : GET_ONE_WORK_STATISTIC;
+                List<List<String>> partition = Lists.partition(strings, over ? 50 : 2);
                 for (List<String> awemeIds : partition) {
                     dataSyncMessageQueue.syncDouyinExecute(() -> {
                         try (HttpResponse multiWorksExecute = HttpUtil.createGet(host + url).bearerAuth(token).form("aweme_ids", awemeIds).execute()) {
@@ -215,7 +215,7 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
                             JsonNode multiWorkNode = JacksonUtil.toObj(result);
                             int code = multiWorkNode.path("code").asInt(500);
                             if (code != HttpStatus.HTTP_OK) {
-                                log.warn("抖音api获取作品详情失败" + result);
+                                log.error("抖音api获取作品详情失败" + result);
                                 for (String awemeId : awemeIds) {
                                     SocialMediaWork socialMediaWork = socialMediaWorkMap.get(awemeId);
                                     socialMediaWork.setPlayNum(-1);
@@ -273,7 +273,7 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
                 navigateToPage(page, shareLink);
                 return this.getNoteWork(playwrightBrowser, dataSyncParamContext);
             }
-            Response response = page.waitForResponse(res -> res.url().contains("/aweme/detail/"), new Page.WaitForResponseOptions().setTimeout(60_000), () -> page.navigate(shareLink, new Page.NavigateOptions().setTimeout(60_000)));
+            Response response = page.waitForResponse(res -> res.url().contains("/aweme/detail/"), new Page.WaitForResponseOptions().setTimeout(90_000), () -> page.navigate(shareLink, new Page.NavigateOptions().setTimeout(60_000)));
             playwrightBrowser.randomMove();
             String body = new String(response.body());
             if (StringUtils.isBlank(body)) {
@@ -354,7 +354,7 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
 
     private static void navigateToPage(Page page, String shareLink) {
         //关闭登录弹窗
-        page.navigate(shareLink, new Page.NavigateOptions().setTimeout(60_000));
+        page.navigate(shareLink, new Page.NavigateOptions().setTimeout(90_000));
         page.waitForSelector("input[placeholder='请输入手机号']");
         ElementHandle element = page.querySelector("article[id='douyin_login_comp_flat_panel'] svg[xmlns='http://www.w3.org/2000/svg']");
         BoundingBox box = element.boundingBox();

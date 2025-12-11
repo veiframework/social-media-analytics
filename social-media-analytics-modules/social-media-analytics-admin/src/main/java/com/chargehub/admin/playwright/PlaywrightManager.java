@@ -14,7 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 /**
@@ -98,11 +97,11 @@ public class PlaywrightManager {
             Page page = playwrightBrowser.newPage();
             page.navigate("https://www.xiaohongshu.com/", new Page.NavigateOptions().setTimeout(60_000));
             log.info("进入页面");
-            page.waitForSelector("text='登录后推荐更懂你的笔记'");
+            page.waitForSelector(".qrcode-img");
             ElementHandle element = page.querySelector(".qrcode-img");
             String src = element.getAttribute("src");
             System.out.println(src);
-            page.waitForSelector("a[title='我']", new Page.WaitForSelectorOptions().setTimeout(60_000));
+            page.waitForSelector("a[title='我']", new Page.WaitForSelectorOptions().setTimeout(180_000));
             String storageState = page.context().storageState();
             FileUtil.writeUtf8String(storageState, "E:\\workspace\\social-media-analytics\\social-media-analytics-modules\\social-media-analytics-admin\\src\\main\\resources\\red_note_state.json");
         }
@@ -152,12 +151,12 @@ public class PlaywrightManager {
         String shareUrl = "https://v.douyin.com/BnP9rp9WtMw/ 11/28 nqR:/ x@s.eO";
         String xiaohongshu = "http://xhslink.com/o/6vwGmnLDROY";
 //        getWork("https://creator.douyin.com/creator-micro/work-management/work-detail/7578754998953051121");
-        //        crawlRedNoteLogin();
-        String read = FileUtil.readUtf8String("E:\\workspace\\social-media-analytics\\social-media-analytics-modules\\social-media-analytics-admin\\src\\main\\resources\\login_state.json");
-        AtomicInteger a = new AtomicInteger();
-        crawlDouYinWorkList("https://www.douyin.com/user/MS4wLjABAAAAJ6GUXA-U_4pDM-vPq_Xl2onTfM-MFA2j9WEjH9mzk-BOiM2MoNcRp56juY9Pbb_c", read, (res) -> {
-            System.out.println(a.getAndIncrement());
-        });
+                crawlRedNoteLogin();
+//        String read = FileUtil.readUtf8String("E:\\workspace\\social-media-analytics\\social-media-analytics-modules\\social-media-analytics-admin\\src\\main\\resources\\login_state.json");
+//        AtomicInteger a = new AtomicInteger();
+//        crawlDouYinWorkList("https://www.douyin.com/user/MS4wLjABAAAAJ6GUXA-U_4pDM-vPq_Xl2onTfM-MFA2j9WEjH9mzk-BOiM2MoNcRp56juY9Pbb_c", read, (res) -> {
+//            System.out.println(a.getAndIncrement());
+//        });
     }
 
 

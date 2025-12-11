@@ -203,7 +203,23 @@ public interface Z9MpCrudMapper<E extends Z9CrudEntity> extends BaseMapper<E>, Z
             qw.ne(i.getField(), value);
         }
         if (i.getQueryType() == Z9QueryTypeEnum.LIKE) {
-            qw.like(i.getField(), value);
+            qw.and(w -> {
+                if (value instanceof Iterable) {
+                    Collection<?> collection = (Collection<?>) value;
+                    List<?> list = new ArrayList<>(collection);
+                    for (Object o : list) {
+                        w.or().like(i.getField(), o);
+                    }
+                } else if (value.getClass().isArray()) {
+                    Object[] objects = (Object[]) value;
+                    for (Object object : objects) {
+                        w.or().like(i.getField(), object);
+                    }
+                } else {
+                    w.like(i.getField(), value);
+                }
+            });
+
         }
         if (i.getQueryType() == Z9QueryTypeEnum.IN) {
             Collection<?> collection = (Collection<?>) value;

@@ -134,7 +134,7 @@ hub:
       token: 0qUYCOQC0W60m1SaMryO6UT+FTGQa7Rm4h3E62uRe8OH1HulI2KqbGq4Pw==
       host: https://api.tikhub.io
   recent-days: 62
-  headless: false
+  headless: true
 
 
 

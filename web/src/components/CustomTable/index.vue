@@ -11,7 +11,7 @@
         <customTable :data="props.data" ref="tableRef" :option="option" :page="page" @refresh="tableRefresh"
             @isShowSearch="showSearch" :total="props.total" @selectAllChange="selectAll" @selectChange="select"
             @sortChange="sort" @menuChange="menu" @currentChange="current" @headerchange="header"
-            @operationChange="handleOperation" @selectData="selectData">
+            @operationChange="handleOperation" @selectData="selectData" @columnFilterChange="columnFilterChange">
             <template #table-top>
                 <slot name='table-top'></slot>
             </template>
@@ -43,7 +43,7 @@ const page = reactive({
     pageSize: props.pageSize,
     small: false,
     total: props.total,
-    pageSizes: [10, 20, 30, 40, 50],
+    pageSizes: [10, 20, 30, 40, 50, 100],
     pagerCount: 7,
     background: true,
     layout: "total, sizes, prev, pager, next, jumper",
@@ -79,6 +79,15 @@ const handleSearch = (val) => {
     emits('search', paramsData);
 
 };
+
+
+
+const columnFilterChange = (filters) => {
+  searchRef.value.handleColumnChange(filters)
+}
+
+
+
 /**
  * 刷新表格
  */

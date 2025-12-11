@@ -139,36 +139,13 @@ const getUserList2 = async () => {
 // 表格配置项
 const option = reactive({
   showSearch: true,
-  searchLabelWidth: 90,
+  searchLabelWidth: 120,
   descFields: new Set(["thumbNum"]),
   /** 搜索字段配置项 */
   searchItem: [
     {
-      type: "select",
-      label: "员工账号",
-      prop: "userId",
-      default: null,
-      // filterable: true,
-      dicData: userDict
-    },
-    {
-      type: "select",
-      label: "账号类型",
-      prop: "type",
-      default: null,
-      filterable: true,
-      dicData: socialMediaAccountTypeDict
-    },{
-      type: "select",
-      label: "平台类型",
-      prop: "platformId",
-      default: null,
-      filterable: true,
-      dicData: platformDict
-    },
-    {
       type: "input",
-      label: "社交昵称",
+      label: "社交帐号昵称",
       prop: "nickname",
       placeholder: "社交帐号昵称",
       default: ""
@@ -206,14 +183,16 @@ const option = reactive({
       dicData: platformDict
     },
     {
-      type: 'text',
-      label: '用户',
-      prop: 'userId_dictText',
-      width: 120,
+      type: 'tag',
+      label: '员工',
+      prop: 'userId',
+      width: 180,
       fixed: false,
       sortable: false,
-      isShow: true
-    }, {
+      isShow: true,
+      dicData: userDict
+    },
+    {
       type: 'text',
       label: '社交账号昵称',
       prop: 'nickname',
@@ -255,7 +234,8 @@ const option = reactive({
       width: 100,
       fixed: false,
       sortable: true,
-      isShow: true
+      isShow: true,
+      noFilter: true
     },
     {
       type: 'text',
@@ -264,7 +244,8 @@ const option = reactive({
       width: 100,
       fixed: false,
       sortable: true,
-      isShow: true
+      isShow: true,
+      noFilter: true
     },
     {
       type: 'text',
@@ -273,7 +254,8 @@ const option = reactive({
       width: 100,
       fixed: false,
       sortable: true,
-      isShow: true
+      isShow: true,
+      noFilter: true
     },
     {
       type: 'text',
@@ -282,7 +264,8 @@ const option = reactive({
       width: 100,
       fixed: false,
       sortable: true,
-      isShow: true
+      isShow: true,
+      noFilter: true
     },
 
   ],

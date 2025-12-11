@@ -37,14 +37,25 @@
         <!-- 作品描述搜索 -->
         <view class="filter-item search-item">
           <text class="filter-label">作品描述：</text>
-          <input 
-            class="search-input" 
-            type="text" 
-            placeholder="请输入作品描述关键词" 
-            v-model="descriptionKeyword"
-            @confirm="handleDescriptionSearch"
+          <input
+              class="search-input"
+              type="text"
+              placeholder="请输入作品描述关键词"
+              v-model="descriptionKeyword"
+              @confirm="handleDescriptionSearch"
           />
           <button class="search-btn" @click="handleDescriptionSearch">搜索</button>
+        </view>
+        <view class="filter-item search-item">
+          <text class="filter-label">分享链接：</text>
+          <input
+              class="search-input"
+              type="text"
+              placeholder="请输入分享链接"
+              v-model="shareLinkKeyword"
+              @confirm="handlerShareLinkKeyword"
+          />
+          <button class="search-btn" @click="handlerShareLinkKeyword">搜索</button>
         </view>
       </view>
 
@@ -131,6 +142,8 @@ export default {
     // 筛选栏展开状态
     const showAllFilters = ref(false)
 
+    const shareLinkKeyword = ref(null)
+
     // 时间范围选项
     const timeRangeOptions = ref([
       {label: '全部', value: null},
@@ -190,6 +203,20 @@ export default {
     // 作品描述搜索关键词
     const descriptionKeyword = ref('')
 
+    const handlerShareLinkKeyword = () => {
+      currentPage.value = 1
+      getWorkList()
+    }
+    const extractUrlFromText = (text) => {
+      // 使用正则表达式匹配 URL
+      const urlRegex = /(https?:\/\/[^\s]+)/;
+      const match = text.match(urlRegex);
+      if (match) {
+        return match[1]; // 返回匹配到的链接
+      } else {
+        return null; // 没有找到链接时返回 null
+      }
+    }
     // 计算时间范围的开始和结束日期
     const calculateDateRange = (days) => {
       // 如果是"全部"选项，返回null
@@ -199,11 +226,11 @@ export default {
           endDate: null
         }
       }
-      
+
       const end = new Date()
       const start = new Date()
       start.setDate(start.getDate() - days)
-      
+
       // 格式化日期为YYYY-MM-DD HH:mm:ss
       const formatDate = (date) => {
         const year = date.getFullYear()
@@ -214,7 +241,7 @@ export default {
         const seconds = String(date.getSeconds()).padStart(2, '0')
         return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
       }
-      
+
       return {
         startDate: formatDate(start),
         endDate: formatDate(end)
@@ -235,7 +262,7 @@ export default {
         const dateRange = calculateDateRange(selectedTimeRange.value.value)
         startDate.value = dateRange.startDate
         endDate.value = dateRange.endDate
-        
+
         // 构造请求参数
         const params = {
           pageNum: currentPage.value,
@@ -246,12 +273,14 @@ export default {
         if (descriptionKeyword.value) {
           params.description = descriptionKeyword.value
         }
-
+        if (shareLinkKeyword.value) {
+          params.shareLink = extractUrlFromText(shareLinkKeyword.value)
+        }
         // 添加社交平台筛选参数
         if (selectedPlatform.value && selectedPlatform.value.value) {
           params.platformId = selectedPlatform.value.value
         }
-        
+
         // 仅当时间范围不是"全部"时，才添加时间参数
         if (dateRange.startDate && dateRange.endDate) {
           params.startPostTime = startDate.value
@@ -382,7 +411,9 @@ export default {
       toggleFilter,
       handleLoadMore,
       onRefresh,
-      navigateToDetail
+      navigateToDetail,
+      handlerShareLinkKeyword,
+      shareLinkKeyword
     }
   }
 }

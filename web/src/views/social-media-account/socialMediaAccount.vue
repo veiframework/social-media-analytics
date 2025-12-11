@@ -384,36 +384,7 @@ const option = reactive({
   searchLabelWidth: 90,
   /** 搜索字段配置项 */
   searchItem: [
-    {
-      type: "select",
-      label: "员工账号",
-      prop: "userId",
-      default: null,
-      filterable: true,
-      dicData: userDict
-    },
-    {
-      type: "select",
-      label: "账号类型",
-      prop: "type",
-      default: null,
-      filterable: true,
-      dicData: socialMediaAccountTypeDict
-    }, {
-      type: "select",
-      label: "平台类型",
-      prop: "platformId",
-      default: null,
-      filterable: true,
-      dicData: socialMediaTypeDict
-    }, {
-      type: "select",
-      label: "同步状态",
-      prop: "syncWorkStatus",
-      default: null,
-      filterable: true,
-      dicData: syncWorkStatusDict
-    },
+
     {
       type: "input",
       label: "用户昵称",
@@ -458,14 +429,14 @@ const option = reactive({
       sortable: false,
       isShow: true
     }, {
-      type: 'text',
+      type: 'tag',
       label: '员工',
-      prop: 'userId_dictText',
+      prop: 'userId',
       width: 180,
       fixed: false,
       sortable: false,
       isShow: true,
-      showOverflowTooltip: true
+      dicData: userDict
     },
     {
       type: 'text',

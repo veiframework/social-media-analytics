@@ -66,6 +66,10 @@ public class SocialMediaWorkController {
     @Operation(summary = "导出excel")
     @GetMapping("/social-media/work/export")
     public Z9CrudExportResult exportExcel(SocialMediaWorkQueryDto queryDto) {
+        if (CollectionUtils.isEmpty(queryDto.getUserId())) {
+            Set<String> userIds = this.groupUserService.checkPurview();
+            queryDto.setUserId(userIds);
+        }
         return this.socialMediaWorkService.exportExcel(queryDto);
     }
 

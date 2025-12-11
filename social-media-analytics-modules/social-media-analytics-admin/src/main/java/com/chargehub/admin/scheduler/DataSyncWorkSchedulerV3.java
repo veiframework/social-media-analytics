@@ -2,12 +2,15 @@ package com.chargehub.admin.scheduler;
 
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.StopWatch;
+import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.RandomUtil;
 import com.chargehub.admin.account.domain.SocialMediaAccount;
 import com.chargehub.admin.account.dto.SocialMediaAccountQueryDto;
 import com.chargehub.admin.account.service.SocialMediaAccountService;
 import com.chargehub.admin.datasync.DataSyncManager;
 import com.chargehub.admin.datasync.domain.DataSyncWorksParams;
 import com.chargehub.admin.datasync.domain.SocialMediaWorkResult;
+import com.chargehub.admin.enums.SocialMediaPlatformEnum;
 import com.chargehub.admin.enums.SyncWorkStatusEnum;
 import com.chargehub.admin.playwright.PlaywrightBrowser;
 import com.chargehub.admin.playwright.PlaywrightCrawlHelper;
@@ -148,6 +151,7 @@ public class DataSyncWorkSchedulerV3 {
                     workUids.put(socialMediaWork.getWorkUid(), socialMediaWork.getUrl());
                     workMap.put(socialMediaWork.getWorkUid(), socialMediaWork);
                 }
+                ThreadUtil.safeSleep(RandomUtil.randomInt(200, 500));
                 DataSyncWorksParams dataSyncWorksParams = new DataSyncWorksParams();
                 dataSyncWorksParams.setSecUid(secUid);
                 dataSyncWorksParams.setBrowserContext(browserContext);
@@ -179,7 +183,9 @@ public class DataSyncWorkSchedulerV3 {
                 String storageState = result.getStorageState();
                 this.socialMediaWorkService.saveOrUpdateBatch(updateList);
                 this.socialMediaAccountService.updateSyncWorkStatus(accountId, SyncWorkStatusEnum.COMPLETE);
-                newStorageStateMap.put(platformId, new UpdateLoginState(storageState));
+                if (!platformId.equals(SocialMediaPlatformEnum.RED_NOTE.getDomain())) {
+                    newStorageStateMap.put(platformId, new UpdateLoginState(storageState));
+                }
                 return null;
             } catch (Exception e) {
                 log.error("账号: " + accountId + "作品同步任务v3异常", e);

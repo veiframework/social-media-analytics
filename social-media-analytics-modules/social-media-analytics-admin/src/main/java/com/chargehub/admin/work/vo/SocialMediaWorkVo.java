@@ -75,19 +75,18 @@ public class SocialMediaWorkVo implements Serializable, Z9CrudVo {
     @ApiModelProperty("收藏数量")
     private Integer collectNum;
 
-    @Excel(name = "评论量", width = 15)
+    @Excel(name = "评论数", width = 15)
     @ApiModelProperty("评论量")
     private Integer commentNum;
 
-    @Excel(name = "播放量", width = 15)
+    @Excel(name = "播放数", width = 15)
     @ApiModelProperty("播放量")
     private Integer playNum;
 
-    @Excel(name = "分享量", width = 15)
+    @Excel(name = "分享数", width = 15)
     @ApiModelProperty("分享量")
     private Integer shareNum;
 
-    @Excel(name = "喜欢量", width = 15)
     @ApiModelProperty("喜欢量")
     private Integer likeNum;
 
