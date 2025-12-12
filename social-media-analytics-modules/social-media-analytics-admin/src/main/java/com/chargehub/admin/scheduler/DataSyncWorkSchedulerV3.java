@@ -2,14 +2,13 @@ package com.chargehub.admin.scheduler;
 
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.StopWatch;
-import cn.hutool.core.thread.ThreadUtil;
-import cn.hutool.core.util.RandomUtil;
 import com.chargehub.admin.account.domain.SocialMediaAccount;
 import com.chargehub.admin.account.dto.SocialMediaAccountQueryDto;
 import com.chargehub.admin.account.service.SocialMediaAccountService;
 import com.chargehub.admin.datasync.DataSyncManager;
 import com.chargehub.admin.datasync.domain.DataSyncWorksParams;
 import com.chargehub.admin.datasync.domain.SocialMediaWorkResult;
+import com.chargehub.admin.enums.AutoSyncEnum;
 import com.chargehub.admin.enums.SocialMediaPlatformEnum;
 import com.chargehub.admin.enums.SyncWorkStatusEnum;
 import com.chargehub.admin.playwright.PlaywrightBrowser;
@@ -27,12 +26,10 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
 
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.*;
 
 /**
  * @author zhanghaowei
@@ -63,31 +60,38 @@ public class DataSyncWorkSchedulerV3 {
     private static final ThreadPoolExecutor FIXED_THREAD_POOL = (ThreadPoolExecutor) Executors.newFixedThreadPool(2);
 
     public void asyncExecute(Set<String> accountIds) {
-        ThreadHelper.execute(() -> this.execute(accountIds));
+        this.execute(accountIds, false);
     }
 
     public void execute() {
-        this.execute(null);
+        this.execute(null, true);
     }
 
-    public void execute(Set<String> accountIds) {
-        StopWatch stopWatch = new StopWatch("作品同步任务");
-        try {
-            stopWatch.start();
-            log.info("作品同步任务v3开始 {}", DateUtil.now());
-            SocialMediaAccountQueryDto socialMediaAccountQueryDto = new SocialMediaAccountQueryDto();
-            socialMediaAccountQueryDto.setCrawler(0);
-            socialMediaAccountQueryDto.setSyncWorkStatus(Sets.newHashSet(SyncWorkStatusEnum.WAIT.ordinal(), SyncWorkStatusEnum.COMPLETE.ordinal(), SyncWorkStatusEnum.ERROR.ordinal()));
-            if (CollectionUtils.isNotEmpty(accountIds)) {
-                socialMediaAccountQueryDto.setId(accountIds);
+    public void execute(Set<String> accountIds, boolean wait) {
+        SocialMediaAccountQueryDto socialMediaAccountQueryDto = new SocialMediaAccountQueryDto();
+        socialMediaAccountQueryDto.setCrawler(0);
+        socialMediaAccountQueryDto.setAutoSync(AutoSyncEnum.ENABLE.getDesc());
+        socialMediaAccountQueryDto.setSyncWorkStatus(Sets.newHashSet(SyncWorkStatusEnum.WAIT.ordinal(), SyncWorkStatusEnum.COMPLETE.ordinal(), SyncWorkStatusEnum.ERROR.ordinal()));
+        if (CollectionUtils.isNotEmpty(accountIds)) {
+            socialMediaAccountQueryDto.setId(accountIds);
+        }
+        List<SocialMediaAccount> socialMediaAccounts = this.socialMediaAccountService.getAccountIds(socialMediaAccountQueryDto);
+        if (CollectionUtils.isEmpty(socialMediaAccounts)) {
+            return;
+        }
+        Map<String, String> crawlerLoginStateMap = this.playwrightCrawlHelper.getCrawlerLoginStateMap();
+        Map<String, UpdateLoginState> newStorageStateMap = new ConcurrentHashMap<>();
+        List<CompletableFuture<Void>> allFutures = new ArrayList<>();
+        redisService.lock("add-task-lock", locked -> {
+            Assert.isTrue(locked, "当前操作人数过多请稍等");
+            Integer maxAccountNum = this.socialMediaAccountService.getMaxAccountNum();
+            int targetTaskSize = CollectionUtils.isNotEmpty(accountIds) ? accountIds.size() : maxAccountNum;
+            int queueSize = FIXED_THREAD_POOL.getQueue().size();
+            int activeCount = FIXED_THREAD_POOL.getActiveCount();
+            int totalPendingTasks = queueSize + activeCount + targetTaskSize;
+            if (totalPendingTasks > maxAccountNum) {
+                throw new IllegalArgumentException("当前正在同步的账号数量超过" + maxAccountNum + "个,请稍后操作!");
             }
-            List<SocialMediaAccount> socialMediaAccounts = this.socialMediaAccountService.getAccountIds(socialMediaAccountQueryDto);
-            if (CollectionUtils.isEmpty(socialMediaAccounts)) {
-                return;
-            }
-            Map<String, String> crawlerLoginStateMap = this.playwrightCrawlHelper.getCrawlerLoginStateMap();
-            Map<String, UpdateLoginState> newStorageStateMap = new ConcurrentHashMap<>();
-            List<CompletableFuture<Void>> allFutures = new ArrayList<>();
             for (SocialMediaAccount socialMediaAccount : socialMediaAccounts) {
                 String accountId = socialMediaAccount.getId();
                 String platformId = socialMediaAccount.getPlatformId();
@@ -104,14 +108,29 @@ public class DataSyncWorkSchedulerV3 {
                 }, FIXED_THREAD_POOL);
                 allFutures.add(future);
             }
-            CompletableFuture.allOf(allFutures.toArray(new CompletableFuture[0])).join();
-            log.info("开始更新cookie...");
-            newStorageStateMap.forEach((platform, storageState) -> this.playwrightCrawlHelper.updateCrawlerLoginState(platform, storageState.getLoginState()));
-            log.info("cookie更新完毕...");
-        } finally {
-            stopWatch.stop();
-            log.info("作品同步任务v3结束 {}秒", stopWatch.getTotalTimeSeconds());
+            return null;
+        }, 30);
+        StopWatch stopWatch = new StopWatch("作品同步任务");
+        stopWatch.start();
+        log.info("作品同步任务v3开始 {}", DateUtil.now());
+        Runnable runnable = () -> {
+            try {
+                CompletableFuture.allOf(allFutures.toArray(new CompletableFuture[0])).get(1, TimeUnit.HOURS);
+                newStorageStateMap.forEach((platform, storageState) -> this.playwrightCrawlHelper.updateCrawlerLoginState(platform, storageState.getLoginState()));
+                log.info("cookie更新完毕...");
+            } catch (Exception e) {
+                log.error("作品同步任务v3超时 {}", e.getMessage());
+                Thread.currentThread().interrupt();
+            } finally {
+                stopWatch.stop();
+                log.info("作品同步任务v3结束 {}秒", stopWatch.getTotalTimeSeconds());
+            }
+        };
+        if (wait) {
+            runnable.run();
+            return;
         }
+        ThreadHelper.execute(runnable);
     }
 
     private void fetchWorks(String accountId, BrowserContext browserContext, Map<String, UpdateLoginState> newStorageStateMap) {
@@ -151,7 +170,6 @@ public class DataSyncWorkSchedulerV3 {
                     workUids.put(socialMediaWork.getWorkUid(), socialMediaWork.getUrl());
                     workMap.put(socialMediaWork.getWorkUid(), socialMediaWork);
                 }
-                ThreadUtil.safeSleep(RandomUtil.randomInt(200, 500));
                 DataSyncWorksParams dataSyncWorksParams = new DataSyncWorksParams();
                 dataSyncWorksParams.setSecUid(secUid);
                 dataSyncWorksParams.setBrowserContext(browserContext);

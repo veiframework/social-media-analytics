@@ -210,7 +210,8 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
                 List<List<String>> partition = Lists.partition(strings, over ? 50 : 2);
                 for (List<String> awemeIds : partition) {
                     dataSyncMessageQueue.syncDouyinExecute(() -> {
-                        try (HttpResponse multiWorksExecute = HttpUtil.createGet(host + url).bearerAuth(token).form("aweme_ids", awemeIds).execute()) {
+                        ThreadUtil.safeSleep(RandomUtil.randomInt(200, 500));
+                        try (HttpResponse multiWorksExecute = HttpUtil.createGet(host + url).timeout(60_000).bearerAuth(token).form("aweme_ids", awemeIds).execute()) {
                             String result = multiWorksExecute.body();
                             JsonNode multiWorkNode = JacksonUtil.toObj(result);
                             int code = multiWorkNode.path("code").asInt(500);
@@ -328,7 +329,7 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
             socialMediaWork.setCustomType(customType);
             log.debug("抖音开始获取播放量");
             dataSyncMessageQueue.syncDouyinExecute(() -> {
-                try (HttpResponse multiWorksExecute = HttpUtil.createGet(host + GET_ONE_WORK_STATISTIC).bearerAuth(token).form("aweme_ids", workUid).execute()) {
+                try (HttpResponse multiWorksExecute = HttpUtil.createGet(host + GET_ONE_WORK_STATISTIC).timeout(60_000).bearerAuth(token).form("aweme_ids", workUid).execute()) {
                     String result = multiWorksExecute.body();
                     JsonNode multiWorkNode = JacksonUtil.toObj(result);
                     int code0 = multiWorkNode.path("code").asInt(500);

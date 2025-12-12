@@ -1,13 +1,10 @@
 package com.chargehub.common.security.interceptor;
 
-import com.alibaba.fastjson2.JSON;
-import com.alibaba.fastjson2.JSONObject;
 import com.chargehub.common.core.web.domain.AjaxResult;
 import com.chargehub.common.redis.service.ValidateCodeService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
@@ -17,7 +14,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -66,7 +62,9 @@ public class ValidationCodeFilter implements Filter {
             httpServletResponse.setHeader("Expires", "0");
             httpServletResponse.setHeader("Pragma", "No-cache");
             httpServletResponse.setHeader("Cache-Control", "no-cache");
-
+            httpServletResponse.setHeader("Access-Control-Allow-Origin", "*");
+            httpServletResponse.setHeader("Access-Control-Allow-Methods", "*");
+            httpServletResponse.setHeader("Access-Control-Allow-Headers", "*");
             try (OutputStream outputStream = httpServletResponse.getOutputStream()) {
                 objectMapper.writeValue(outputStream, AjaxResult.error(e.getMessage()));
                 outputStream.flush();

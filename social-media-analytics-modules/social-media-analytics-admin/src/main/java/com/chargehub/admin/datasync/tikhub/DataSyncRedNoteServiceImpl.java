@@ -40,6 +40,7 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -58,7 +59,7 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
     @Autowired
     private RedisService redisService;
 
-    private static final boolean TEST = false;
+    private static final boolean TEST = true;
 
     private static final boolean TEST_DETAIL = true;
 
@@ -267,7 +268,7 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
                 dataSyncParamContext.setStorageState(null);
                 return null;
             }
-            page.waitForFunction("typeof __INITIAL_STATE__ !== 'undefined'");
+            page.waitForFunction("typeof __INITIAL_STATE__ !== 'undefined'", null, new Page.WaitForFunctionOptions().setTimeout(30_000L));
             String string = (String) page.evaluate("JSON.stringify(__INITIAL_STATE__.note.noteDetailMap)");
             JsonNode jsonNode = JacksonUtil.toObj(string);
 
@@ -438,7 +439,7 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
         List<SocialMediaWork> socialMediaWorks = new ArrayList<>();
         String storageState = null;
         for (Map.Entry<String, String> entry : workUids.entrySet()) {
-            ThreadUtil.safeSleep(RandomUtil.randomInt(200, 500));
+            ThreadUtil.safeSleep(RandomUtil.randomInt(500, 3000));
             String url = entry.getValue();
             DataSyncParamContext dataSyncParamContext = new DataSyncParamContext();
             dataSyncParamContext.setShareLink(url);
@@ -484,7 +485,7 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
             });
         }
         try {
-            latch.await();
+            latch.await(1, TimeUnit.MINUTES);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }

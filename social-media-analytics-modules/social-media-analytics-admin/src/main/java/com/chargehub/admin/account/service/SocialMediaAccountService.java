@@ -145,7 +145,7 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
     public void updateSyncWorkStatus(String accountId, SyncWorkStatusEnum syncWorkStatusEnum) {
         this.baseMapper.lambdaUpdate()
                 .set(SocialMediaAccount::getSyncWorkStatus, syncWorkStatusEnum.ordinal())
-                .set(syncWorkStatusEnum != SyncWorkStatusEnum.SYNCING, SocialMediaAccount::getSyncWorkDate, new Date())
+                .set(syncWorkStatusEnum == SyncWorkStatusEnum.COMPLETE, SocialMediaAccount::getSyncWorkDate, new Date())
                 .eq(SocialMediaAccount::getId, accountId)
                 .ne(SocialMediaAccount::getSyncWorkStatus, syncWorkStatusEnum.ordinal())
                 .update();
@@ -167,12 +167,19 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
         Set<Integer> syncWorkStatus = dto.getSyncWorkStatus();
         Integer crawler = dto.getCrawler();
         Set<String> platformId = dto.getPlatformId();
+        String autoSync = dto.getAutoSync();
         return this.baseMapper.lambdaQuery().select(SocialMediaAccount::getId, SocialMediaAccount::getPlatformId)
+                .eq(StringUtils.isNotBlank(autoSync), SocialMediaAccount::getAutoSync, autoSync)
                 .in(CollectionUtils.isNotEmpty(ids), SocialMediaAccount::getId, ids)
                 .in(CollectionUtils.isNotEmpty(syncWorkStatus), SocialMediaAccount::getSyncWorkStatus, syncWorkStatus)
                 .in(CollectionUtils.isNotEmpty(platformId), SocialMediaAccount::getPlatformId, platformId)
                 .eq(crawler != null, SocialMediaAccount::getCrawler, crawler)
+                .orderByAsc(SocialMediaAccount::getSyncWorkDate)
                 .list();
+    }
+
+    public Integer getMaxAccountNum() {
+        return Integer.parseInt(this.baseMapper.lambdaQuery().count() + "");
     }
 
     public IPage<SocialMediaAccountStatisticVo> getAccountStatistic(SocialMediaAccountQueryDto queryDto) {

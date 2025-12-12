@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.chargehub.admin.account.service.SocialMediaAccountService;
 import com.chargehub.admin.enums.SocialMediaPlatformEnum;
 import com.chargehub.admin.groupuser.service.GroupUserService;
+import com.chargehub.admin.work.dto.SocialMediaWorkPlayNumDto;
 import com.chargehub.admin.work.dto.SocialMediaWorkQueryDto;
 import com.chargehub.admin.work.dto.SocialMediaWorkShareLinkDto;
 import com.chargehub.admin.work.service.SocialMediaWorkService;
@@ -102,8 +103,17 @@ public class SocialMediaWorkController {
     @ApiOperation("删除作品")
     @Operation(summary = "删除作品")
     @DeleteMapping("/social-media/work/{ids}")
-    public void deleteWork(@PathVariable String ids){
+    public void deleteWork(@PathVariable String ids) {
         this.socialMediaWorkService.deleteByIds(ids);
+    }
+
+    @Debounce
+    @RequiresLogin
+    @ApiOperation("更新播放量")
+    @Operation(summary = "更新播放量")
+    @PostMapping("/social-media/work/view")
+    public void updateViewNum(@RequestBody @Validated SocialMediaWorkPlayNumDto dto) {
+        this.socialMediaWorkService.updateViewNum(dto);
     }
 
 }

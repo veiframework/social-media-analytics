@@ -1,6 +1,8 @@
 package com.chargehub.admin.datasync.tikhub;
 
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.RandomUtil;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpStatus;
 import cn.hutool.http.HttpUtil;
@@ -88,7 +90,8 @@ public class DataSyncWechatVideoServiceImpl implements DataSyncService {
         String token = socialMediaDataApi.getToken();
         String host = socialMediaDataApi.getHost();
         String secUid = socialMediaAccount.getSecUid();
-        try (HttpResponse execute = HttpUtil.createGet(host + GET_USER_WORKS).bearerAuth(token)
+        ThreadUtil.safeSleep(RandomUtil.randomInt(200, 500));
+        try (HttpResponse execute = HttpUtil.createGet(host + GET_USER_WORKS).timeout(60_000).bearerAuth(token)
                 .form("username", secUid)
                 .form("last_buffer", cursor)
                 .execute()) {

@@ -47,3 +47,12 @@ export function delWork(id) {
     method: 'delete'
   })
 }
+
+
+export function updateViewCount(data) {
+  return request({
+    url: `${prefix}/view`,
+    method: 'post',
+    data: data
+  })
+}

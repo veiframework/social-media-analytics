@@ -119,6 +119,9 @@ public class SocialMediaWork implements Serializable, Z9CrudEntity {
     @ApiModelProperty("同步作品日期")
     private Date syncWorkDate;
 
+    @ApiModelProperty("播放量被修正了")
+    private Integer playFixed;
+
     @Override
     public String getUniqueId() {
         return this.id;
@@ -165,7 +168,7 @@ public class SocialMediaWork implements Serializable, Z9CrudEntity {
         if (!this.getCommentNum().equals(newWork.getCommentNum())) {
             updateWork.setCommentNum(newWork.getCommentNum());
         }
-        if (!this.getPlayNum().equals(newWork.getPlayNum())) {
+        if (this.playFixed.equals(0) && !this.getPlayNum().equals(newWork.getPlayNum())) {
             updateWork.setPlayNum(newWork.getPlayNum());
             int upNum = newWork.getPlayNum() - this.getPlayNum();
             if (upNum >= 0) {

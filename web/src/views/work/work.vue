@@ -98,6 +98,14 @@
         @cancel="wechatVideoVisible = false"
         @save="handleWechatVideoForm"
     />
+    <!-- 播放数修正 -->
+    <CustomDialog
+        :form="editViewForm"
+        :option="editViewOption"
+        :visible="editViewVisible"
+        @cancel="editViewVisible = false"
+        @save="handleEditViewForm"
+    />
 
   </div>
 </template>
@@ -113,7 +121,7 @@ import {
   getWorkListApi,
   getWorkApi,
   exportWorkApi, createByWechatVideoId, createByWorkShareUrl,
-  delWork
+  delWork, updateViewCount
 } from '@/api/work'
 import {getDicts} from '@/api/system/dict/data'
 import CustomTable from "@/components/CustomTable"
@@ -159,6 +167,10 @@ const shareLinkForm = ref({})
 const shareLinkVisible = ref(false)
 const wechatVideoForm = ref({})
 const wechatVideoVisible = ref(false)
+
+const editViewVisible = ref(false)
+const editViewForm = ref({})
+
 
 // 处理分享链接
 const handleShareLink = async (val) => {
@@ -344,13 +356,9 @@ const handleSyncWork = async () => {
       ElMessage.success('同步作品需要时间，请稍后前往《作品管理》查看~')
       getData()
     } else {
-      ElMessage.error(response.msg || '同步失败')
     }
   } catch (error) {
-    if (error !== 'cancel') {
-      console.error('同步失败:', error)
-      ElMessage.error('同步失败')
-    }
+
   }
 }
 
@@ -378,7 +386,27 @@ const handleMenu = async (val) => {
     case 'delete':
       await handleDelete(row.id)
       break
+    case 'viewEdit':
+      await handleViewEdit(row)
+      break
   }
+}
+
+const handleEditViewForm = async (val) => {
+  let loading = ElLoading.service(loadingOpt)
+  try {
+    let res = await updateViewCount(val)
+    await getData()
+    editViewVisible.value = false;
+  }finally {
+    loading.close()
+  }
+}
+
+const handleViewEdit = async (row) => {
+  editViewForm.value.accountId = row.accountId;
+  editViewForm.value.workId = row.id;
+  editViewVisible.value = true;
 }
 
 const handleDelete = async (id) => {
@@ -439,7 +467,7 @@ const option = reactive({
   descFields: new Set(["createTime"]),
   /** 搜索字段配置项 */
   searchItem: [
-      {
+    {
       type: "select",
       label: "社交帐号",
       prop: "accountId",
@@ -750,10 +778,18 @@ const option = reactive({
   /** 操作菜单配置项 */
   menu: {
     isShow: true,
-    width: 100,
+    width: 140,
     fixed: 'right'
   },
   menuItemBtn: [
+    {
+      type: 'primary',
+      isShow: true,
+      icon: 'View',
+      label: '修正播放数',
+      value: 'viewEdit',
+      judge: (row) => row.platformId === 'xiaohongshu' || row.platformId === 'wechatvideo'
+    },
     {
       type: 'primary',
       isShow: true,
@@ -955,6 +991,24 @@ const wechatVideoOption = reactive({
   }
 })
 
+// 分享链接表单配置项
+const editViewOption = reactive({
+  dialogTitle: '修正播放数',
+  dialogClass: 'dialog_md',
+  labelWidth: '140px',
+  formitem: [
+    {
+      type: "input",
+      label: "播放数",
+      prop: "playNum",
+      category: "number",
+      placeholder: "请输入播放数",
+    },
+  ],
+  rules: {
+    playNum: [{required: true, message: '请输入播放数', trigger: 'blur'}],
+  }
+})
 
 /**
  * 初始化数据
