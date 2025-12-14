@@ -84,7 +84,7 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
                 socialMediaAccount.setUid(uid);
                 this.baseMapper.insert(socialMediaAccount);
             } else {
-                Assert.isTrue(userId.equals(socialMediaAccount.getUserId()), "该作品账号归属于其他人,请联系归属人");
+                Assert.isTrue(userId.equals(socialMediaAccount.getUserId()), "请联系组长交接账号,该作品账号归属于其他人");
             }
             return socialMediaAccount;
         });

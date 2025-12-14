@@ -268,6 +268,7 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
                 dataSyncParamContext.setStorageState(null);
                 return null;
             }
+            ThreadUtil.safeSleep(RandomUtil.randomInt(200, 500));
             page.waitForFunction("typeof __INITIAL_STATE__ !== 'undefined'", null, new Page.WaitForFunctionOptions().setTimeout(30_000L));
             String string = (String) page.evaluate("JSON.stringify(__INITIAL_STATE__.note.noteDetailMap)");
             JsonNode jsonNode = JacksonUtil.toObj(string);

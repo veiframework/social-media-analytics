@@ -167,7 +167,7 @@ public class DataSyncWorkSchedulerV3 {
                 Map<String, String> workUids = new HashMap<>();
                 Map<String, SocialMediaWork> workMap = new HashMap<>();
                 for (SocialMediaWork socialMediaWork : latestWork) {
-                    workUids.put(socialMediaWork.getWorkUid(), socialMediaWork.getUrl());
+                    workUids.put(socialMediaWork.getWorkUid(), socialMediaWork.getShareLink());
                     workMap.put(socialMediaWork.getWorkUid(), socialMediaWork);
                 }
                 DataSyncWorksParams dataSyncWorksParams = new DataSyncWorksParams();

@@ -210,7 +210,7 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
                 List<List<String>> partition = Lists.partition(strings, over ? 50 : 2);
                 for (List<String> awemeIds : partition) {
                     dataSyncMessageQueue.syncDouyinExecute(() -> {
-                        ThreadUtil.safeSleep(RandomUtil.randomInt(200, 500));
+                        ThreadUtil.safeSleep(RandomUtil.randomInt(1000, 3000));
                         try (HttpResponse multiWorksExecute = HttpUtil.createGet(host + url).timeout(60_000).bearerAuth(token).form("aweme_ids", awemeIds).execute()) {
                             String result = multiWorksExecute.body();
                             JsonNode multiWorkNode = JacksonUtil.toObj(result);
