@@ -29,6 +29,7 @@ import com.chargehub.common.security.template.dto.Z9CrudDto;
 import com.chargehub.common.security.template.dto.Z9CrudQueryDto;
 import com.chargehub.common.security.template.service.AbstractZ9CrudServiceImpl;
 import com.chargehub.common.security.utils.SecurityUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -45,6 +46,7 @@ import java.util.stream.Collectors;
  * @author : zhanghaowei
  * @since : 1.0
  */
+@Slf4j
 @Service
 @Transactional(rollbackFor = Exception.class)
 public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialMediaAccountMapper, SocialMediaAccount> {
@@ -86,7 +88,9 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
                 socialMediaAccount.setAutoSync(AutoSyncEnum.ENABLE.getDesc());
                 this.baseMapper.insert(socialMediaAccount);
             } else {
-                Assert.isTrue(userId.equals(socialMediaAccount.getUserId()), "用户" + userId + "请联系组长交接账号,该作品账号归属于其他人");
+                if (!userId.equals(socialMediaAccount.getUserId())) {
+                    log.error("用户" + userId + ",添加了用户" + socialMediaAccount.getUserId() + "的作品,账号id是" + socialMediaAccount.getId());
+                }
             }
             return socialMediaAccount;
         });
@@ -276,7 +280,7 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
         SocialMediaUserInfo socialMediaUserInfo = socialMediaWorkDetail.getSocialMediaUserInfo();
         SocialMediaAccount socialMediaAccount = this.getAndSave(socialMediaUserInfo, userId, accountType, platformEnum.getPlatformEnum());
         SocialMediaWork socialMediaWork = socialMediaWorkDetail.getWork();
-        socialMediaWork.setUserId(userId);
+        socialMediaWork.setUserId(socialMediaAccount.getUserId());
         socialMediaWork.setAccountId(socialMediaAccount.getId());
         socialMediaWork.setTenantId(socialMediaAccount.getTenantId());
         socialMediaWork.setAccountType(socialMediaAccount.getType());
