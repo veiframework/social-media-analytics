@@ -68,4 +68,5 @@ public class SocialMediaAccountDto implements Serializable, Z9CrudDto<SocialMedi
     private String type;
 
 
+    private String autoSync;
 }

@@ -6,7 +6,7 @@
 				<el-button circle icon="Search" @click="toggleSearch()" />
 			</el-tooltip>
 			<el-tooltip class="item" effect="dark" content="刷新" placement="top">
-				<el-button circle icon="Refresh" @click="refresh()" />
+				<el-button circle icon="Refresh" @click="refresh()" v-if="search"/>
 			</el-tooltip>
 			<el-tooltip class="item" effect="dark" content="显隐列" placement="top" v-if="columns">
 				<el-button circle icon="Menu" @click="showColumn()" v-if="showColumnsType == 'transfer'" />

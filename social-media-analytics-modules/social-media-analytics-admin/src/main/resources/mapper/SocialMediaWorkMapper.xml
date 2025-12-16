@@ -3,20 +3,22 @@
 <mapper namespace="com.chargehub.admin.work.mapper.SocialMediaWorkMapper">
 
     <select id="groupByAccountId0" resultType="com.chargehub.admin.work.domain.SocialMediaWork">
-        SELECT IFNULL(SUM(thumb_num), 0) AS thumbNum,
-        IFNULL(SUM(share_num), 0) AS shareNum,
-        IFNULL(SUM(collect_num), 0) AS collectNum,
-        IFNULL(SUM(comment_num), 0) AS commentNum,
-        IFNULL(SUM(play_num), 0) AS playNum,
-        account_id
-        FROM social_media_work
-        <if test='userIds!=null'>
-            WHERE user_id in
-            <foreach item="item" index="index" collection="userIds" separator="," open="(" close=")">
-                #{item}
-            </foreach>
-        </if>
-        GROUP BY account_id
+        select * from (
+            SELECT IFNULL(SUM(thumb_num), 0) AS thumbNum,
+            IFNULL(SUM(share_num), 0) AS shareNum,
+            IFNULL(SUM(collect_num), 0) AS collectNum,
+            IFNULL(SUM(comment_num), 0) AS commentNum,
+            IFNULL(SUM(play_num), 0) AS playNum,
+            account_id
+            FROM social_media_work
+            <if test='userIds!=null'>
+                WHERE user_id in
+                <foreach item="item" index="index" collection="userIds" separator="," open="(" close=")">
+                    #{item}
+                </foreach>
+            </if>
+            GROUP BY account_id
+        ) t
         <if test='ascFields!=null||descFields!=null'>
         ORDER BY
             <if test='ascFields!=null'>

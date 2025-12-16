@@ -27,6 +27,10 @@ public class SocialMediaWorkDto implements Serializable, Z9CrudDto<SocialMediaWo
 
     private String id;
 
+    @Excel(name = "标题", width = 15)
+    @ApiModelProperty("标题")
+    private String title;
+
     @Excel(name = "描述", width = 15)
     @ApiModelProperty("描述")
     private String description;
@@ -110,6 +114,8 @@ public class SocialMediaWorkDto implements Serializable, Z9CrudDto<SocialMediaWo
     @ApiModelProperty("业务类型")
     private String customType;
 
+    @ApiModelProperty("话题")
+    private String topics;
 
     @ApiModelProperty("数据统计的md5")
     private String statisticMd5;

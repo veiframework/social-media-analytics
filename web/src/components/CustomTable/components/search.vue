@@ -113,8 +113,7 @@
 							<el-form-item v-if="appStore.device == 'desktop'" :label="item.label + '：'">
 								<el-date-picker :shortcuts="item.shortcuts" class="w100" start-placeholder="开始时间" end-placeholder="结束时间"
 									:format="item.format" :value-format="item.valueFormat"
-									:default-time="[new Date(2000, 1, 1, 0, 0, 0), new Date(2000, 2, 1, 23, 59, 59)]"
-									v-model="queryParams[item.prop]" @change="(val) => handleDate(val, item.prop)"
+									v-model="item.default" @change="(val) => handleDate(val, item.prop)"
 									:type="item.category" :disabled-date="item.disabledDate" />
 							</el-form-item>
 							<template v-else>

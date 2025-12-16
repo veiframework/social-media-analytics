@@ -225,7 +225,8 @@ const option = reactive({
       width: 100,
       fixed: false,
       sortable: true,
-      isShow: true
+      isShow: true,
+      noFilter: true
     },
     {
       type: 'text',

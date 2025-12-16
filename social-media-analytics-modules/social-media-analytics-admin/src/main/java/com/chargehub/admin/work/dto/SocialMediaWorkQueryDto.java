@@ -76,6 +76,10 @@ public class SocialMediaWorkQueryDto extends Pagination implements Serializable,
 
     private Set<String> userId_dictText;
 
+    private String startCreateTime;
+
+    private String endCreateTime;
+
     @Override
     public Page<SocialMediaWork> buildPageObj() {
         return page();
@@ -109,6 +113,18 @@ public class SocialMediaWorkQueryDto extends Pagination implements Serializable,
             condition.setQueryType(Z9QueryTypeEnum.IN_SQL);
             condition.setValue("select user_id from sys_user where nick_name in (" + userId_dictText.stream().map(i -> "'" + i + "'").collect(Collectors.joining(",")) + ")");
             z9CrudQueryConditions.add(condition);
+        }
+        if (StringUtils.isNotBlank(startCreateTime) && StringUtils.isNotBlank(endCreateTime)) {
+            Z9CrudQueryCondition<SocialMediaWork> condition = new Z9CrudQueryCondition<>();
+            condition.setField(SocialMediaWork::getPostTime);
+            condition.setQueryType(Z9QueryTypeEnum.GE);
+            condition.setValue(startCreateTime);
+            Z9CrudQueryCondition<SocialMediaWork> condition2 = new Z9CrudQueryCondition<>();
+            condition2.setField(SocialMediaWork::getPostTime);
+            condition2.setQueryType(Z9QueryTypeEnum.LT);
+            condition2.setValue(endCreateTime);
+            z9CrudQueryConditions.add(condition);
+            z9CrudQueryConditions.add(condition2);
         }
         return z9CrudQueryConditions;
     }

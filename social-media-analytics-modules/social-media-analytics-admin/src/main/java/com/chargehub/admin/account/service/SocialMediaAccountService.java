@@ -15,6 +15,7 @@ import com.chargehub.admin.datasync.DataSyncManager;
 import com.chargehub.admin.datasync.DataSyncMessageQueue;
 import com.chargehub.admin.datasync.domain.SocialMediaUserInfo;
 import com.chargehub.admin.datasync.domain.SocialMediaWorkDetail;
+import com.chargehub.admin.enums.AutoSyncEnum;
 import com.chargehub.admin.enums.SocialMediaPlatformEnum;
 import com.chargehub.admin.enums.SyncWorkStatusEnum;
 import com.chargehub.admin.scheduler.DataSyncWorkSchedulerV3;
@@ -82,9 +83,10 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
                 socialMediaAccount.setNickname(nickname);
                 socialMediaAccount.setSecUid(secUid);
                 socialMediaAccount.setUid(uid);
+                socialMediaAccount.setAutoSync(AutoSyncEnum.ENABLE.getDesc());
                 this.baseMapper.insert(socialMediaAccount);
             } else {
-                Assert.isTrue(userId.equals(socialMediaAccount.getUserId()), "请联系组长交接账号,该作品账号归属于其他人");
+                Assert.isTrue(userId.equals(socialMediaAccount.getUserId()), "用户" + userId + "请联系组长交接账号,该作品账号归属于其他人");
             }
             return socialMediaAccount;
         });
@@ -260,6 +262,7 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
         socialMediaAccountDto.setUid(uid);
         socialMediaAccountDto.setNickname(nickname);
         socialMediaAccountDto.setType(type);
+        socialMediaAccountDto.setAutoSync(AutoSyncEnum.ENABLE.getDesc());
         this.create(socialMediaAccountDto);
     }
 
@@ -269,7 +272,7 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
         String accountType = dto.getAccountType();
         SocialMediaPlatformEnum.PlatformExtra platformEnum = dto.getPlatformEnum() == null ? SocialMediaPlatformEnum.getPlatformByWorkUrl(shareLink) : new SocialMediaPlatformEnum.PlatformExtra(dto.getPlatformEnum());
         SocialMediaWorkDetail<SocialMediaWork> socialMediaWorkDetail = this.dataSyncManager.getWork("", shareLink, platformEnum);
-        Assert.notNull(socialMediaWorkDetail, "获取作品失败,请重试");
+        Assert.notNull(socialMediaWorkDetail, "获取作品失败,请检查作品是否下架再重试");
         SocialMediaUserInfo socialMediaUserInfo = socialMediaWorkDetail.getSocialMediaUserInfo();
         SocialMediaAccount socialMediaAccount = this.getAndSave(socialMediaUserInfo, userId, accountType, platformEnum.getPlatformEnum());
         SocialMediaWork socialMediaWork = socialMediaWorkDetail.getWork();

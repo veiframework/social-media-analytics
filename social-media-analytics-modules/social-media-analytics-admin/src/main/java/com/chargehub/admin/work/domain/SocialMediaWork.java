@@ -1,9 +1,6 @@
 package com.chargehub.admin.work.domain;
 
-import com.baomidou.mybatisplus.annotation.FieldFill;
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.*;
 import com.chargehub.common.security.template.annotation.CrudSubUniqueId;
 import com.chargehub.common.security.template.domain.Z9CrudEntity;
 import io.swagger.annotations.ApiModelProperty;
@@ -23,6 +20,8 @@ public class SocialMediaWork implements Serializable, Z9CrudEntity {
     @TableId(type = IdType.ASSIGN_ID)
     private String id;
 
+    @ApiModelProperty("标题")
+    private String title;
 
     @ApiModelProperty("描述")
     private String description;
@@ -121,6 +120,9 @@ public class SocialMediaWork implements Serializable, Z9CrudEntity {
 
     @ApiModelProperty("播放量被修正了")
     private Integer playFixed;
+
+    @ApiModelProperty("话题")
+    private String topics;
 
     @Override
     public String getUniqueId() {

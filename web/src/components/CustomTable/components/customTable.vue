@@ -77,7 +77,7 @@
 					<!-- tag 标签类型 -->
 					<el-table-column v-if="item.type == 'tag' && item.isShow" :sortable="item.sortable"
 						:label="item.label" align="center" :min-width="item.width" show-overflow-tooltip
-						:fixed="item.fixed" :filters="columnFilterData(item)" :column-key="item.prop" >
+						:fixed="item.fixed" :filters="item.noFilter? null : columnFilterData(item)" :column-key="item.prop" >
 						<template #default="scope">
 							<template v-for="itm, indx in item.dicData">
 								<template v-if="itm.elTagType && itm.elTagType != 'default'">

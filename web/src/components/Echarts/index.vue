@@ -29,7 +29,7 @@ const props = defineProps({
 		default: false,
 	}
 });
-const emit = defineEmits(['monthChange']);
+const emit = defineEmits(['monthChange','handleClick']);
 const month = ref(moment().format("YYYY-MM"));
 const monthChange = () => {
 	emit('monthChange', month.value);
@@ -44,7 +44,6 @@ const cancalDebounce = lodash.debounce(echartsChange, 100, { leading: false, tra
 // 初始化图
 const initEcharts = () => {
 	myCharts = Echarts.init(chartDom.value, { renderer: 'svg' });
-	myCharts.showLoading();
 }
 // 监听 sidbar 变化
 watch(() => appStore.sidebar.opened, () => {
@@ -53,9 +52,30 @@ watch(() => appStore.sidebar.opened, () => {
 // 监听数据变化
 watch(() => props.option, (news) => {
 	if (news && news.series && news.series[0].data && news.series[0].data.length > 0) {
-		myCharts.hideLoading();
+    myCharts.clear()
 		myCharts.setOption(props.option);
-	}
+    myCharts.on('click', function (params) {
+      emit('handleClick', params);
+    })
+	}else if (myCharts){
+      myCharts.clear()
+      myCharts.setOption({
+        title: props.option.title,
+        graphic: {
+          elements: [{
+            type: 'text',
+            left: 'center',
+            top: 'center',
+            style: {
+              text: '暂无数据',
+              fontSize: 16,
+              fill: '#999'
+            }
+          }]
+        },
+        series: []
+      });
+  }
 }, { deep: true, immediate: true })
 onMounted(() => {
 	initEcharts();

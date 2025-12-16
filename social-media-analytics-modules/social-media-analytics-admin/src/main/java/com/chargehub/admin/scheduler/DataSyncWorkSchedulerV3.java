@@ -1,5 +1,6 @@
 package com.chargehub.admin.scheduler;
 
+import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.StopWatch;
 import com.chargehub.admin.account.domain.SocialMediaAccount;
@@ -24,10 +25,12 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -59,7 +62,18 @@ public class DataSyncWorkSchedulerV3 {
 
     private static final ThreadPoolExecutor FIXED_THREAD_POOL = (ThreadPoolExecutor) Executors.newFixedThreadPool(2);
 
+    private static final String LAST_TASK_DATE = "sync_work_last_date";
+
     public void asyncExecute(Set<String> accountIds) {
+        String lastSyncDate = redisService.getCacheObject(LAST_TASK_DATE);
+        if (StringUtils.isNotBlank(lastSyncDate)) {
+            LocalDateTime localDateTime = LocalDateTime.parse(lastSyncDate, DatePattern.NORM_DATETIME_FORMATTER).plusHours(2);
+            long betweenNextMs = DateUtil.betweenMs(new Date(), DateUtil.date(localDateTime));
+            if (betweenNextMs > 0 && betweenNextMs < 1000 * 60 * 30) {
+                log.warn("距离下一次同步时间太近不执行");
+                return;
+            }
+        }
         this.execute(accountIds, false);
     }
 
@@ -117,7 +131,6 @@ public class DataSyncWorkSchedulerV3 {
             try {
                 CompletableFuture.allOf(allFutures.toArray(new CompletableFuture[0])).get(1, TimeUnit.HOURS);
                 newStorageStateMap.forEach((platform, storageState) -> this.playwrightCrawlHelper.updateCrawlerLoginState(platform, storageState.getLoginState()));
-                log.info("cookie更新完毕...");
             } catch (Exception e) {
                 log.error("作品同步任务v3超时 {}", e.getMessage());
                 Thread.currentThread().interrupt();
@@ -127,6 +140,8 @@ public class DataSyncWorkSchedulerV3 {
             }
         };
         if (wait) {
+            //记录上一次定时任务的执行时间
+            redisService.setCacheObject(LAST_TASK_DATE, DateUtil.now());
             runnable.run();
             return;
         }
@@ -158,7 +173,7 @@ public class DataSyncWorkSchedulerV3 {
                 }
 
                 List<SocialMediaWork> latestWork = this.socialMediaWorkService.getLatestWork(accountId);
-                if (CollectionUtils.isEmpty(latestWork)) {
+                if (CollectionUtils.isEmpty(latestWork) && !platformId.equals(SocialMediaPlatformEnum.WECHAT_VIDEO.getDomain())) {
                     return null;
                 }
                 this.socialMediaAccountService.updateSyncWorkStatus(accountId, SyncWorkStatusEnum.SYNCING);

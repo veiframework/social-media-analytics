@@ -14,6 +14,7 @@ import com.chargehub.admin.enums.SocialMediaPlatformEnum;
 import com.chargehub.admin.enums.WorkTypeEnum;
 import com.chargehub.admin.work.domain.SocialMediaWork;
 import com.chargehub.common.core.properties.HubProperties;
+import com.chargehub.common.core.utils.MessageFormatUtils;
 import com.chargehub.common.security.utils.DictUtils;
 import com.chargehub.common.security.utils.JacksonUtil;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -228,6 +229,8 @@ public class DataSyncWechatVideoServiceImpl implements DataSyncService {
         // 基于3.3%互动率估算,目前无法从 view_count获取浏览量
         int playNum = (thumbNum + collectNum + shareNum + commentNum) * 10;
         String desc = objectDescNode.get("description").asText("");
+        String title = MessageFormatUtils.cleanDescription(desc);
+        String topics = MessageFormatUtils.extractHashtagsStr(desc);
         String workUid = node.at("/object_extend/export_id").asText("");
         String customType = "";
         Map<String, String> socialMediaCustomType = DictUtils.getDictLabelMap("social_media_custom_type");
@@ -261,6 +264,8 @@ public class DataSyncWechatVideoServiceImpl implements DataSyncService {
         socialMediaWork.setPlayNum(playNum);
         socialMediaWork.setAccountType(accountType);
         socialMediaWork.setCustomType(customType);
+        socialMediaWork.setTitle(title);
+        socialMediaWork.setTopics(topics);
         socialMediaWorkMap.put(workUid, socialMediaWork);
     }
 

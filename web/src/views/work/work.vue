@@ -78,8 +78,15 @@
         :option="optionInfo"
         :visible="infoVisible"
         :rowData="rowData"
-        @cancel="infoVisible = false"
-    />
+        @cancel="infoVisible = false">
+      <template #custom="{ row, prop }">
+        <template v-if="prop==='topics'">
+          <el-tag style="margin-right: 5px" v-for="(item, indx) in row.topics.split(',')" :key="indx">
+            {{ item }}
+          </el-tag>
+        </template>
+      </template>
+    </CustomInfo>
 
     <!-- 分享链接添加弹窗 -->
     <CustomDialog
@@ -184,6 +191,8 @@ const handleShareLink = async (val) => {
       ElMessage.success(res.msg || '通过主页分享链接添加成功')
       shareLinkVisible.value = false
       await getData()
+      await getUserList()
+      await getAccountList()
     } else {
       ElMessage.error(res.msg || '操作失败')
     }
@@ -398,7 +407,7 @@ const handleEditViewForm = async (val) => {
     let res = await updateViewCount(val)
     await getData()
     editViewVisible.value = false;
-  }finally {
+  } finally {
     loading.close()
   }
 }
@@ -839,19 +848,56 @@ const optionInfo = reactive({
           isShow: true,
           dicData: mediaTypeDict
         },
-        // {
-        //   type: 'tag',
-        //   label: '作品状态',
-        //   prop: 'status',
-        //   isShow: true,
-        //   dicData: statusDict
-        // }
+        {
+          type: 'tag',
+          label: '员工',
+          prop: 'userId',
+          width: 180,
+          fixed: false,
+          sortable: false,
+          isShow: true,
+          dicData: userDict
+        },
+        {
+          type: 'tag',
+          label: '昵称',
+          prop: 'accountId',
+          width: 120,
+          fixed: false,
+          sortable: false,
+          isShow: true,
+          dicData: accountListDict
+        },
+        {
+          type: 'tag',
+          label: '账号类型',
+          prop: 'accountType',
+          width: 100,
+          fixed: false,
+          sortable: false,
+          isShow: true,
+          dicData: socialMediaAccountTypeDict
+        },
       ]
     },
     {
       title: '作品内容',
       column: 1,
       infoData: [
+        {
+          type: 'text',
+          label: '标题',
+          prop: 'title',
+          isShow: true,
+          span: 2
+        },
+        {
+          type: 'custom',
+          label: '话题',
+          prop: 'topics',
+          isShow: true,
+          span: 2
+        },
         {
           type: 'text',
           label: '描述',
@@ -890,6 +936,11 @@ const optionInfo = reactive({
           label: '点赞数',
           prop: 'thumbNum',
           isShow: true
+        }, {
+          type: 'text',
+          label: '点赞增长量',
+          prop: 'thumbNumUp',
+          isShow: true,
         },
         {
           type: 'text',
@@ -908,6 +959,11 @@ const optionInfo = reactive({
           label: '播放量',
           prop: 'playNum',
           isShow: true
+        }, {
+          type: 'text',
+          label: '播放增长量',
+          prop: 'playNumUp',
+          isShow: true,
         },
         {
           type: 'text',
@@ -922,6 +978,12 @@ const optionInfo = reactive({
       title: '时间信息',
       column: 2,
       infoData: [
+        {
+          type: 'text',
+          label: '创建时间',
+          prop: 'createTime',
+          isShow: true
+        },
         {
           type: 'text',
           label: '发布时间',

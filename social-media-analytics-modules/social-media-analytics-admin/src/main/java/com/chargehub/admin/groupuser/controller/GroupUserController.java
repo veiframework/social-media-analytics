@@ -19,7 +19,9 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * @author : zhanghaowei
@@ -95,6 +97,22 @@ public class GroupUserController {
         }
         String userId = SecurityUtils.getUserId() + "";
         return this.groupUserService.getGroupUsers(userId);
+    }
+
+    @RequiresLogin
+    @ApiOperation("获取用户下拉列表")
+    @Operation(summary = "获取用户下拉列表")
+    @GetMapping("/user/leader")
+    public List<SysUser> getLeaderUsers() {
+        LoginUser loginUser = SecurityUtils.getLoginUser();
+        Set<String> roles = loginUser.getRoles();
+        SysUser sysUser = new SysUser();
+        sysUser.setNickName(loginUser.getSysUser().getNickName());
+        sysUser.setUserId(loginUser.getUserid());
+        if (roles.contains("组长") || roles.contains("员工")) {
+            return Stream.of(sysUser).collect(Collectors.toList());
+        }
+        return this.groupUserService.getLeaderUsers();
     }
 
 }

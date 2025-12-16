@@ -63,6 +63,11 @@ public class GroupUserService extends AbstractZ9CrudServiceImpl<GroupUserMapper,
         return this.baseMapper.getUsers();
     }
 
+    public List<SysUser> getLeaderUsers() {
+        return this.baseMapper.getLeaderUsers();
+    }
+
+
     public List<GroupUserVo> getGroupUsers(String userId) {
         List<GroupUser> relativeUsers = this.baseMapper.getRelativeUsers(userId);
         return BeanUtil.copyToList(relativeUsers, GroupUserVo.class);
@@ -81,6 +86,16 @@ public class GroupUserService extends AbstractZ9CrudServiceImpl<GroupUserMapper,
             userIds.addAll(collect);
         }
         userIds.add(userid);
+        return userIds;
+    }
+
+    public Set<String> checkPurview(String userId) {
+        Set<String> userIds = new HashSet<>();
+        List<GroupUser> relativeUsers = this.baseMapper.getRelativeUsers(userId);
+        if (CollectionUtils.isNotEmpty(relativeUsers)) {
+            Set<String> collect = relativeUsers.stream().map(GroupUser::getUserId).collect(Collectors.toSet());
+            userIds.addAll(collect);
+        }
         return userIds;
     }
 

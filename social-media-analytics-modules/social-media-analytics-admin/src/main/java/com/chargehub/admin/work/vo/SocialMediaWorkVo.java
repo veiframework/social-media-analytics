@@ -31,6 +31,9 @@ public class SocialMediaWorkVo implements Serializable, Z9CrudVo {
     @ApiModelProperty("员工id")
     private String userId;
 
+    @Excel(name = "标题", width = 15)
+    @ApiModelProperty("标题")
+    private String title;
 
     @Excel(name = "描述", width = 15)
     @ApiModelProperty("描述")
@@ -114,6 +117,9 @@ public class SocialMediaWorkVo implements Serializable, Z9CrudVo {
     @Dict(dictType = "social_media_custom_type")
     @ApiModelProperty("业务类型")
     private String customType;
+
+    @ApiModelProperty("话题")
+    private String topics;
 
     @JsonFormat(timezone = "GMT+8", pattern = "yyyy-MM-dd HH:mm:ss")
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")

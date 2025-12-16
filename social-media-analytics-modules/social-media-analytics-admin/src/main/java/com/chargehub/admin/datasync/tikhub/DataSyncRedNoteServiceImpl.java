@@ -17,6 +17,7 @@ import com.chargehub.admin.enums.WorkTypeEnum;
 import com.chargehub.admin.playwright.PlaywrightBrowser;
 import com.chargehub.admin.work.domain.SocialMediaWork;
 import com.chargehub.common.core.properties.HubProperties;
+import com.chargehub.common.core.utils.MessageFormatUtils;
 import com.chargehub.common.core.utils.ThreadHelper;
 import com.chargehub.common.redis.service.RedisService;
 import com.chargehub.common.security.utils.DictUtils;
@@ -283,14 +284,15 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
             String nickname = userNode.get("nickname").asText();
             String secUid = userNode.get("userId").asText();
             String workUid = noteNode.get("noteId").asText();
-            String desc = noteNode.get("title").asText();
-            String hashtagName = noteNode.get("desc").asText("");
+            String desc = noteNode.get("desc").asText("");
+            String title = noteNode.get("title").asText();
+            String topics = MessageFormatUtils.extractHashtagsStr(desc);
             String customType = "";
             Map<String, String> socialMediaCustomType = DictUtils.getDictLabelMap("social_media_custom_type");
             for (Map.Entry<String, String> entry : socialMediaCustomType.entrySet()) {
                 String k = entry.getKey();
                 String v = entry.getValue();
-                if (hashtagName.contains(k)) {
+                if (desc.contains(k)) {
                     customType = v;
                 }
             }
@@ -329,7 +331,9 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
             SocialMediaWork socialMediaWork = new SocialMediaWork();
             socialMediaWork.setUrl(shareUrl);
             socialMediaWork.setPlatformId(SocialMediaPlatformEnum.RED_NOTE.getDomain());
-            socialMediaWork.setDescription(StringUtils.isBlank(desc) ? hashtagName : desc);
+            socialMediaWork.setDescription(desc);
+            socialMediaWork.setTitle(StringUtils.isNotBlank(title) ? title : MessageFormatUtils.cleanDescription(desc));
+            socialMediaWork.setTopics(topics);
             socialMediaWork.setWorkUid(workUid);
             socialMediaWork.setPostTime(postTime);
             socialMediaWork.setMediaType(mediaType);

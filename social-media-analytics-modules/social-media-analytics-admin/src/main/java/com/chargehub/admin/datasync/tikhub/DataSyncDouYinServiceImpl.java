@@ -17,6 +17,7 @@ import com.chargehub.admin.enums.WorkTypeEnum;
 import com.chargehub.admin.playwright.PlaywrightBrowser;
 import com.chargehub.admin.work.domain.SocialMediaWork;
 import com.chargehub.common.core.properties.HubProperties;
+import com.chargehub.common.core.utils.MessageFormatUtils;
 import com.chargehub.common.security.utils.DictUtils;
 import com.chargehub.common.security.utils.JacksonUtil;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -209,36 +210,31 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
                 String url = over ? GET_WORK_STATISTIC : GET_ONE_WORK_STATISTIC;
                 List<List<String>> partition = Lists.partition(strings, over ? 50 : 2);
                 for (List<String> awemeIds : partition) {
-                    dataSyncMessageQueue.syncDouyinExecute(() -> {
+                    dataSyncMessageQueue.syncDouyinExecuteSignal(() -> {
                         ThreadUtil.safeSleep(RandomUtil.randomInt(1000, 3000));
                         try (HttpResponse multiWorksExecute = HttpUtil.createGet(host + url).timeout(60_000).bearerAuth(token).form("aweme_ids", awemeIds).execute()) {
                             String result = multiWorksExecute.body();
                             JsonNode multiWorkNode = JacksonUtil.toObj(result);
                             int code = multiWorkNode.path("code").asInt(500);
                             if (code != HttpStatus.HTTP_OK) {
-                                log.error("抖音api获取作品详情失败" + result);
-                                for (String awemeId : awemeIds) {
-                                    SocialMediaWork socialMediaWork = socialMediaWorkMap.get(awemeId);
-                                    socialMediaWork.setPlayNum(-1);
-                                }
-                            } else {
-                                JsonNode statisticsNode = multiWorkNode.at("/data/statistics_list");
-                                for (JsonNode node : statisticsNode) {
-                                    String workUid = node.get("aweme_id").asText("");
-                                    int playNum = node.at("/play_count").asInt(0);
-                                    SocialMediaWork socialMediaWork = socialMediaWorkMap.get(workUid);
-                                    if (socialMediaWork == null) {
-                                        continue;
-                                    }
+                                return new DataSyncMessageQueue.AsyncResult(false, result);
+                            }
+                            JsonNode statisticsNode = multiWorkNode.at("/data/statistics_list");
+                            for (JsonNode node : statisticsNode) {
+                                String workUid = node.get("aweme_id").asText("");
+                                int playNum = node.at("/play_count").asInt(0);
+                                SocialMediaWork socialMediaWork = socialMediaWorkMap.get(workUid);
+                                if (socialMediaWork != null) {
                                     socialMediaWork.setPlayNum(playNum);
                                 }
                             }
+                            return new DataSyncMessageQueue.AsyncResult(true, null);
                         }
-                    });
+                    }, 3);
                 }
             }
             List<SocialMediaWork> socialMediaWorks = socialMediaWorkMap.values().stream().map(i -> {
-                if (i.getPlayNum() == -1) {
+                if (i.getPlayNum() == null) {
                     return null;
                 }
                 String md5 = i.generateStatisticMd5();
@@ -292,6 +288,8 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
             String uniqueId = node.at("/author/unique_id").asText();
             String uid = StringUtils.isBlank(uniqueId) ? node.at("/author/short_id").asText() : uniqueId;
             String desc = node.get("desc").asText("");
+            String title = MessageFormatUtils.cleanDescription(desc);
+            String topics = MessageFormatUtils.extractHashtagsStr(desc);
             String workUid = node.get("aweme_id").asText();
             String shareUrl = "https://www.douyin.com/video/" + workUid;
             Date postTime = DateUtil.date(node.get("create_time").asLong(0) * 1000L);
@@ -326,20 +324,25 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
             socialMediaWork.setShareNum(shareNum);
             socialMediaWork.setCommentNum(commentNum);
             socialMediaWork.setLikeNum(0);
+            socialMediaWork.setTitle(title);
+            socialMediaWork.setTopics(topics);
             socialMediaWork.setCustomType(customType);
             log.debug("抖音开始获取播放量");
-            dataSyncMessageQueue.syncDouyinExecute(() -> {
+            dataSyncMessageQueue.syncDouyinExecuteSignal(() -> {
                 try (HttpResponse multiWorksExecute = HttpUtil.createGet(host + GET_ONE_WORK_STATISTIC).timeout(60_000).bearerAuth(token).form("aweme_ids", workUid).execute()) {
                     String result = multiWorksExecute.body();
                     JsonNode multiWorkNode = JacksonUtil.toObj(result);
                     int code0 = multiWorkNode.path("code").asInt(500);
-                    Assert.isTrue(code0 == HttpStatus.HTTP_OK, "获取作品详情失败" + result);
+                    if (code0 != HttpStatus.HTTP_OK) {
+                        return new DataSyncMessageQueue.AsyncResult(false, result);
+                    }
                     JsonNode statisticsNodes = multiWorkNode.at("/data/statistics_list");
                     JsonNode statisticsNode = statisticsNodes.get(0);
                     int playNum = statisticsNode.get("play_count").asInt(0);
                     socialMediaWork.setPlayNum(playNum);
+                    return new DataSyncMessageQueue.AsyncResult(true, null);
                 }
-            });
+            }, 3);
             if (socialMediaWork.getPlayNum() == null) {
                 return null;
             }
@@ -390,6 +393,8 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
             }
         }
         String desc = node.get("desc").asText("");
+        String title = MessageFormatUtils.cleanDescription(desc);
+        String topics = MessageFormatUtils.extractHashtagsStr(desc);
         String workUid = node.get("aweme_id").asText("");
         String secUid = node.at("/author/sec_uid").asText();
         String shareUrl = "https://www.douyin.com/user/" + secUid + "?modal_id=" + workUid;
@@ -414,6 +419,8 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
         socialMediaWork.setPlayNum(0);
         socialMediaWork.setAccountType(accountType);
         socialMediaWork.setCustomType(customType);
+        socialMediaWork.setTitle(title);
+        socialMediaWork.setTopics(topics);
         socialMediaWorkMap.put(workUid, socialMediaWork);
     }
 
@@ -422,7 +429,7 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
         boolean isScheduler = dataSyncParamContext.isScheduler();
         Page page = playwrightBrowser.getPage();
         if (page.isVisible("text='你要观看的图文不存在'")) {
-            log.warn("抖音检测到对方已删除此作品!");
+            log.error("抖音检测到对方已删除此作品! {}", dataSyncParamContext.getShareLink());
             return null;
         }
         HubProperties.SocialMediaDataApi socialMediaDataApi = hubProperties.getSocialMediaDataApi().get("tikhub");
@@ -464,6 +471,8 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
             playwrightBrowser.randomMove();
         }
         String desc = detailNode.get("desc").asText();
+        String title = MessageFormatUtils.cleanDescription(desc);
+        String topics = MessageFormatUtils.extractHashtagsStr(desc);
         Date postTime = DateUtil.date(detailNode.get("createTime").asLong(0) * 1000L);
         //内容类型 (0=普通视频, 68=图文)
         String workType = detailNode.get("awemeType").asInt() == 0 ? WorkTypeEnum.NORMAL_VIDEO.getType() : WorkTypeEnum.RICH_TEXT.getType();
@@ -498,19 +507,24 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
         socialMediaWork.setShareNum(shareNum);
         socialMediaWork.setCommentNum(commentNum);
         socialMediaWork.setLikeNum(0);
+        socialMediaWork.setTitle(title);
+        socialMediaWork.setTopics(topics);
         socialMediaWork.setCustomType(customType);
-        dataSyncMessageQueue.syncDouyinExecute(() -> {
+        dataSyncMessageQueue.syncDouyinExecuteSignal(() -> {
             try (HttpResponse multiWorksExecute = HttpUtil.createGet(host + GET_ONE_WORK_STATISTIC).bearerAuth(token).form("aweme_ids", workUid).execute()) {
                 String result = multiWorksExecute.body();
                 JsonNode multiWorkNode = JacksonUtil.toObj(result);
                 int code0 = multiWorkNode.path("code").asInt(500);
-                Assert.isTrue(code0 == HttpStatus.HTTP_OK, "获取作品详情失败" + result);
+                if (code0 != HttpStatus.HTTP_OK) {
+                    return new DataSyncMessageQueue.AsyncResult(false, result);
+                }
                 JsonNode statisticsNodes = multiWorkNode.at("/data/statistics_list");
                 JsonNode statisticsNode = statisticsNodes.get(0);
                 int playNum = statisticsNode.get("play_count").asInt(0);
                 socialMediaWork.setPlayNum(playNum);
+                return new DataSyncMessageQueue.AsyncResult(true, null);
             }
-        });
+        }, 3);
         if (socialMediaWork.getPlayNum() == null) {
             return null;
         }
