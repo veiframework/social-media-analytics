@@ -199,8 +199,9 @@ const getDouyinData = async (queryParams) => {
     },
     series: [
       {
-        name: queryParams.startCreateTime? queryParams.startCreateTime + '至' + queryParams.endCreateTime:'全部',
+        name: queryParams.startCreateTime ? queryParams.startCreateTime + '至' + queryParams.endCreateTime : '全部',
         type: 'bar',
+        barMaxWidth: 40,
         data: x,
         label: {
           show: true,
@@ -280,8 +281,9 @@ const getXiaohongshuData = async (queryParams) => {
     },
     series: [
       {
-        name: queryParams.startCreateTime? queryParams.startCreateTime + '至' + queryParams.endCreateTime:'全部',
+        name: queryParams.startCreateTime ? queryParams.startCreateTime + '至' + queryParams.endCreateTime : '全部',
         type: 'bar',
+        barMaxWidth: 40,
         data: x,
         label: {
           show: true,
@@ -363,9 +365,10 @@ const getWechatvideoData = async (queryParams) => {
     },
     series: [
       {
-        name: queryParams.startCreateTime? queryParams.startCreateTime + '至' + queryParams.endCreateTime:'全部',
+        name: queryParams.startCreateTime ? queryParams.startCreateTime + '至' + queryParams.endCreateTime : '全部',
         type: 'bar',
         data: x,
+        barMaxWidth: 40,
         label: {
           show: true,
           position: 'right',
