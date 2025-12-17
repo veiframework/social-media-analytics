@@ -9,11 +9,62 @@
     <scroll-view v-else class="detail-content" scroll-y="true">
       <!-- 基本信息 -->
       <view class="detail-section">
+        <!-- 统计数据 -->
+        <view class="detail-section">
+          <text class="section-title">统计数据</text>
+          <view class="stats-grid">
+            <view class="stat-item">
+              <text class="stat-label">点赞数</text>
+              <text class="stat-value">{{ workDetail.thumbNum || 0 }}</text>
+            </view>
+            <view class="stat-item">
+              <text class="stat-label">收藏数</text>
+              <text class="stat-value">{{ workDetail.collectNum || 0 }}</text>
+            </view>
+            <view class="stat-item">
+              <text class="stat-label">评论数</text>
+              <text class="stat-value">{{ workDetail.commentNum || 0 }}</text>
+            </view>
+            <view class="stat-item">
+              <text class="stat-label">播放量</text>
+              <text class="stat-value">{{ workDetail.playNum || 0 }}</text>
+            </view>
+            <view class="stat-item">
+              <text class="stat-label">分享数</text>
+              <text class="stat-value">{{ workDetail.shareNum || 0 }}</text>
+            </view>
+            <view class="stat-item">
+              <text class="stat-label">点赞增长量</text>
+              <text class="stat-value">{{ workDetail.thumbNumUp || 0 }}</text>
+            </view>
+            <view class="stat-item">
+              <text class="stat-label">播放增长量</text>
+              <text class="stat-value">{{ workDetail.playNumUp || 0 }}</text>
+            </view>
+            <view class="stat-item">
+              <text class="stat-label">点赞趋势</text>
+              <text class="stat-value" :class="{ 'trend-up': workDetail.thumbNumChange > 0, 'trend-down': workDetail.thumbNumChange < 0 }">
+                <text v-if="workDetail.thumbNumChange > 0">↑ </text>
+                <text v-else-if="workDetail.thumbNumChange < 0">↓ </text>
+                {{ Math.abs(workDetail.thumbNumChange) || 0 }}
+              </text>
+            </view>
+            <view class="stat-item">
+              <text class="stat-label">播放趋势</text>
+              <text class="stat-value" :class="{ 'trend-up': workDetail.playNumChange > 0, 'trend-down': workDetail.playNumChange < 0 }">
+                <text v-if="workDetail.playNumChange > 0">↑ </text>
+                <text v-else-if="workDetail.playNumChange < 0">↓ </text>
+                {{ Math.abs(workDetail.playNumChange) || 0 }}
+              </text>
+            </view>
+          </view>
+        </view>
+
         <text class="section-title">基本信息</text>
         <view class="info-grid">
           <view class="info-item">
             <text class="info-label">平台</text>
-            <text class="info-value platform-tag">{{ workDetail.platformId_dictText }}</text>
+            <text class="info-value platform-tag" :style="platformStyle(workDetail.platformId)">{{ workDetail.platformId_dictText }}</text>
           </view>
           <view class="info-item">
             <text class="info-label">作品类型</text>
@@ -23,12 +74,30 @@
             <text class="info-label">媒体类型</text>
             <text class="info-value">{{ workDetail.mediaType_dictText }}</text>
           </view>
+          <view class="info-item">
+            <text class="info-label">员工</text>
+            <text class="info-value">{{ workDetail.userId_dictText }}</text>
+          </view>
+          <view class="info-item">
+            <text class="info-label">账号</text>
+            <text class="info-value">{{ workDetail.accountId_dictText }}</text>
+          </view>
         </view>
       </view>
 
       <!-- 作品内容 -->
       <view class="detail-section">
         <text class="section-title">作品内容</text>
+        <view class="content-block">
+          <text class="info-label">标题</text>
+          <view class="content-text">{{ workDetail.title || '暂无描述' }}</view>
+        </view>
+        <view class="content-block">
+          <text class="info-label">话题</text>
+          <view class="content-text-topic-box">
+            <view class="content-text-topic"  v-if="workDetail.topics" :key="topic" v-for="topic in workDetail.topics.split(',')">{{ topic || '暂无描述' }}</view>
+          </view>
+        </view>
         <view class="content-block">
           <text class="info-label">描述</text>
           <view class="content-text">{{ workDetail.description || '暂无描述' }}</view>
@@ -47,56 +116,7 @@
         </view>
       </view>
 
-      <!-- 统计数据 -->
-      <view class="detail-section">
-        <text class="section-title">统计数据</text>
-        <view class="stats-grid">
-          <view class="stat-item">
-            <text class="stat-label">点赞数</text>
-            <text class="stat-value">{{ workDetail.thumbNum || 0 }}</text>
-          </view>
-          <view class="stat-item">
-            <text class="stat-label">收藏数</text>
-            <text class="stat-value">{{ workDetail.collectNum || 0 }}</text>
-          </view>
-          <view class="stat-item">
-            <text class="stat-label">评论数</text>
-            <text class="stat-value">{{ workDetail.commentNum || 0 }}</text>
-          </view>
-          <view class="stat-item">
-            <text class="stat-label">播放量</text>
-            <text class="stat-value">{{ workDetail.playNum || 0 }}</text>
-          </view>
-          <view class="stat-item">
-            <text class="stat-label">分享数</text>
-            <text class="stat-value">{{ workDetail.shareNum || 0 }}</text>
-          </view>
-          <view class="stat-item">
-            <text class="stat-label">点赞增长量</text>
-            <text class="stat-value">{{ workDetail.thumbNumUp || 0 }}</text>
-          </view>
-          <view class="stat-item">
-            <text class="stat-label">播放增长量</text>
-            <text class="stat-value">{{ workDetail.playNumUp || 0 }}</text>
-          </view>
-          <view class="stat-item">
-            <text class="stat-label">点赞趋势</text>
-            <text class="stat-value" :class="{ 'trend-up': workDetail.thumbNumChange > 0, 'trend-down': workDetail.thumbNumChange < 0 }">
-              <text v-if="workDetail.thumbNumChange > 0">↑ </text>
-              <text v-else-if="workDetail.thumbNumChange < 0">↓ </text>
-              {{ Math.abs(workDetail.thumbNumChange) || 0 }}
-            </text>
-          </view>
-          <view class="stat-item">
-            <text class="stat-label">播放趋势</text>
-            <text class="stat-value" :class="{ 'trend-up': workDetail.playNumChange > 0, 'trend-down': workDetail.playNumChange < 0 }">
-              <text v-if="workDetail.playNumChange > 0">↑ </text>
-              <text v-else-if="workDetail.playNumChange < 0">↓ </text>
-              {{ Math.abs(workDetail.playNumChange) || 0 }}
-            </text>
-          </view>
-        </view>
-      </view>
+
 
       <!-- 时间信息 -->
       <view class="detail-section">
@@ -149,7 +169,17 @@ export default {
         loading.value = false
       }
     }
-
+    const platformStyle = (platformId) => {
+      let platformColors = {
+        'douyin': '#FF7A45', // 抖音
+        'kuaishou': '#00C1DE', // 快手
+        'wechatvideo': '#00A0E9', // 视频号
+        'xiaohongshu': '#FE2C55', // 小红书
+        'xigua': '#FFD60A', // 西瓜视频
+        default: '#5AC8FA' // 默认
+      }
+      return 'color:' + platformColors[platformId]
+    }
     // 页面加载时获取参数和详情
     onMounted(() => {
       // 获取路由参数
@@ -163,7 +193,8 @@ export default {
 
     return {
       workDetail,
-      loading
+      loading,
+      platformStyle
     }
   }
 }
@@ -250,12 +281,33 @@ export default {
   color: #333;
   line-height: 44rpx;
   white-space: pre-wrap;
+  user-select: text;
+}
+
+.content-text-topic-box{
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.content-text-topic{
+  font-size: 28rpx;
+  color: #007aff;
+  line-height: 44rpx;
+  white-space: pre-wrap;
+  user-select: text;
+  margin: 0 10rpx;
+  padding: 5rpx 15rpx;
+  border-radius: 15rpx;
+  background-color: rgba(0, 122, 255, 0.1);
+
 }
 
 .link-text {
   color: #007aff;
   text-decoration: underline;
   overflow-wrap: break-word;
+  user-select: text;
 }
 
 .stats-grid {

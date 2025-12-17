@@ -32,7 +32,11 @@
         <button class="logout-btn" @tap="handleLogout">退出登录</button>
       </view>
     </view>
+    
+    <!-- 自定义tabbar -->
   </view>
+  <bottom-bar></bottom-bar>
+
 </template>
 
 <script>
@@ -40,9 +44,13 @@ import {ref, onMounted, computed} from 'vue'
 import store from "../../utils/store";
 import {getInfo} from "../../api/login";
 import editPassword from "../../components/editPassword.vue";
+import BottomBar from "../../components/BottomBar.vue";
 
 export default {
-  components: {editPassword},
+  components: {
+    BottomBar,
+    editPassword,
+  },
   setup() {
 
     const user = ref({})
@@ -219,6 +227,7 @@ export default {
 /* 主内容区域 */
 .main {
   padding: 30rpx;
+  padding-bottom: 160rpx;
 }
 
 /* 功能网格 */

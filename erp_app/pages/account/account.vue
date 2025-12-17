@@ -58,14 +58,23 @@
         <text>已加载全部数据</text>
       </view>
     </scroll-view>
+    
+    <!-- 自定义tabbar -->
+    <bottom-bar></bottom-bar>
   </view>
 </template>
 
 <script>
 import {ref, onMounted} from 'vue'
 import {listSocialMediaAccount, syncWork, updateAutoSync} from '../../api/account.js'
+import BottomBar from "../../components/BottomBar.vue";
 
 export default {
+  components: {
+    BottomBar
+
+  },
+  
   setup() {
     // 账号列表数据
     const accountList = ref([])
@@ -273,7 +282,6 @@ export default {
 
 <style scoped>
 .account-container {
-  padding: 20rpx;
   background-color: #fff;
 }
 
@@ -281,10 +289,12 @@ export default {
   display: flex;
   align-items: center;
   margin-bottom: 20rpx;
-  padding: 20rpx;
   background-color: #fff;
   border-radius: 10rpx;
   box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
+  position: fixed;
+  z-index: 666;
+  width: 100%;
 }
 
 .search-input {
@@ -294,7 +304,7 @@ export default {
   border-radius: 40rpx;
   padding: 0 20rpx;
   font-size: 28rpx;
-  margin-right: 15rpx;
+  margin: 15rpx;
 }
 
 .search-btn, .reset-btn {
@@ -319,12 +329,13 @@ export default {
   background-color: #fff;
   color: #666;
   border: 1rpx solid #ddd;
+  margin-right: 15rpx;
 }
 
 .account-list {
-  padding-top: 30rpx;
+  padding-top: 140rpx;
   margin-bottom: 20rpx;
-  height: calc(90vh - 100rpx); /* 设置固定高度以便滚动 */
+  height: 80vh; /* 设置固定高度以便滚动 */
   overflow-y: auto;
   background-color: #f5f5f5;
 
@@ -353,7 +364,7 @@ export default {
   font-size: 32rpx;
   font-weight: bold;
   color: #333;
-  width: 84%;
+  width: 74%;
 }
 
 .account-type {

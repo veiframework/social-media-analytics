@@ -30,7 +30,7 @@
 
 <script>
 import {ref, onMounted, computed} from 'vue'
-import {getCodeImg, login, getInfo} from '../../api/login.js'
+import {getCodeImg, login, getInfo, getRouters} from '../../api/login.js'
 import store from '../../utils/store.js'
 
 export default {
@@ -53,7 +53,9 @@ export default {
     // 获取验证码
     const getCode = async () => {
       if (logged.value) {
-        uni.switchTab({url: '/pages/index/index'})
+        let res = await getRouters()
+        uni.setStorageSync('routers', res)
+        uni.redirectTo({url: '/pages/index/index'})
         return
       }
       const res = await getCodeImg()
@@ -102,9 +104,10 @@ export default {
           uni.removeStorageSync('password')
           uni.removeStorageSync('rememberMe')
         }
-
+        let routers = await getRouters()
+        uni.setStorageSync('routers', routers)
         // 登录成功，跳转到首页
-        uni.switchTab({url: '/pages/index/index'})
+        uni.redirectTo({url: '/pages/index/index'})
       } catch (error) {
         // 重新获取验证码
         if (captchaEnabled.value) {

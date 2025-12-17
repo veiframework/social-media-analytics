@@ -37,8 +37,18 @@
 			"style": {
 				"navigationBarTitleText": "作品详情"
 			}
+		},
+		{
+			"path": "pages/blank/blank",
+			"style": {
+				"navigationBarTitleText": "鹿梦数据"
+			}
+		},{
+			"path": "pages/blank2/blank2",
+			"style": {
+				"navigationBarTitleText": "鹿梦数据"
+			}
 		}
-
 	],
 	"globalStyle": {
 		"navigationBarTitleText": "鹿梦数据",
@@ -47,23 +57,18 @@
 	},
 
 	"tabBar": {
+		"custom": true,
 		"color": "#000",
 		"selectedColor": "#cea156",
 		"backgroundColor": "#FFFFFF",
 		"borderStyle": "black",
 		"list": [
 			{
-				"pagePath": "pages/index/index",
+				"pagePath": "pages/blank/blank",
 				"text": "首页"
 			},{
-				"pagePath": "pages/work/work",
+				"pagePath": "pages/blank2/blank2",
 				"text": "作品"
-			},{
-				"pagePath": "pages/account/account",
-				"text": "账号"
-			},{
-				"pagePath": "pages/mine/mine",
-				"text": "个人中心"
 			}
 		]
 	}

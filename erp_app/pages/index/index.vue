@@ -43,14 +43,23 @@
 <!--      <view class="loading-spinner"></view>-->
 <!--      <text class="loading-text">加载数据中...</text>-->
 <!--    </view>-->
+    <!-- 自定义tabbar -->
+    <bottom-bar></bottom-bar>
   </view>
+  
+
 </template>
 
 <script>
 import { onShow } from "@dcloudio/uni-app";
 import { getPlatformStatistic } from "../../api/dashboard";
+import bottomBar from "../../components/BottomBar.vue";
 
 export default {
+  components: {
+    bottomBar
+  },
+  
   data() {
     return {
       platformData: [],
@@ -122,7 +131,6 @@ export default {
   min-height: 100vh;
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
   padding: 30rpx 20rpx;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 .dashboard-header {

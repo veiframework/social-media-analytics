@@ -10,12 +10,7 @@
         </picker>
       </view>
 
-      <!-- 折叠/展开按钮 -->
-      <view class="filter-item toggle-btn">
-        <text class="toggle-text" @click="toggleFilter">{{ showAllFilters ? '收起筛选' : '更多筛选' }}</text>
-        <text class="toggle-icon" @click="toggleFilter">{{ showAllFilters ? '▲' : '▼' }}</text>
-        <button class="search-btn" style="margin-left: 60rpx" @click="handleCreateWorkByShareLink">添加作品</button>
-      </view>
+
 
       <!-- 其他筛选条件（默认隐藏） -->
       <view v-if="showAllFilters" class="extra-filters">
@@ -50,7 +45,12 @@
         </view>
       </view>
 
-
+      <!-- 折叠/展开按钮 -->
+      <view class="filter-item toggle-btn">
+        <text class="toggle-text" @click="toggleFilter">{{ showAllFilters ? '收起筛选' : '更多筛选' }}</text>
+        <text class="toggle-icon" @click="toggleFilter">{{ showAllFilters ? '▲' : '▼' }}</text>
+        <button class="search-btn" style="margin-left: 60rpx" @click="handleCreateWorkByShareLink">添加作品</button>
+      </view>
     </view>
 
     <!-- 作品列表 -->
@@ -105,6 +105,9 @@
     <ModalMask :visible="showAddWorkModal" :title="'添加作品'" @close="handleCloseAddWorkModal">
       <AddWorkForm @close="handleCloseAddWorkModal" @success="handleAddWorkSuccess"/>
     </ModalMask>
+    
+    <!-- 自定义tabbar -->
+    <bottom-bar></bottom-bar>
   </view>
 </template>
 
@@ -114,11 +117,13 @@ import {getWorkListApi} from '../../api/work.js'
 import ModalMask from '../../components/ModalMask.vue'
 import AddWorkForm from '../../components/AddWorkForm.vue'
 import {extractUrlFromText} from '../../utils/common.js'
+import BottomBar from "../../components/BottomBar.vue";
 
 export default {
   components: {
+    BottomBar,
     ModalMask,
-    AddWorkForm
+    AddWorkForm,
   },
   setup() {
     // 作品列表数据
@@ -445,11 +450,13 @@ export default {
 
 <style scoped>
 .work-container {
-  padding: 20rpx;
   background-color: #fff;
 }
 
 .filter-bar {
+  position: fixed;
+  z-index: 666;
+  width: 100%;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -494,7 +501,6 @@ export default {
 
 .search-item {
   width: 100%;
-  margin-right: 0;
 }
 
 .search-input {
@@ -563,9 +569,8 @@ export default {
 }
 
 .work-list {
-  padding-top: 30rpx;
-  margin-bottom: 20rpx;
-  height: calc(90vh - 100rpx);
+  padding-top: 140rpx;
+  height: 80vh;
   /* 设置固定高度以便滚动 */
   overflow-y: auto;
   background-color: #f5f5f5;
