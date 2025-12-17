@@ -23,7 +23,7 @@
       <view class="account-item" v-for="item in accountList" :key="item.id">
         <view class="account-header">
           <text class="account-name">{{ item.nickname }}</text>
-          <text class="account-type">{{ item.platformId_dictText }}</text>
+          <text class="account-type" :style="platformStyle(item.platformId)">{{ item.platformId_dictText }}</text>
         </view>
         <view class="account-info">
           <text class="info-item">账号类型：{{ item.type_dictText }}</text>
@@ -96,7 +96,7 @@ export default {
         return true
       } else if (item.syncWorkStatus === '0') {
         return true
-      }else{
+      } else {
         return false
       }
     })
@@ -229,6 +229,18 @@ export default {
       }
     }
 
+    const platformStyle = (platformId) => {
+      let platformColors = {
+        'douyin': '#FF7A45', // 抖音
+        'kuaishou': '#00C1DE', // 快手
+        'wechatvideo': '#00A0E9', // 视频号
+        'xiaohongshu': '#FE2C55', // 小红书
+        'xigua': '#FFD60A', // 西瓜视频
+        default: '#5AC8FA' // 默认
+      }
+      return 'color:' + platformColors[platformId]
+    }
+
     // 页面加载时获取数据
     onMounted(() => {
       getAccountList()
@@ -252,7 +264,8 @@ export default {
       handleSync,
       handleToggleAutoSync,
       computeStatus,
-      computeButton
+      computeButton,
+      platformStyle
     }
   }
 }
@@ -340,6 +353,7 @@ export default {
   font-size: 32rpx;
   font-weight: bold;
   color: #333;
+  width: 84%;
 }
 
 .account-type {

@@ -9,3 +9,10 @@ export function getWorkListApi(params) {
 export function getWorkApi(id) {
     return get(`${prefix}/${id}`)
 }
+
+export function createWorkByShareLink(shareLink, accountType) {
+    return post(`${prefix}/share-link`, {shareLink, accountType},{
+        showLoading: true,
+        showError: true
+    })
+}

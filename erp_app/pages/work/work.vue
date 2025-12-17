@@ -11,9 +11,10 @@
       </view>
 
       <!-- 折叠/展开按钮 -->
-      <view class="filter-item toggle-btn" @click="toggleFilter">
-        <text class="toggle-text">{{ showAllFilters ? '收起筛选' : '更多筛选' }}</text>
-        <text class="toggle-icon">{{ showAllFilters ? '▲' : '▼' }}</text>
+      <view class="filter-item toggle-btn">
+        <text class="toggle-text" @click="toggleFilter">{{ showAllFilters ? '收起筛选' : '更多筛选' }}</text>
+        <text class="toggle-icon" @click="toggleFilter">{{ showAllFilters ? '▲' : '▼' }}</text>
+        <button class="search-btn" style="margin-left: 60rpx" @click="handleCreateWorkByShareLink">添加作品</button>
       </view>
 
       <!-- 其他筛选条件（默认隐藏） -->
@@ -37,24 +38,14 @@
         <!-- 作品描述搜索 -->
         <view class="filter-item search-item">
           <text class="filter-label">作品描述：</text>
-          <input
-              class="search-input"
-              type="text"
-              placeholder="请输入作品描述关键词"
-              v-model="descriptionKeyword"
-              @confirm="handleDescriptionSearch"
-          />
+          <input class="search-input" type="text" placeholder="请输入作品描述关键词" v-model="descriptionKeyword"
+                 @confirm="handleDescriptionSearch"/>
           <button class="search-btn" @click="handleDescriptionSearch">搜索</button>
         </view>
         <view class="filter-item search-item">
           <text class="filter-label">分享链接：</text>
-          <input
-              class="search-input"
-              type="text"
-              placeholder="请输入分享链接"
-              v-model="shareLinkKeyword"
-              @confirm="handlerShareLinkKeyword"
-          />
+          <input class="search-input" type="text" placeholder="请输入分享链接" v-model="shareLinkKeyword"
+                 @confirm="handlerShareLinkKeyword"/>
           <button class="search-btn" @click="handlerShareLinkKeyword">搜索</button>
         </view>
       </view>
@@ -63,20 +54,13 @@
     </view>
 
     <!-- 作品列表 -->
-    <scroll-view
-        class="work-list"
-        @scrolltolower="handleLoadMore"
-        scroll-y="true"
-        refresher-enabled="true"
-        :refresher-triggered="refreshing"
-        @refresherrefresh="onRefresh"
-        lower-threshold="60"
-        refresher-background="#f5f5f5"
-    >
+    <scroll-view class="work-list" @scrolltolower="handleLoadMore" scroll-y="true" refresher-enabled="true"
+                 :refresher-triggered="refreshing" @refresherrefresh="onRefresh" lower-threshold="60"
+                 refresher-background="#f5f5f5">
       <view class="work-item" v-for="item in workList" :key="item.id" @click="navigateToDetail(item.id)">
         <view class="work-header">
           <text class="work-title">{{ item.description }}</text>
-          <text class="work-platform">{{ item.platformId_dictText }}</text>
+          <text class="work-platform" :style="platformStyle(item.platformId)">{{ item.platformId_dictText }}</text>
         </view>
         <view class="work-stats">
           <text class="stat-item">播放量：{{ item.playNum || 0 }}</text>
@@ -116,14 +100,26 @@
         <text>已加载全部数据</text>
       </view>
     </scroll-view>
+
+    <!-- 添加作品弹窗 -->
+    <ModalMask :visible="showAddWorkModal" :title="'添加作品'" @close="handleCloseAddWorkModal">
+      <AddWorkForm @close="handleCloseAddWorkModal" @success="handleAddWorkSuccess"/>
+    </ModalMask>
   </view>
 </template>
 
 <script>
 import {ref, onMounted} from 'vue'
 import {getWorkListApi} from '../../api/work.js'
+import ModalMask from '../../components/ModalMask.vue'
+import AddWorkForm from '../../components/AddWorkForm.vue'
+import {extractUrlFromText} from '../../utils/common.js'
 
 export default {
+  components: {
+    ModalMask,
+    AddWorkForm
+  },
   setup() {
     // 作品列表数据
     const workList = ref([])
@@ -141,6 +137,8 @@ export default {
     const refreshing = ref(false)
     // 筛选栏展开状态
     const showAllFilters = ref(false)
+    // 弹窗显示状态
+    const showAddWorkModal = ref(false)
 
     const shareLinkKeyword = ref(null)
 
@@ -197,6 +195,18 @@ export default {
       {label: 'B站', value: 'bilibili'}
     ])
 
+    const platformStyle = (platformId) => {
+      let platformColors = {
+        'douyin': '#FF7A45', // 抖音
+        'kuaishou': '#00C1DE', // 快手
+        'wechatvideo': '#00A0E9', // 视频号
+        'xiaohongshu': '#FE2C55', // 小红书
+        'xigua': '#FFD60A', // 西瓜视频
+        default: '#5AC8FA' // 默认
+      }
+      return 'color:' + platformColors[platformId]
+    }
+
     // 选中的社交平台
     const selectedPlatform = ref(platformOptions.value[0])
 
@@ -207,16 +217,7 @@ export default {
       currentPage.value = 1
       getWorkList()
     }
-    const extractUrlFromText = (text) => {
-      // 使用正则表达式匹配 URL
-      const urlRegex = /(https?:\/\/[^\s]+)/;
-      const match = text.match(urlRegex);
-      if (match) {
-        return match[1]; // 返回匹配到的链接
-      } else {
-        return null; // 没有找到链接时返回 null
-      }
-    }
+
     // 计算时间范围的开始和结束日期
     const calculateDateRange = (days) => {
       // 如果是"全部"选项，返回null
@@ -338,6 +339,24 @@ export default {
       getWorkList()
     }
 
+    // 打开添加作品弹窗
+    const handleCreateWorkByShareLink = () => {
+      showAddWorkModal.value = true
+    }
+
+    // 关闭添加作品弹窗
+    const handleCloseAddWorkModal = () => {
+      showAddWorkModal.value = false
+
+    }
+
+    // 添加作品成功回调
+    const handleAddWorkSuccess = () => {
+      // 重新获取作品列表
+      currentPage.value = 1
+      getWorkList()
+    }
+
     // 折叠/展开筛选栏
     const toggleFilter = () => {
       showAllFilters.value = !showAllFilters.value
@@ -397,6 +416,7 @@ export default {
       loading,
       refreshing,
       showAllFilters,
+      showAddWorkModal,
       timeRangeOptions,
       selectedTimeRange,
       sortFieldOptions,
@@ -413,7 +433,11 @@ export default {
       onRefresh,
       navigateToDetail,
       handlerShareLinkKeyword,
-      shareLinkKeyword
+      shareLinkKeyword,
+      platformStyle,
+      handleCreateWorkByShareLink,
+      handleCloseAddWorkModal,
+      handleAddWorkSuccess
     }
   }
 }
@@ -513,7 +537,8 @@ export default {
   color: #333;
 }
 
-.search-btn, .reset-btn {
+.search-btn,
+.reset-btn {
   height: 60rpx;
   padding: 0 30rpx;
   font-size: 24rpx;
@@ -540,7 +565,8 @@ export default {
 .work-list {
   padding-top: 30rpx;
   margin-bottom: 20rpx;
-  height: calc(90vh - 100rpx); /* 设置固定高度以便滚动 */
+  height: calc(90vh - 100rpx);
+  /* 设置固定高度以便滚动 */
   overflow-y: auto;
   background-color: #f5f5f5;
   border-radius: 10rpx;

@@ -39,10 +39,10 @@
     </view>
     
     <!-- 加载状态 -->
-    <view v-if="platformData.length === 0" class="loading-state">
-      <view class="loading-spinner"></view>
-      <text class="loading-text">加载数据中...</text>
-    </view>
+<!--    <view v-if="platformData.length === 0" class="loading-state">-->
+<!--      <view class="loading-spinner"></view>-->
+<!--      <text class="loading-text">加载数据中...</text>-->
+<!--    </view>-->
   </view>
 </template>
 

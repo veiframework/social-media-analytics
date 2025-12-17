@@ -12,7 +12,7 @@ const request = (options) => {
             uni.showLoading({
                 title: '加载中...',
                 mask: true,
-                duration: 1000
+                duration: 120_000
             });
         }
 
