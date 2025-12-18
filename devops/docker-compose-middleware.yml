@@ -37,7 +37,8 @@ services:
       - mynet
     privileged: true
     restart: always
-    image: swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/redis:7.2.4
+    ## 修复远程执行漏洞
+    image: swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/redis:7.4.6
     container_name: redis
     ports:
       - 36379:6379

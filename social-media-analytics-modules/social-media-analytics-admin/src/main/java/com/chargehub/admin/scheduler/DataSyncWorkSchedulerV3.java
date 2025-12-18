@@ -65,11 +65,13 @@ public class DataSyncWorkSchedulerV3 {
     public static final String LAST_TASK_DATE = "sync_work_last_date";
 
     public void asyncExecute(Set<String> accountIds) {
-        String lastSyncDate = redisService.getCacheObject(LAST_TASK_DATE);
+        String lastSyncDate = redisService.getCacheObject(DataSyncWorkSchedulerV3.LAST_TASK_DATE);
         if (StringUtils.isNotBlank(lastSyncDate)) {
-            LocalDateTime localDateTime = LocalDateTime.parse(lastSyncDate, DatePattern.NORM_DATETIME_FORMATTER).plusHours(2);
-            long betweenNextMs = DateUtil.betweenMs(new Date(), DateUtil.date(localDateTime));
-            if (betweenNextMs > 0 && betweenNextMs < 1000 * 60 * 30) {
+            LocalDateTime lastLocalDateTime = LocalDateTime.parse(lastSyncDate, DatePattern.NORM_DATETIME_FORMATTER).plusMinutes(30);
+            LocalDateTime nextTime = lastLocalDateTime.plusMinutes(110);
+            Date date = new Date();
+            boolean in = DateUtil.isIn(date, DateUtil.date(lastLocalDateTime), DateUtil.date(nextTime));
+            if (!in) {
                 log.error("距离下一次同步时间太近不执行同步");
                 return;
             }
