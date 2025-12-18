@@ -88,6 +88,29 @@
       </template>
     </CustomInfo>
 
+
+    <CustomDialog
+        :option="shareLinkTaskOption"
+        :visible="shareLinkTaskVisible"
+        @cancel="shareLinkTaskVisible = false"
+        @save="handleSaveShareLinkTask">
+      <template #content>
+        <CustomTable
+            v-if="shareLinkTaskVisible"
+            :data="shareLinkTable"
+            :option="shareLinkTableOption"
+            @search="handleShareLinkTaskSearch"
+            :pageNum="shareLinkPageNum"
+            @refresh="getShareLinkTask"
+            :total="shareLinkTotal"
+            @headerchange="handleShareLinkTaskHeader"
+            @menuChange="handleShareLinkMenu"
+            :pageSize="shareLinkPageSize"
+            @currentChange="handleShareLinkChange"
+        />
+      </template>
+    </CustomDialog>
+
     <!-- 分享链接添加弹窗 -->
     <CustomDialog
         :form="shareLinkForm"
@@ -128,7 +151,7 @@ import {
   getWorkListApi,
   getWorkApi,
   exportWorkApi, createByWechatVideoId, createByWorkShareUrl,
-  delWork, updateViewCount
+  delWork, updateViewCount, getShareLinkTaskPage, deleteShareLinkTask, retryShareLinkTask, createShareLinkTask
 } from '@/api/work'
 import {getDicts} from '@/api/system/dict/data'
 import CustomTable from "@/components/CustomTable"
@@ -153,6 +176,7 @@ let loadingOpt = {
 }
 // 查询参数
 const queryParams = ref({})
+const shareLinkTaskParams = ref({})
 
 // 字典数据
 const typeDict = ref([])
@@ -178,6 +202,119 @@ const wechatVideoVisible = ref(false)
 const editViewVisible = ref(false)
 const editViewForm = ref({})
 
+const shareLinkTaskVisible = ref(false)
+
+const shareLinkTable = ref([])
+const shareLinkPageNum = ref(1)
+const shareLinkPageSize = ref(10)
+const shareLinkTotal = ref(0)
+const createStatusDict = ref([
+  {
+    label: '待处理',
+    value: 'wait',
+    elTagType: 'info'
+  }, {
+    label: '处理中',
+    value: 'processing',
+    elTagType: 'warning'
+  }, {
+    label: '完成',
+    value: 'success',
+    elTagType: 'success'
+  }, {
+    label: '失败',
+    value: 'fail',
+    elTagType: 'danger'
+  },
+])
+
+const getShareLinkTask = async () => {
+  const params = {
+    pageNum: shareLinkPageNum.value,
+    pageSize: shareLinkPageSize.value,
+    ...shareLinkTaskParams.value
+  }
+  let url = params.shareLink
+  if (url) {
+    params.shareLink = extractUrlFromText(url)
+  }
+  const response = await getShareLinkTaskPage(params)
+  if (response.code === 200) {
+    shareLinkTable.value = response.data.records || []
+    shareLinkTotal.value = response.data.total || 0
+  } else {
+    ElMessage.error(response.msg || '获取作品列表失败')
+  }
+}
+
+const handleShareLinkTaskHeader = (key) => {
+  switch (key) {
+    case 'shareLink':
+      shareLinkForm.value = {}
+      shareLinkVisible.value = true
+      break
+  }
+}
+
+const handleShareLinkMenu = async (val) => {
+  const {index, row, value} = val
+  switch (value) {
+    case 'delete':
+      await handleShareLinkTaskDelete(row.id)
+      break
+    case 'updateStatus':
+      await handleCreateStatus(row.id)
+      break
+  }
+}
+
+const handleShareLinkTaskDelete = async (id) => {
+  try {
+    await ElMessageBox.confirm('确定要删除任务吗？', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    const response = await deleteShareLinkTask(id)
+    if (response.code === 200) {
+      ElMessage.success('删除成功')
+      await getShareLinkTask()
+    } else {
+      ElMessage.error(response.msg || '删除失败')
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('删除失败:', error)
+      ElMessage.error('删除失败')
+    }
+  }
+}
+
+const handleCreateStatus = async (id) => {
+  let loading = ElLoading.service(loadingOpt)
+  try {
+    await retryShareLinkTask(id)
+    await getShareLinkTask()
+  } finally {
+    loading.close()
+  }
+}
+
+const handleShareLinkTaskSearch = (searchParams) => {
+  shareLinkTaskParams.value = searchParams
+  shareLinkPageNum.value = 1
+  getShareLinkTask()
+}
+
+const handleShareLinkChange = (page) => {
+  shareLinkPageNum.value = page.page
+  shareLinkPageSize.value = page.limit
+  getShareLinkTask()
+}
+
+const handleSaveShareLinkTask = () => {
+  shareLinkTaskVisible.value = false
+}
 
 // 处理分享链接
 const handleShareLink = async (val) => {
@@ -186,13 +323,11 @@ const handleShareLink = async (val) => {
     let shareLink = val.shareLink
     val.shareLink = extractUrlFromText(shareLink)
     const formData = {...val}
-    let res = await createByWorkShareUrl(formData)
+    let res = await createShareLinkTask(formData)
     if (res.code === 200) {
-      ElMessage.success(res.msg || '通过主页分享链接添加成功')
+      ElMessage.success(res.msg || '通过分享链接添加成功')
       shareLinkVisible.value = false
-      await getData()
-      await getUserList()
-      await getAccountList()
+      await getShareLinkTask()
     } else {
       ElMessage.error(res.msg || '操作失败')
     }
@@ -289,6 +424,8 @@ const getUserList = async () => {
 const getData = async () => {
   loading.value = true
   try {
+    await getUserList()
+    await getAccountList()
     const params = {
       pageNum: pageNum.value,
       pageSize: pageSize.value,
@@ -342,8 +479,7 @@ const handleHeader = (key) => {
       handleSyncWork()
       break
     case 'shareLink':
-      shareLinkForm.value = {}
-      shareLinkVisible.value = true
+      shareLinkTaskVisible.value = true
       break
     case 'wechatVideo':
       wechatVideoForm.value = {}
@@ -1072,18 +1208,137 @@ const editViewOption = reactive({
   }
 })
 
+const shareLinkTaskOption = ref({
+  dialogTitle: '任务管理',
+  dialogClass: 'shareLinkTaskDialogClass',
+  labelWidth: '140px',
+  formitem: [],
+  rules: {}
+})
+const shareLinkTableOption = ref({
+  showSearch: true,
+  searchLabelWidth: 90,
+  /** 搜索字段配置项 */
+  searchItem: [
+    {
+      type: "input",
+      label: "分享链接",
+      prop: "shareLink",
+      default: null,
+      placeholder: "请输入分享链接",
+      max: 5000
+    },
+  ],
+  /** 表格顶部左侧 button 配置项 */
+  headerBtn: [
+    {key: "shareLink", text: "新增作品链接", icon: "Link", isShow: true, type: "primary", disabled: false},
+  ],
+  /** 表格顶部右侧 toobar 配置项 */
+  toolbar: {isShowToolbar: true, isShowSearch: true},
+  openSelection: false,
+  /** 序号下标配置项 */
+  index: {
+    openIndex: true,
+    indexFixed: true,
+    indexWidth: 70
+  },
+  /** 表格字段配置项 */
+  tableItem: [
+    {
+      type: 'text',
+      label: '分享链接',
+      prop: 'shareLink',
+      width: 200,
+      fixed: false,
+      sortable: false,
+      isShow: true,
+      noFilter: true
+    }, {
+      type: 'tag',
+      label: '账号类型',
+      prop: 'accountType',
+      width: 80,
+      fixed: false,
+      sortable: false,
+      isShow: true,
+      dicData: socialMediaAccountTypeDict
+    },
+    {
+      type: 'tag',
+      label: '状态',
+      prop: 'createStatus',
+      width: 80,
+      fixed: false,
+      sortable: false,
+      isShow: true,
+      dicData: createStatusDict
+    },
+    {
+      type: 'text',
+      label: '错误原因',
+      prop: 'errorMsg',
+      width: 160,
+      fixed: false,
+      sortable: false,
+      isShow: true,
+      noFilter: true
+    }, {
+      type: 'text',
+      label: '创建时间',
+      prop: 'createTime',
+      width: 100,
+      fixed: false,
+      sortable: false,
+      isShow: true,
+      noFilter: true
+    },
+  ],
+  /** 操作菜单配置项 */
+  menu: {
+    isShow: true,
+    width: 140,
+    fixed: 'right'
+  },
+  menuItemBtn: [
+    {
+      type: 'primary',
+      isShow: true,
+      icon: 'View',
+      label: '重试',
+      value: 'updateStatus',
+      judge: (row) => row.createStatus === 'fail' && row.retryCount === 0
+    },
+    {
+      type: 'danger',
+      isShow: true,
+      icon: 'Delete',
+      label: '删除',
+      value: 'delete'
+    },
+  ],
+  /** page 分页配置项 */
+  isShowPage: true
+})
+
 /**
  * 初始化数据
  */
 const init = () => {
   getDict()
-  getUserList()
-  getAccountList()
 }
 
 // 初始化
 init()
 </script>
+<style>
+.shareLinkTaskDialogClass {
+  width: 1400px;
+}
+
+.m5 {
+  position: relative;
+}
+</style>
 
 <style scoped>
 /* 自定义样式 */
@@ -1098,4 +1353,6 @@ init()
   display: flex;
   align-items: center;
 }
+
+
 </style>

@@ -62,7 +62,7 @@ public class DataSyncWorkSchedulerV3 {
 
     private static final ThreadPoolExecutor FIXED_THREAD_POOL = (ThreadPoolExecutor) Executors.newFixedThreadPool(2);
 
-    private static final String LAST_TASK_DATE = "sync_work_last_date";
+    public static final String LAST_TASK_DATE = "sync_work_last_date";
 
     public void asyncExecute(Set<String> accountIds) {
         String lastSyncDate = redisService.getCacheObject(LAST_TASK_DATE);
@@ -70,7 +70,7 @@ public class DataSyncWorkSchedulerV3 {
             LocalDateTime localDateTime = LocalDateTime.parse(lastSyncDate, DatePattern.NORM_DATETIME_FORMATTER).plusHours(2);
             long betweenNextMs = DateUtil.betweenMs(new Date(), DateUtil.date(localDateTime));
             if (betweenNextMs > 0 && betweenNextMs < 1000 * 60 * 30) {
-                log.warn("距离下一次同步时间太近不执行");
+                log.error("距离下一次同步时间太近不执行同步");
                 return;
             }
         }
@@ -198,18 +198,25 @@ public class DataSyncWorkSchedulerV3 {
 
                 List<SocialMediaWork> updateList = new ArrayList<>();
                 for (SocialMediaWork newWork : newWorks) {
-                    SocialMediaWork existWork = workMap.get(newWork.getWorkUid());
-                    if (existWork == null) {
-                        newWork.setUserId(userId);
-                        newWork.setAccountId(accountId);
-                        newWork.setTenantId(tenantId);
-                        newWork.setAccountType(accountType);
-                        newWork.setPlatformId(platformId);
-                        updateList.add(newWork);
+                    String workUid = newWork.getWorkUid();
+                    if ("-1".equals(workUid)) {
+                        String shareLink = newWork.getShareLink();
+                        log.error("删除作品分享链接:" + shareLink);
+                        this.socialMediaWorkService.deleteByShareLink(shareLink);
                     } else {
-                        SocialMediaWork updateWork = existWork.computeMd5(newWork);
-                        if (updateWork != null) {
-                            updateList.add(updateWork);
+                        SocialMediaWork existWork = workMap.get(workUid);
+                        if (existWork == null) {
+                            newWork.setUserId(userId);
+                            newWork.setAccountId(accountId);
+                            newWork.setTenantId(tenantId);
+                            newWork.setAccountType(accountType);
+                            newWork.setPlatformId(platformId);
+                            updateList.add(newWork);
+                        } else {
+                            SocialMediaWork updateWork = existWork.computeMd5(newWork);
+                            if (updateWork != null) {
+                                updateList.add(updateWork);
+                            }
                         }
                     }
                 }

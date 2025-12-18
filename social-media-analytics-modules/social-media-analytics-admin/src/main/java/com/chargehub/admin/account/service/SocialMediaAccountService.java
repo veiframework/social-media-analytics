@@ -14,14 +14,11 @@ import com.chargehub.admin.account.vo.SocialMediaAccountVo;
 import com.chargehub.admin.datasync.DataSyncManager;
 import com.chargehub.admin.datasync.DataSyncMessageQueue;
 import com.chargehub.admin.datasync.domain.SocialMediaUserInfo;
-import com.chargehub.admin.datasync.domain.SocialMediaWorkDetail;
 import com.chargehub.admin.enums.AutoSyncEnum;
 import com.chargehub.admin.enums.SocialMediaPlatformEnum;
 import com.chargehub.admin.enums.SyncWorkStatusEnum;
 import com.chargehub.admin.scheduler.DataSyncWorkSchedulerV3;
 import com.chargehub.admin.work.domain.SocialMediaWork;
-import com.chargehub.admin.work.dto.SocialMediaWorkDto;
-import com.chargehub.admin.work.dto.SocialMediaWorkShareLinkDto;
 import com.chargehub.admin.work.service.SocialMediaWorkService;
 import com.chargehub.common.redis.service.RedisService;
 import com.chargehub.common.security.service.ChargeExcelDictHandler;
@@ -270,24 +267,7 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
         this.create(socialMediaAccountDto);
     }
 
-    public void createWorkByShareUrl(SocialMediaWorkShareLinkDto dto) {
-        String shareLink = dto.getShareLink();
-        String userId = dto.getUserId();
-        String accountType = dto.getAccountType();
-        SocialMediaPlatformEnum.PlatformExtra platformEnum = dto.getPlatformEnum() == null ? SocialMediaPlatformEnum.getPlatformByWorkUrl(shareLink) : new SocialMediaPlatformEnum.PlatformExtra(dto.getPlatformEnum());
-        SocialMediaWorkDetail<SocialMediaWork> socialMediaWorkDetail = this.dataSyncManager.getWork("", shareLink, platformEnum);
-        Assert.notNull(socialMediaWorkDetail, "获取作品失败,请检查作品是否下架再重试");
-        SocialMediaUserInfo socialMediaUserInfo = socialMediaWorkDetail.getSocialMediaUserInfo();
-        SocialMediaAccount socialMediaAccount = this.getAndSave(socialMediaUserInfo, userId, accountType, platformEnum.getPlatformEnum());
-        SocialMediaWork socialMediaWork = socialMediaWorkDetail.getWork();
-        socialMediaWork.setUserId(socialMediaAccount.getUserId());
-        socialMediaWork.setAccountId(socialMediaAccount.getId());
-        socialMediaWork.setTenantId(socialMediaAccount.getTenantId());
-        socialMediaWork.setAccountType(socialMediaAccount.getType());
-        socialMediaWork.setShareLink(shareLink);
-        SocialMediaWorkDto socialMediaWorkDto = BeanUtil.copyProperties(socialMediaWork, SocialMediaWorkDto.class);
-        socialMediaWorkService.create(socialMediaWorkDto);
-    }
+
 
     public void transferAccount(SocialMediaTransferAccountDto transferAccountDto) {
         this.baseMapper.lambdaUpdate()

@@ -8,6 +8,7 @@ import com.chargehub.admin.account.dto.SocialMediaTransferAccountDto;
 import com.chargehub.admin.enums.SyncWorkStatusEnum;
 import com.chargehub.admin.scheduler.DataSyncWorkSchedulerV3;
 import com.chargehub.admin.work.domain.SocialMediaWork;
+import com.chargehub.admin.work.domain.SocialMediaWorkCreate;
 import com.chargehub.admin.work.dto.SocialMediaWorkDto;
 import com.chargehub.admin.work.dto.SocialMediaWorkPlayNumDto;
 import com.chargehub.admin.work.dto.SocialMediaWorkQueryDto;
@@ -17,10 +18,12 @@ import com.chargehub.common.core.properties.HubProperties;
 import com.chargehub.common.redis.service.RedisService;
 import com.chargehub.common.security.service.ChargeExcelDictHandler;
 import com.chargehub.common.security.template.dto.Z9CrudQueryDto;
+import com.chargehub.common.security.template.event.Z9BeforeCreateEvent;
 import com.chargehub.common.security.template.service.AbstractZ9CrudServiceImpl;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
@@ -145,6 +148,12 @@ public class SocialMediaWorkService extends AbstractZ9CrudServiceImpl<SocialMedi
         Db.saveOrUpdateBatch(works);
     }
 
+    public void deleteByShareLink(String shareLink) {
+        this.baseMapper.lambdaUpdate()
+                .eq(SocialMediaWork::getShareLink, shareLink)
+                .remove();
+    }
+
     public IPage<SocialMediaWorkVo> getPurviewPage(SocialMediaWorkQueryDto queryDto) {
         return this.baseMapper.doGetPage(queryDto).convert(i -> BeanUtil.copyProperties(i, voClass()));
     }
@@ -173,6 +182,19 @@ public class SocialMediaWorkService extends AbstractZ9CrudServiceImpl<SocialMedi
 //            return;
 //        }
 //        runnable.run();
+    }
+
+    @EventListener
+    public void workListenCreateTaskBeforeCreate(Z9BeforeCreateEvent<SocialMediaWorkCreate> event) {
+        List<SocialMediaWorkCreate> data = event.getData();
+        if (CollectionUtils.isEmpty(data)) {
+            return;
+        }
+        for (SocialMediaWorkCreate datum : data) {
+            String shareLink = datum.getShareLink();
+            Long count = this.baseMapper.lambdaQuery().eq(SocialMediaWork::getShareLink, shareLink).count();
+            Assert.isTrue(count == 0, "该作品已被添加,请搜索分享链接查看");
+        }
     }
 
 

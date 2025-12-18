@@ -2,12 +2,14 @@ package com.chargehub.admin.work.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.chargehub.admin.account.service.SocialMediaAccountService;
-import com.chargehub.admin.enums.SocialMediaPlatformEnum;
 import com.chargehub.admin.groupuser.service.GroupUserService;
+import com.chargehub.admin.work.dto.SocialMediaWorkCreateDto;
+import com.chargehub.admin.work.dto.SocialMediaWorkCreateQueryDto;
 import com.chargehub.admin.work.dto.SocialMediaWorkPlayNumDto;
 import com.chargehub.admin.work.dto.SocialMediaWorkQueryDto;
-import com.chargehub.admin.work.dto.SocialMediaWorkShareLinkDto;
+import com.chargehub.admin.work.service.SocialMediaWorkCreateService;
 import com.chargehub.admin.work.service.SocialMediaWorkService;
+import com.chargehub.admin.work.vo.SocialMediaWorkCreateVo;
 import com.chargehub.admin.work.vo.SocialMediaWorkVo;
 import com.chargehub.common.security.annotation.Debounce;
 import com.chargehub.common.security.annotation.RequiresLogin;
@@ -40,6 +42,9 @@ public class SocialMediaWorkController {
 
     @Autowired
     private SocialMediaAccountService socialMediaAccountService;
+
+    @Autowired
+    private SocialMediaWorkCreateService socialMediaWorkCreateService;
 
     @RequiresPermissions("work:page")
     @ApiOperation("分页")
@@ -74,29 +79,6 @@ public class SocialMediaWorkController {
         return this.socialMediaWorkService.exportExcel(queryDto);
     }
 
-    @Debounce
-    @RequiresLogin
-    @ApiOperation("通过分享链接添加作品")
-    @Operation(summary = "通过分享链接添加作品")
-    @PostMapping("/social-media/work/share-link")
-    public void createByShareUrl(@RequestBody @Validated SocialMediaWorkShareLinkDto dto) {
-        Long userId = SecurityUtils.getUserId();
-        dto.setUserId(userId + "");
-        this.socialMediaAccountService.createWorkByShareUrl(dto);
-    }
-
-    @Debounce
-    @RequiresLogin
-    @ApiOperation("微信视频号ID添加")
-    @Operation(summary = "微信视频号ID添加")
-    @PostMapping("/social-media/work/wechat-video-id")
-    public void createByWechatVideoId(@RequestBody @Validated SocialMediaWorkShareLinkDto dto) {
-        Long userId = SecurityUtils.getUserId();
-        dto.setUserId(userId + "");
-        dto.setPlatformEnum(SocialMediaPlatformEnum.WECHAT_VIDEO);
-        this.socialMediaAccountService.createWorkByShareUrl(dto);
-    }
-
 
     @Debounce
     @RequiresLogin
@@ -114,6 +96,42 @@ public class SocialMediaWorkController {
     @PostMapping("/social-media/work/view")
     public void updateViewNum(@RequestBody @Validated SocialMediaWorkPlayNumDto dto) {
         this.socialMediaWorkService.updateViewNum(dto);
+    }
+
+    @RequiresLogin
+    @ApiOperation("添加分享链接任务")
+    @Operation(summary = "添加分享链接任务")
+    @PostMapping("/social-media/work/share-link/task")
+    public void createShareLinkTask(@RequestBody @Validated SocialMediaWorkCreateDto dto) {
+        socialMediaWorkCreateService.create(dto);
+    }
+
+    @Debounce
+    @RequiresLogin
+    @ApiOperation("链接任务重试")
+    @Operation(summary = "链接任务重试")
+    @PostMapping("/social-media/work/share-link/retry/{id}")
+    public void createShareLinkTaskRetry(@PathVariable String id) {
+        socialMediaWorkCreateService.retryCreate(id);
+    }
+
+    @SuppressWarnings("unchecked")
+    @RequiresLogin
+    @ApiOperation("链接任务列表")
+    @Operation(summary = "链接任务列表")
+    @GetMapping("/social-media/work/share-link/task")
+    public IPage<SocialMediaWorkCreateVo> createShareLinkTaskList(SocialMediaWorkCreateQueryDto queryDto) {
+        queryDto.setCreator(SecurityUtils.getUserId() + "");
+        return (IPage<SocialMediaWorkCreateVo>) this.socialMediaWorkCreateService.getPage(queryDto);
+    }
+
+    @Debounce
+    @RequiresLogin
+    @ApiOperation("删除链接任务")
+    @Operation(summary = "删除链接任务")
+    @DeleteMapping("/social-media/work/share-link/task/{ids}")
+    public void deleteCreateShareLinkTask(@PathVariable String ids) {
+        this.socialMediaWorkCreateService.deleteByIds(ids);
     }
 
 }

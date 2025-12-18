@@ -11,7 +11,7 @@ export function getWorkApi(id) {
 }
 
 export function createWorkByShareLink(shareLink, accountType) {
-    return post(`${prefix}/share-link`, {shareLink, accountType},{
+    return post(`${prefix}/share-link/task`, {shareLink, accountType},{
         showLoading: true,
         showError: true
     })

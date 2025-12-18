@@ -8,6 +8,7 @@
 				<slot name='custom-item' :prop="prop" :form="form"></slot>
 			</template>
 		</CustomForm>
+    <slot name='content'></slot>
 		<template #footer>
 			<span class="dialog-footer">
 				<el-button @click="cancel">取 消</el-button>

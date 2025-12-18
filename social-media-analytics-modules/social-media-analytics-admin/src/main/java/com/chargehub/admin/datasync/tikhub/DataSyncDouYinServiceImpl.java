@@ -430,7 +430,10 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
         Page page = playwrightBrowser.getPage();
         if (page.isVisible("text='你要观看的图文不存在'")) {
             log.error("抖音检测到对方已删除此作品! {}", dataSyncParamContext.getShareLink());
-            return null;
+            SocialMediaWork socialMediaWork = new SocialMediaWork();
+            socialMediaWork.setShareLink(dataSyncParamContext.getShareLink());
+            socialMediaWork.setWorkUid("-1");
+            return (SocialMediaWorkDetail<T>) new SocialMediaWorkDetail<>(socialMediaWork, null);
         }
         HubProperties.SocialMediaDataApi socialMediaDataApi = hubProperties.getSocialMediaDataApi().get("tikhub");
         String token = socialMediaDataApi.getToken();

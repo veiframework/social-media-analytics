@@ -258,6 +258,7 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
         return (SocialMediaWorkDetail<T>) new SocialMediaWorkDetail<>(socialMediaWork, socialMediaUserInfo);
     }
 
+    @SuppressWarnings("unchecked")
     public <T> SocialMediaWorkDetail<T> getWork0(DataSyncParamContext dataSyncParamContext) {
         BrowserContext browserContext = dataSyncParamContext.getBrowserContext();
         String shareLink = dataSyncParamContext.getShareLink();
@@ -278,7 +279,10 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
             JsonNode noteNode = detailNode.get("note");
             if (noteNode.isEmpty()) {
                 log.error("小红书笔记不存在" + shareLink);
-                return null;
+                SocialMediaWork socialMediaWork = new SocialMediaWork();
+                socialMediaWork.setShareLink(shareLink);
+                socialMediaWork.setWorkUid("-1");
+                return (SocialMediaWorkDetail<T>) new SocialMediaWorkDetail<>(socialMediaWork, null);
             }
             JsonNode userNode = noteNode.get("user");
             String nickname = userNode.get("nickname").asText();
