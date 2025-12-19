@@ -13,6 +13,7 @@ import com.chargehub.admin.alarm.service.AlarmNotificationConfig;
 import com.chargehub.admin.alarm.service.AlarmNotificationManager;
 import com.chargehub.admin.alarm.service.SocialMediaWorkAlarmService;
 import com.chargehub.admin.api.domain.SysUser;
+import com.chargehub.admin.scheduler.domain.WorkAlarmRecordValue;
 import com.chargehub.admin.work.dto.SocialMediaWorkQueryDto;
 import com.chargehub.admin.work.service.SocialMediaWorkService;
 import com.chargehub.admin.work.vo.SocialMediaWorkVo;
@@ -73,40 +74,34 @@ public class WorkAlarmIntervalScheduler {
 
     @SuppressWarnings("unchecked")
     public void execute(String taskId) {
-        redisService.lock("lock:work-alarm:" + taskId, locked -> {
-            if (BooleanUtils.isFalse(locked)) {
-                return null;
+        SocialMediaWorkAlarm socialMediaWorkAlarm = socialMediaWorkAlarmService.getBaseMapper().doGetDetailById(taskId);
+        if (socialMediaWorkAlarm == null) {
+            return;
+        }
+        String workAlarmLastExecuteTimeKey = WORK_ALARM_LAST_EXECUTE_TIME_KEY + taskId;
+        String keyword = socialMediaWorkAlarm.getKeyword();
+        String keywordValue = socialMediaWorkAlarm.getKeywordValue();
+        String lastDatetime = redisService.getCacheObject(workAlarmLastExecuteTimeKey);
+        boolean hasMore = true;
+        long pageNum = 1;
+        while (hasMore) {
+            SocialMediaWorkQueryDto socialMediaAccountQueryDto = new SocialMediaWorkQueryDto();
+            socialMediaAccountQueryDto.setNumber(pageNum);
+            socialMediaAccountQueryDto.setSize(50L);
+            socialMediaAccountQueryDto.setUpdateTime(lastDatetime);
+            socialMediaAccountQueryDto.setSearchCount(false);
+            if (StringUtils.isNotBlank(keyword)) {
+                ReflectUtil.setFieldValue(socialMediaAccountQueryDto, keyword, keywordValue);
             }
-            SocialMediaWorkAlarm socialMediaWorkAlarm = socialMediaWorkAlarmService.getBaseMapper().doGetDetailById(taskId);
-            if (socialMediaWorkAlarm == null) {
-                return null;
+            IPage<SocialMediaWorkVo> page = (IPage<SocialMediaWorkVo>) socialMediaWorkService.getPage(socialMediaAccountQueryDto);
+            List<SocialMediaWorkVo> records = page.getRecords();
+            hasMore = CollectionUtils.isNotEmpty(records);
+            pageNum++;
+            for (SocialMediaWorkVo socialMediaWorkVo : records) {
+                this.executeAlarmCheck(taskId, socialMediaWorkVo, socialMediaWorkAlarm);
             }
-            String workAlarmLastExecuteTimeKey = WORK_ALARM_LAST_EXECUTE_TIME_KEY + taskId;
-            String keyword = socialMediaWorkAlarm.getKeyword();
-            String keywordValue = socialMediaWorkAlarm.getKeywordValue();
-            String lastDatetime = redisService.getCacheObject(workAlarmLastExecuteTimeKey);
-            boolean hasMore = true;
-            long pageNum = 1;
-            while (hasMore) {
-                SocialMediaWorkQueryDto socialMediaAccountQueryDto = new SocialMediaWorkQueryDto();
-                socialMediaAccountQueryDto.setNumber(pageNum);
-                socialMediaAccountQueryDto.setSize(50L);
-                socialMediaAccountQueryDto.setUpdateTime(lastDatetime);
-                socialMediaAccountQueryDto.setSearchCount(false);
-                if (StringUtils.isNotBlank(keyword)) {
-                    ReflectUtil.setFieldValue(socialMediaAccountQueryDto, keyword, keywordValue);
-                }
-                IPage<SocialMediaWorkVo> page = (IPage<SocialMediaWorkVo>) socialMediaWorkService.getPage(socialMediaAccountQueryDto);
-                List<SocialMediaWorkVo> records = page.getRecords();
-                hasMore = CollectionUtils.isNotEmpty(records);
-                pageNum++;
-                for (SocialMediaWorkVo socialMediaWorkVo : records) {
-                    this.executeAlarmCheck(taskId, socialMediaWorkVo, socialMediaWorkAlarm);
-                }
-            }
-            redisService.setCacheObject(workAlarmLastExecuteTimeKey, DateUtil.now());
-            return null;
-        });
+        }
+        redisService.setCacheObject(workAlarmLastExecuteTimeKey, DateUtil.now());
     }
 
     private void executeAlarmCheck(String taskId,

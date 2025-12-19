@@ -38,6 +38,7 @@ import java.util.concurrent.*;
  * @author zhanghaowei
  * @since 1.0
  */
+@Deprecated
 @Slf4j
 @Component("dataSyncWorkSchedulerV3")
 public class DataSyncWorkSchedulerV3 {
@@ -169,7 +170,7 @@ public class DataSyncWorkSchedulerV3 {
                 if (syncWorkDate != null && !syncWorkStatus.equals(SyncWorkStatusEnum.ERROR.ordinal())) {
                     long betweenMs = DateUtil.betweenMs(syncWorkDate, new Date());
                     if (betweenMs <= 1000 * 60 * 30) {
-                        log.warn("发现账号同步最近同步过 {}-{}", accountId, betweenMs);
+                        log.error("发现账号同步最近同步过 {}-{}", accountId, betweenMs);
                         return null;
                     }
                 }

@@ -1,8 +1,11 @@
 package com.chargehub.admin.account.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.chargehub.admin.account.domain.SocialMediaAccount;
 import com.chargehub.admin.account.dto.*;
+import com.chargehub.admin.account.mapper.SocialMediaAccountMapper;
 import com.chargehub.admin.account.service.SocialMediaAccountService;
+import com.chargehub.admin.account.service.SocialMediaAccountTaskService;
 import com.chargehub.admin.account.vo.SocialMediaAccountVo;
 import com.chargehub.admin.groupuser.service.GroupUserService;
 import com.chargehub.admin.scheduler.DataSyncWorkSchedulerV3;
@@ -19,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -35,6 +39,12 @@ public class SocialMediaAccountController extends AbstractZ9Controller<SocialMed
 
     @Autowired
     private DataSyncWorkSchedulerV3 dataSyncWorkSchedulerV3;
+
+    @Autowired
+    private SocialMediaAccountTaskService socialMediaAccountTaskService;
+
+    @Autowired
+    private SocialMediaAccountMapper socialMediaAccountMapper;
 
     protected SocialMediaAccountController(SocialMediaAccountService crudService) {
         super(crudService);
@@ -77,17 +87,21 @@ public class SocialMediaAccountController extends AbstractZ9Controller<SocialMed
     @Debounce
     @GetMapping("/sync/work/{accountId}")
     @ApiOperation("同步作品")
-    public void syncWorkData(@PathVariable("accountId") String accountId) {
-        this.dataSyncWorkSchedulerV3.asyncExecute(Sets.newHashSet(accountId));
+    public synchronized void syncWorkData(@PathVariable("accountId") String accountId) {
+        SocialMediaAccount socialMediaAccount = this.socialMediaAccountMapper.doGetDetailById(accountId);
+        if (socialMediaAccount == null) {
+            return;
+        }
+        this.socialMediaAccountTaskService.batchAddTask(Sets.newHashSet(socialMediaAccount));
     }
 
     @RequiresLogin
     @GetMapping("/sync/work")
     @ApiOperation("同步全部作品")
-    public void syncWorkData() {
+    public synchronized void syncWorkData() {
         Set<String> userIds = groupUserService.checkPurview();
-        Set<String> accountIds = this.getCrudService().getAccountIdsByUserIds(userIds);
-        this.dataSyncWorkSchedulerV3.asyncExecute(accountIds);
+        List<SocialMediaAccount> accounts = this.getCrudService().getAccountIdsByUserIds(userIds);
+        this.socialMediaAccountTaskService.batchAddTask(accounts);
     }
 
     @Debounce

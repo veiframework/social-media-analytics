@@ -69,4 +69,7 @@ public class SocialMediaAccountDto implements Serializable, Z9CrudDto<SocialMedi
 
 
     private String autoSync;
+
+    @ApiModelProperty("同步作品日期")
+    private Date syncWorkDate;
 }

@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
  * @author : zhanghaowei
  * @since : 1.0
  */
+@Deprecated
 @Slf4j
 @Component("dataSyncWorkScheduler")
 public class DataSyncWorkScheduler {

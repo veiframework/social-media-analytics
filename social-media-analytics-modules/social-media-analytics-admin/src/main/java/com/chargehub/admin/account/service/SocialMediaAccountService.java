@@ -3,7 +3,6 @@ package com.chargehub.admin.account.service;
 import cn.afterturn.easypoi.handler.inter.IExcelDictHandler;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.bean.copier.CopyOptions;
-import cn.hutool.core.date.DateUtil;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.chargehub.admin.account.domain.SocialMediaAccount;
@@ -17,7 +16,7 @@ import com.chargehub.admin.datasync.domain.SocialMediaUserInfo;
 import com.chargehub.admin.enums.AutoSyncEnum;
 import com.chargehub.admin.enums.SocialMediaPlatformEnum;
 import com.chargehub.admin.enums.SyncWorkStatusEnum;
-import com.chargehub.admin.scheduler.DataSyncWorkSchedulerV3;
+import com.chargehub.admin.scheduler.DataSyncWorkMonitorScheduler;
 import com.chargehub.admin.work.domain.SocialMediaWork;
 import com.chargehub.admin.work.service.SocialMediaWorkService;
 import com.chargehub.common.redis.service.RedisService;
@@ -26,6 +25,7 @@ import com.chargehub.common.security.template.dto.Z9CrudDto;
 import com.chargehub.common.security.template.dto.Z9CrudQueryDto;
 import com.chargehub.common.security.template.service.AbstractZ9CrudServiceImpl;
 import com.chargehub.common.security.utils.SecurityUtils;
+import com.google.common.collect.Sets;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
@@ -71,26 +71,20 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
         String uid = socialMediaUserInfo.getUid();
         String secUid = socialMediaUserInfo.getSecUid();
         String nickname = socialMediaUserInfo.getNickname();
-        return redisService.lock("lock:social-media-account:" + secUid, locked -> {
-            Assert.isTrue(locked, "操作人数过多请稍后再试");
-            SocialMediaAccount socialMediaAccount = this.getBySecUid(secUid);
-            if (socialMediaAccount == null) {
-                socialMediaAccount = new SocialMediaAccount();
-                socialMediaAccount.setPlatformId(platformEnum.getDomain());
-                socialMediaAccount.setType(type);
-                socialMediaAccount.setUserId(userId);
-                socialMediaAccount.setNickname(nickname);
-                socialMediaAccount.setSecUid(secUid);
-                socialMediaAccount.setUid(uid);
-                socialMediaAccount.setAutoSync(AutoSyncEnum.ENABLE.getDesc());
-                this.baseMapper.insert(socialMediaAccount);
-            } else {
-                if (!userId.equals(socialMediaAccount.getUserId())) {
-                    log.error("用户" + userId + ",添加了用户" + socialMediaAccount.getUserId() + "的作品,账号id是" + socialMediaAccount.getId());
-                }
-            }
-            return socialMediaAccount;
-        });
+        SocialMediaAccount socialMediaAccount = this.getBySecUid(secUid);
+        if (socialMediaAccount == null) {
+            socialMediaAccount = new SocialMediaAccount();
+            socialMediaAccount.setPlatformId(platformEnum.getDomain());
+            socialMediaAccount.setType(type);
+            socialMediaAccount.setUserId(userId);
+            socialMediaAccount.setNickname(nickname);
+            socialMediaAccount.setSecUid(secUid);
+            socialMediaAccount.setUid(uid);
+            socialMediaAccount.setAutoSync(AutoSyncEnum.ENABLE.getDesc());
+            socialMediaAccount.setSyncWorkDate(new Date());
+            this.baseMapper.insert(socialMediaAccount);
+        }
+        return socialMediaAccount;
     }
 
     public SocialMediaAccount getBySecUid(String secUid) {
@@ -105,31 +99,31 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
                 .update();
     }
 
-    @SuppressWarnings("unchecked")
-    public Set<String> getAccountIdsByUserIds(Collection<String> userIds) {
-        if (userIds != null && userIds.isEmpty()) {
-            return new HashSet<>();
+    public List<SocialMediaAccount> getAccountIdsByUserIds(Collection<String> userIds) {
+        SocialMediaAccountQueryDto socialMediaAccountQueryDto = new SocialMediaAccountQueryDto();
+        socialMediaAccountQueryDto.setCrawler(0);
+        socialMediaAccountQueryDto.setAutoSync(AutoSyncEnum.ENABLE.getDesc());
+        if (CollectionUtils.isNotEmpty(userIds)) {
+            socialMediaAccountQueryDto.setUserId(new HashSet<>(userIds));
         }
-        List<SocialMediaAccount> list = this.baseMapper.lambdaQuery().select(SocialMediaAccount::getId).in(userIds != null, SocialMediaAccount::getUserId, userIds).list();
-        return list.stream().map(SocialMediaAccount::getId).collect(Collectors.toSet());
+        socialMediaAccountQueryDto.setSyncWorkStatus(Sets.newHashSet(SyncWorkStatusEnum.WAIT.ordinal(), SyncWorkStatusEnum.COMPLETE.ordinal(), SyncWorkStatusEnum.ERROR.ordinal()));
+        return this.getAccountIds(socialMediaAccountQueryDto);
     }
 
     @Override
     public void deleteByIds(String ids) {
-        redisService.lock(DataSyncWorkSchedulerV3.SYNC_ACCOUNT_LOCK + ids, locked -> {
-            Assert.isTrue(locked, "账号正在同步数据,请稍后操作");
-            String[] split = ids.split(",");
-            if (ArrayUtils.isEmpty(split)) {
-                return null;
-            }
-            List<String> idList = Arrays.stream(split).collect(Collectors.toList());
-            for (String s : idList) {
-                SocialMediaAccount mediaAccount = this.baseMapper.lambdaQuery().eq(SocialMediaAccount::getId, s).eq(SocialMediaAccount::getCrawler, 1).one();
-                Assert.isNull(mediaAccount, "该账号被设置无法删除，如有疑问请联系管理员");
-                this.baseMapper.deleteById(s);
-            }
-            return null;
-        });
+        Boolean hasKey = redisService.hasKey(DataSyncWorkMonitorScheduler.SYNCING_WORK_LOCK);
+        cn.hutool.core.lang.Assert.isFalse(hasKey, "账号正在同步数据,请稍后操作");
+        String[] split = ids.split(",");
+        if (ArrayUtils.isEmpty(split)) {
+            return;
+        }
+        List<String> idList = Arrays.stream(split).collect(Collectors.toList());
+        for (String s : idList) {
+            SocialMediaAccount mediaAccount = this.baseMapper.lambdaQuery().eq(SocialMediaAccount::getId, s).eq(SocialMediaAccount::getCrawler, 1).one();
+            Assert.isNull(mediaAccount, "该账号被设置无法删除，如有疑问请联系管理员");
+            this.baseMapper.deleteById(s);
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -154,16 +148,6 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
                 .update();
     }
 
-    public void updateSyncWorkError(int minute) {
-        String now = DateUtil.now();
-        this.baseMapper.lambdaUpdate()
-                .set(SocialMediaAccount::getSyncWorkStatus, SyncWorkStatusEnum.ERROR.ordinal())
-                .eq(SocialMediaAccount::getSyncWorkStatus, SyncWorkStatusEnum.SYNCING.ordinal())
-                .isNotNull(SocialMediaAccount::getSyncWorkDate)
-                .apply("TIMESTAMPDIFF(MINUTE, sync_work_date, '" + now + "') > " + minute)
-                .update();
-    }
-
     @SuppressWarnings("unchecked")
     public List<SocialMediaAccount> getAccountIds(SocialMediaAccountQueryDto dto) {
         Set<String> ids = dto.getId();
@@ -171,7 +155,7 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
         Integer crawler = dto.getCrawler();
         Set<String> platformId = dto.getPlatformId();
         String autoSync = dto.getAutoSync();
-        return this.baseMapper.lambdaQuery().select(SocialMediaAccount::getId, SocialMediaAccount::getPlatformId)
+        return this.baseMapper.lambdaQuery().select(SocialMediaAccount::getId, SocialMediaAccount::getPlatformId, SocialMediaAccount::getSyncWorkDate)
                 .eq(StringUtils.isNotBlank(autoSync), SocialMediaAccount::getAutoSync, autoSync)
                 .in(CollectionUtils.isNotEmpty(ids), SocialMediaAccount::getId, ids)
                 .in(CollectionUtils.isNotEmpty(syncWorkStatus), SocialMediaAccount::getSyncWorkStatus, syncWorkStatus)
@@ -264,9 +248,9 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
         socialMediaAccountDto.setNickname(nickname);
         socialMediaAccountDto.setType(type);
         socialMediaAccountDto.setAutoSync(AutoSyncEnum.ENABLE.getDesc());
+        socialMediaAccountDto.setSyncWorkDate(new Date());
         this.create(socialMediaAccountDto);
     }
-
 
 
     public void transferAccount(SocialMediaTransferAccountDto transferAccountDto) {

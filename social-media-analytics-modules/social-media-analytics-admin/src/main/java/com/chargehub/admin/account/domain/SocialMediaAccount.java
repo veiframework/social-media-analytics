@@ -1,5 +1,6 @@
 package com.chargehub.admin.account.domain;
 
+import cn.hutool.core.date.DateUtil;
 import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
@@ -94,4 +95,11 @@ public class SocialMediaAccount implements Serializable, Z9CrudEntity {
     public void setUniqueId(String id) {
         this.id = id;
     }
+
+    public boolean computeSyncDuration(Date now, Integer minutes) {
+        Date date = this.getSyncWorkDate();
+        long betweenMs = DateUtil.betweenMs(date, now);
+        return betweenMs > 1000L * 60 * minutes;
+    }
+
 }

@@ -1,4 +1,4 @@
-package com.chargehub.admin.scheduler;
+package com.chargehub.admin.scheduler.domain;
 
 import lombok.Data;
 

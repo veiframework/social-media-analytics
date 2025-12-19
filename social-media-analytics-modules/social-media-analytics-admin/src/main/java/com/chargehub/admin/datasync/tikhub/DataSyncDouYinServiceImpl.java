@@ -229,6 +229,8 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
                                 }
                             }
                             return new DataSyncMessageQueue.AsyncResult(true, null);
+                        } catch (Exception e) {
+                            return new DataSyncMessageQueue.AsyncResult(false, String.join(",", awemeIds) + ": " + e.getMessage());
                         }
                     }, 3);
                 }
@@ -341,6 +343,8 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
                     int playNum = statisticsNode.get("play_count").asInt(0);
                     socialMediaWork.setPlayNum(playNum);
                     return new DataSyncMessageQueue.AsyncResult(true, null);
+                } catch (Exception e) {
+                    return new DataSyncMessageQueue.AsyncResult(false, workUid + ": " + e.getMessage());
                 }
             }, 3);
             if (socialMediaWork.getPlayNum() == null) {
@@ -526,6 +530,8 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
                 int playNum = statisticsNode.get("play_count").asInt(0);
                 socialMediaWork.setPlayNum(playNum);
                 return new DataSyncMessageQueue.AsyncResult(true, null);
+            } catch (Exception e) {
+                return new DataSyncMessageQueue.AsyncResult(false, workUid + ": " + e.getMessage());
             }
         }, 3);
         if (socialMediaWork.getPlayNum() == null) {

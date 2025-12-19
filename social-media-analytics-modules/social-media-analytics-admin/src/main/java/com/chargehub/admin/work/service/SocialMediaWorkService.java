@@ -6,7 +6,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.toolkit.Db;
 import com.chargehub.admin.account.dto.SocialMediaTransferAccountDto;
 import com.chargehub.admin.enums.SyncWorkStatusEnum;
-import com.chargehub.admin.scheduler.DataSyncWorkSchedulerV3;
+import com.chargehub.admin.scheduler.DataSyncWorkMonitorScheduler;
 import com.chargehub.admin.work.domain.SocialMediaWork;
 import com.chargehub.admin.work.domain.SocialMediaWorkCreate;
 import com.chargehub.admin.work.dto.SocialMediaWorkDto;
@@ -55,27 +55,24 @@ public class SocialMediaWorkService extends AbstractZ9CrudServiceImpl<SocialMedi
 
 
     public void updateViewNum(SocialMediaWorkPlayNumDto dto) {
-        String accountId = dto.getAccountId();
         String workId = dto.getWorkId();
         Integer playNum = dto.getPlayNum();
-        redisService.lock(DataSyncWorkSchedulerV3.SYNC_ACCOUNT_LOCK + accountId, locked -> {
-            Assert.isTrue(locked, "该作品账号正在同步数据请稍后再修改");
-            SocialMediaWork work = this.baseMapper.lambdaQuery().eq(SocialMediaWork::getId, workId).one();
-            int playNumUp = 0;
-            int playNumUpChange = 0;
-            if (work.getPlayFixed().equals(1)) {
-                playNumUp = playNum - work.getPlayNum();
-                playNumUpChange = playNumUp - work.getPlayNumUp();
-            }
-            this.baseMapper.lambdaUpdate()
-                    .set(SocialMediaWork::getPlayNum, playNum)
-                    .set(SocialMediaWork::getPlayNumUp, playNumUp)
-                    .set(SocialMediaWork::getPlayNumChange, playNumUpChange)
-                    .set(SocialMediaWork::getPlayFixed, 1)
-                    .eq(SocialMediaWork::getId, workId)
-                    .update();
-            return null;
-        });
+        Boolean hasKey = redisService.hasKey(DataSyncWorkMonitorScheduler.SYNCING_WORK_LOCK);
+        cn.hutool.core.lang.Assert.isFalse(hasKey, "该作品账号正在同步数据请稍后再修改");
+        SocialMediaWork work = this.baseMapper.lambdaQuery().eq(SocialMediaWork::getId, workId).one();
+        int playNumUp = 0;
+        int playNumUpChange = 0;
+        if (work.getPlayFixed().equals(1)) {
+            playNumUp = playNum - work.getPlayNum();
+            playNumUpChange = playNumUp - work.getPlayNumUp();
+        }
+        this.baseMapper.lambdaUpdate()
+                .set(SocialMediaWork::getPlayNum, playNum)
+                .set(SocialMediaWork::getPlayNumUp, playNumUp)
+                .set(SocialMediaWork::getPlayNumChange, playNumUpChange)
+                .set(SocialMediaWork::getPlayFixed, 1)
+                .eq(SocialMediaWork::getId, workId)
+                .update();
     }
 
     public Map<String, SocialMediaWork> getByWorkUidList(Collection<String> workUidList) {
