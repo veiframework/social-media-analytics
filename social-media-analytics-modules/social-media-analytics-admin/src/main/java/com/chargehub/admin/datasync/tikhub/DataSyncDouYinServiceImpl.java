@@ -55,6 +55,7 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
     private static final String GET_ONE_WORK_STATISTIC = "/api/v1/douyin/app/v3/fetch_video_statistics";
     private static final String WORK_DETAIL_URL = "/api/v1/douyin/web/fetch_one_video_v2";
 
+    private static final Integer RETRY = 4;
 
     @Override
     public SocialMediaPlatformEnum platform() {
@@ -211,7 +212,7 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
                 List<List<String>> partition = Lists.partition(strings, over ? 50 : 2);
                 for (List<String> awemeIds : partition) {
                     dataSyncMessageQueue.syncDouyinExecuteSignal(() -> {
-                        ThreadUtil.safeSleep(RandomUtil.randomInt(1000, 3000));
+                        ThreadUtil.safeSleep(RandomUtil.randomInt(500, 1000));
                         try (HttpResponse multiWorksExecute = HttpUtil.createGet(host + url).timeout(60_000).bearerAuth(token).form("aweme_ids", awemeIds).execute()) {
                             String result = multiWorksExecute.body();
                             JsonNode multiWorkNode = JacksonUtil.toObj(result);
@@ -232,7 +233,7 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
                         } catch (Exception e) {
                             return new DataSyncMessageQueue.AsyncResult(false, String.join(",", awemeIds) + ": " + e.getMessage());
                         }
-                    }, 3);
+                    }, RETRY);
                 }
             }
             List<SocialMediaWork> socialMediaWorks = socialMediaWorkMap.values().stream().map(i -> {
@@ -346,7 +347,7 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
                 } catch (Exception e) {
                     return new DataSyncMessageQueue.AsyncResult(false, workUid + ": " + e.getMessage());
                 }
-            }, 3);
+            }, RETRY);
             if (socialMediaWork.getPlayNum() == null) {
                 return null;
             }
@@ -533,7 +534,7 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
             } catch (Exception e) {
                 return new DataSyncMessageQueue.AsyncResult(false, workUid + ": " + e.getMessage());
             }
-        }, 3);
+        }, RETRY);
         if (socialMediaWork.getPlayNum() == null) {
             return null;
         }

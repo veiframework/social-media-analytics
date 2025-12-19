@@ -28,7 +28,9 @@ public class DataSyncMessageQueue {
 
     private static final ExecutorService FIXED_BILIBILI_THREAD_POOL = Executors.newFixedThreadPool(10);
 
-    private static final ExecutorService FIXED_DOUYIN_DETAIL_THREAD_POOL = Executors.newFixedThreadPool(2);
+    private static final ExecutorService FIXED_DOUYIN_DETAIL_THREAD_POOL = Executors.newFixedThreadPool(1);
+
+    private static final ExecutorService WECHAT_VIDEO_POOL = Executors.newFixedThreadPool(1);
 
 
     public SocialMediaUserInfo syncExecute(Supplier<SocialMediaUserInfo> runnable) {
@@ -51,6 +53,27 @@ public class DataSyncMessageQueue {
                 log.error("执行异步任务失败: ", e);
             }
         }, FIXED_BILIBILI_THREAD_POOL);
+        future.join();
+    }
+
+    public void syncWechatVideoSignal(Callable<AsyncResult> callable, int retry) {
+        CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+            try {
+                int realRetry = retry + 1;
+                String result = "";
+                for (int i = 0; i <= realRetry; i++) {
+                    ThreadUtil.safeSleep(RandomUtil.randomInt(500, 1000));
+                    AsyncResult call = callable.call();
+                    result = call.getResult();
+                    if (call.isSuccess()) {
+                        return;
+                    }
+                }
+                log.error("任务重试失败: {}", result);
+            } catch (Exception e) {
+                log.error("执行异步任务失败: ", e);
+            }
+        }, WECHAT_VIDEO_POOL);
         future.join();
     }
 
@@ -84,7 +107,7 @@ public class DataSyncMessageQueue {
                 int realRetry = retry + 1;
                 String result = "";
                 for (int i = 0; i <= realRetry; i++) {
-                    ThreadUtil.safeSleep(RandomUtil.randomInt(200, 300));
+                    ThreadUtil.safeSleep(RandomUtil.randomInt(300, 500));
                     AsyncResult call = callable.call();
                     result = call.getResult();
                     if (call.isSuccess()) {

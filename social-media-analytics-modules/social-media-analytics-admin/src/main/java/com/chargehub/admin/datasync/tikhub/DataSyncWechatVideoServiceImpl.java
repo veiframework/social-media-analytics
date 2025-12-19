@@ -7,6 +7,7 @@ import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpStatus;
 import cn.hutool.http.HttpUtil;
 import com.chargehub.admin.account.vo.SocialMediaAccountVo;
+import com.chargehub.admin.datasync.DataSyncMessageQueue;
 import com.chargehub.admin.datasync.DataSyncService;
 import com.chargehub.admin.datasync.domain.*;
 import com.chargehub.admin.enums.MediaTypeEnum;
@@ -25,6 +26,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 /**
@@ -37,6 +40,9 @@ public class DataSyncWechatVideoServiceImpl implements DataSyncService {
 
     @Autowired
     private HubProperties hubProperties;
+
+    @Autowired
+    private DataSyncMessageQueue dataSyncMessageQueue;
 
     private static final String GET_USER_PROFILE = "/api/v1/wechat_channels/fetch_user_search";
 
@@ -132,18 +138,25 @@ public class DataSyncWechatVideoServiceImpl implements DataSyncService {
     @SuppressWarnings("unchecked")
     @Override
     public <T> SocialMediaWorkResult<T> getWorks(DataSyncWorksParams params) {
-        boolean moreData = true;
-        String nextCursor = null;
+        AtomicBoolean moreData = new AtomicBoolean(true);
+        AtomicReference<String> nextCursor = new AtomicReference<>();
         SocialMediaWorkResult<SocialMediaWork> socialMediaWorkResult = new SocialMediaWorkResult<>();
         List<SocialMediaWork> socialMediaWorks = new ArrayList<>();
         SocialMediaAccountVo socialMediaAccountVo = new SocialMediaAccountVo();
         socialMediaAccountVo.setSecUid(params.getSecUid());
-        while (moreData) {
-            SocialMediaWorkResult<SocialMediaWork> result = this.getWorks(socialMediaAccountVo, nextCursor, null);
-            moreData = result.isHasMore();
-            nextCursor = result.getNextCursor();
-            List<SocialMediaWork> works = result.getWorks();
-            socialMediaWorks.addAll(works);
+        while (moreData.get()) {
+            dataSyncMessageQueue.syncWechatVideoSignal(() -> {
+                try {
+                    SocialMediaWorkResult<SocialMediaWork> result = this.getWorks(socialMediaAccountVo, nextCursor.get(), null);
+                    moreData.set(result.isHasMore());
+                    nextCursor.set(result.getNextCursor());
+                    List<SocialMediaWork> works = result.getWorks();
+                    socialMediaWorks.addAll(works);
+                    return new DataSyncMessageQueue.AsyncResult(true, null);
+                } catch (Exception e) {
+                    return new DataSyncMessageQueue.AsyncResult(false, socialMediaAccountVo.getId() + ": " + e.getMessage());
+                }
+            }, 4);
         }
         socialMediaWorkResult.setWorks(socialMediaWorks);
         return (SocialMediaWorkResult<T>) socialMediaWorkResult;

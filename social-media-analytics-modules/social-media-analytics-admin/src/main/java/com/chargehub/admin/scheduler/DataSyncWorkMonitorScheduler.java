@@ -102,14 +102,22 @@ public class DataSyncWorkMonitorScheduler {
 
     private void fetchWorks(String accountId, String crawlerLoginState, Map<String, UpdateLoginState> newStorageStateMap) {
         SocialMediaAccount socialMediaAccountVo = this.socialMediaAccountService.getById(accountId);
+        if (socialMediaAccountVo == null) {
+            log.error(accountId + "账号已被删除");
+            this.socialMediaAccountTaskService.deleteTaskById(accountId);
+            return;
+        }
         if (!socialMediaAccountVo.computeSyncDuration(new Date(), 30)) {
             log.error(accountId + "最近同步过了,不再执行");
+            this.socialMediaAccountTaskService.deleteTaskById(accountId);
             return;
         }
         Playwright playwright = Playwright.create();
         BrowserContext browserContext = PlaywrightBrowser.buildBrowserContext(crawlerLoginState, playwright);
         try {
             this.fetchWorks(socialMediaAccountVo, browserContext, newStorageStateMap);
+            this.socialMediaAccountService.updateSyncWorkStatus(accountId, SyncWorkStatusEnum.COMPLETE);
+            this.socialMediaAccountTaskService.deleteTaskById(accountId);
         } catch (Exception e) {
             log.error("账号: " + accountId + "作品同步任务v3异常", e);
         } finally {
@@ -144,7 +152,6 @@ public class DataSyncWorkMonitorScheduler {
         SocialMediaWorkResult<SocialMediaWork> result = this.dataSyncManager.getWorks(platformId, dataSyncWorksParams);
         List<SocialMediaWork> newWorks = result.getWorks();
         if (CollectionUtils.isEmpty(newWorks)) {
-            this.socialMediaAccountService.updateSyncWorkStatus(accountId, SyncWorkStatusEnum.COMPLETE);
             return;
         }
         List<SocialMediaWork> updateList = new ArrayList<>();
@@ -172,8 +179,6 @@ public class DataSyncWorkMonitorScheduler {
             }
         }
         this.socialMediaWorkService.saveOrUpdateBatch(updateList);
-        this.socialMediaAccountService.updateSyncWorkStatus(accountId, SyncWorkStatusEnum.COMPLETE);
-        this.socialMediaAccountTaskService.deleteTaskById(accountId);
         String storageState = result.getStorageState();
         newStorageStateMap.put(platformId, new UpdateLoginState(storageState));
     }
