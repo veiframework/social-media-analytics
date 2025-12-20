@@ -25,7 +25,6 @@ import com.chargehub.common.security.template.dto.Z9CrudDto;
 import com.chargehub.common.security.template.dto.Z9CrudQueryDto;
 import com.chargehub.common.security.template.service.AbstractZ9CrudServiceImpl;
 import com.chargehub.common.security.utils.SecurityUtils;
-import com.google.common.collect.Sets;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
@@ -106,7 +105,6 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
         if (CollectionUtils.isNotEmpty(userIds)) {
             socialMediaAccountQueryDto.setUserId(new HashSet<>(userIds));
         }
-        socialMediaAccountQueryDto.setSyncWorkStatus(Sets.newHashSet(SyncWorkStatusEnum.WAIT.ordinal(), SyncWorkStatusEnum.COMPLETE.ordinal(), SyncWorkStatusEnum.ERROR.ordinal()));
         return this.getAccountIds(socialMediaAccountQueryDto);
     }
 

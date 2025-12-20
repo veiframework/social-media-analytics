@@ -38,6 +38,8 @@ public class HubProperties {
 
     private long recentDays;
 
+    private Integer updateMinutes;
+
     public boolean headless = false;
 
     @Data

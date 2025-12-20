@@ -135,7 +135,7 @@ hub:
       host: https://api.tikhub.io
   recent-days: 62
   headless: true
-
+  update-minutes: 30
 
 
 security:
