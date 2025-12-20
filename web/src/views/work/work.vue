@@ -266,6 +266,9 @@ const handleShareLinkMenu = async (val) => {
     case 'updateStatus':
       await handleCreateStatus(row.id)
       break
+    case 'detailByLink':
+      await showDetailByLink(row.shareLink)
+      break
   }
 }
 
@@ -352,6 +355,15 @@ const handleWechatVideoForm = async (val) => {
     }
   } finally {
     loading.close()
+  }
+}
+
+const showDetailByLink = async (shareLink) => {
+  const response = await getWorkListApi({shareLink: shareLink, pageNum: 1, pageSize: 10})
+  let arr = response.data.records || [];
+  if (arr.length) {
+    rowData.value = arr[0]
+    infoVisible.value = true
   }
 }
 
@@ -1317,6 +1329,14 @@ const shareLinkTableOption = ref({
     fixed: 'right'
   },
   menuItemBtn: [
+    {
+      type: 'primary',
+      isShow: true,
+      icon: 'View',
+      value: 'detailByLink',
+      label: '作品详情',
+      judge: (row) => row.createStatus === 'success'
+    },
     {
       type: 'primary',
       isShow: true,
