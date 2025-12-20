@@ -5,7 +5,6 @@ import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.toolkit.Db;
 import com.chargehub.admin.account.dto.SocialMediaTransferAccountDto;
-import com.chargehub.admin.enums.SyncWorkStatusEnum;
 import com.chargehub.admin.scheduler.DataSyncWorkMonitorScheduler;
 import com.chargehub.admin.work.domain.SocialMediaWork;
 import com.chargehub.admin.work.domain.SocialMediaWorkCreate;
@@ -108,9 +107,6 @@ public class SocialMediaWorkService extends AbstractZ9CrudServiceImpl<SocialMedi
                 .remove();
     }
 
-    public SocialMediaWork getDomainById(String id) {
-        return this.baseMapper.lambdaQuery().eq(SocialMediaWork::getId, id).one();
-    }
 
     @SuppressWarnings("all")
     public List<SocialMediaWork> getWorkIds(Set<String> accountIds) {
@@ -130,9 +126,6 @@ public class SocialMediaWorkService extends AbstractZ9CrudServiceImpl<SocialMedi
                 .list();
     }
 
-    public void updateOne(SocialMediaWork socialMediaWork) {
-        this.baseMapper.updateById(socialMediaWork);
-    }
 
     public void transferAccount(SocialMediaTransferAccountDto dto) {
         this.baseMapper.lambdaUpdate()
@@ -155,30 +148,8 @@ public class SocialMediaWorkService extends AbstractZ9CrudServiceImpl<SocialMedi
         return this.baseMapper.doGetPage(queryDto).convert(i -> BeanUtil.copyProperties(i, voClass()));
     }
 
-    public void updateSyncWorkStatus(String workId, SyncWorkStatusEnum syncWorkStatusEnum) {
-        this.baseMapper.lambdaUpdate()
-                .set(SocialMediaWork::getSyncWorkStatus, syncWorkStatusEnum.ordinal())
-                .set(SocialMediaWork::getSyncWorkDate, new Date())
-                .eq(SocialMediaWork::getId, workId)
-                .ne(SocialMediaWork::getSyncWorkStatus, syncWorkStatusEnum.ordinal())
-                .update();
-
-//        Runnable runnable = () -> this.baseMapper.lambdaUpdate()
-//                .set(SocialMediaWork::getSyncWorkStatus, syncWorkStatusEnum.ordinal())
-//                .set(SocialMediaWork::getSyncWorkDate, new Date())
-//                .eq(SocialMediaWork::getId, workId)
-//                .ne(SocialMediaWork::getSyncWorkStatus, syncWorkStatusEnum.ordinal())
-//                .update();
-//        if (TransactionSynchronizationManager.isActualTransactionActive()) {
-//            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-//                @Override
-//                public void afterCompletion(int status) {
-//                    runnable.run();
-//                }
-//            });
-//            return;
-//        }
-//        runnable.run();
+    public Long getWorkNumByAccountId(String accountId) {
+        return this.baseMapper.lambdaQuery().eq(SocialMediaWork::getAccountId, accountId).count();
     }
 
     @EventListener

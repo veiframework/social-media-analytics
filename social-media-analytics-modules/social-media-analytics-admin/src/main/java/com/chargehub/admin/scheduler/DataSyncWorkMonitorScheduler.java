@@ -87,7 +87,7 @@ public class DataSyncWorkMonitorScheduler {
             redisService.setCacheObject(SYNCING_WORK_LOCK, now);
             try {
                 CompletableFuture.allOf(allFutures.toArray(new CompletableFuture[0])).get(1, TimeUnit.HOURS);
-//                newStorageStateMap.forEach((platform, storageState) -> this.playwrightCrawlHelper.updateCrawlerLoginState(platform, storageState.getLoginState()));
+                newStorageStateMap.forEach((platform, storageState) -> this.playwrightCrawlHelper.updateCrawlerLoginState(platform, storageState.getLoginState()));
             } catch (Exception e) {
                 log.error("作品同步任务v4超时 {}", e.getMessage());
                 Thread.currentThread().interrupt();

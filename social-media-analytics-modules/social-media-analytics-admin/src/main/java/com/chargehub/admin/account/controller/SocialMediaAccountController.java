@@ -8,7 +8,6 @@ import com.chargehub.admin.account.service.SocialMediaAccountService;
 import com.chargehub.admin.account.service.SocialMediaAccountTaskService;
 import com.chargehub.admin.account.vo.SocialMediaAccountVo;
 import com.chargehub.admin.groupuser.service.GroupUserService;
-import com.chargehub.admin.scheduler.DataSyncWorkSchedulerV3;
 import com.chargehub.common.security.annotation.Debounce;
 import com.chargehub.common.security.annotation.RequiresLogin;
 import com.chargehub.common.security.annotation.UnifyResult;
@@ -36,9 +35,6 @@ public class SocialMediaAccountController extends AbstractZ9Controller<SocialMed
 
     @Autowired
     private GroupUserService groupUserService;
-
-    @Autowired
-    private DataSyncWorkSchedulerV3 dataSyncWorkSchedulerV3;
 
     @Autowired
     private SocialMediaAccountTaskService socialMediaAccountTaskService;

@@ -122,7 +122,12 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
         for (String s : idList) {
             SocialMediaAccount mediaAccount = this.baseMapper.lambdaQuery().eq(SocialMediaAccount::getId, s).eq(SocialMediaAccount::getCrawler, 1).one();
             Assert.isNull(mediaAccount, "该账号被设置无法删除，如有疑问请联系管理员");
-            this.baseMapper.deleteById(s);
+            Long num = socialMediaWorkService.getWorkNumByAccountId(s);
+            if (num > 0) {
+                this.baseMapper.lambdaUpdate().set(SocialMediaAccount::getAutoSync, AutoSyncEnum.DISABLE.getDesc()).eq(SocialMediaAccount::getId, s).update();
+            } else {
+                this.baseMapper.deleteById(s);
+            }
         }
     }
 
@@ -155,9 +160,11 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
         Integer crawler = dto.getCrawler();
         Set<String> platformId = dto.getPlatformId();
         String autoSync = dto.getAutoSync();
+        Set<String> userId = dto.getUserId();
         return this.baseMapper.lambdaQuery().select(SocialMediaAccount::getId, SocialMediaAccount::getPlatformId, SocialMediaAccount::getSyncWorkDate)
                 .eq(StringUtils.isNotBlank(autoSync), SocialMediaAccount::getAutoSync, autoSync)
                 .in(CollectionUtils.isNotEmpty(ids), SocialMediaAccount::getId, ids)
+                .in(CollectionUtils.isNotEmpty(userId), SocialMediaAccount::getUserId, userId)
                 .in(CollectionUtils.isNotEmpty(syncWorkStatus), SocialMediaAccount::getSyncWorkStatus, syncWorkStatus)
                 .in(CollectionUtils.isNotEmpty(platformId), SocialMediaAccount::getPlatformId, platformId)
                 .eq(crawler != null, SocialMediaAccount::getCrawler, crawler)
