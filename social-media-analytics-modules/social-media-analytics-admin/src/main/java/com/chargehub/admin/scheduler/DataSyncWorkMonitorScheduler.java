@@ -89,9 +89,9 @@ public class DataSyncWorkMonitorScheduler {
                 CompletableFuture<Void> future = CompletableFuture.runAsync(() -> this.fetchWorks(now, accountId, crawlerLoginState, newStorageStateMap, completeAccountIds), FIXED_THREAD_POOL);
                 allFutures.add(future);
             }
-            StopWatch stopWatch = new StopWatch("作品同步任务");
+            StopWatch stopWatch = new StopWatch("作品同步监控");
             stopWatch.start();
-            log.info("作品同步任务v4开始 {}", now);
+            log.info("作品同步监控开始 {}", now);
             redisService.setCacheObject(SYNCING_WORK_LOCK, now);
             try {
                 CompletableFuture.allOf(allFutures.toArray(new CompletableFuture[0])).get(1, TimeUnit.HOURS);
@@ -108,11 +108,11 @@ public class DataSyncWorkMonitorScheduler {
                     Db.updateBatchById(completeList);
                 }
             } catch (Exception e) {
-                log.error("作品同步任务v4超时 {}", e.getMessage());
+                log.error("作品同步监控异常 {}", e.getMessage());
                 Thread.currentThread().interrupt();
             } finally {
                 stopWatch.stop();
-                log.info("作品同步任务v4结束 {}秒", stopWatch.getTotalTimeSeconds());
+                log.info("作品同步监控结束 {}秒", stopWatch.getTotalTimeSeconds());
                 redisService.deleteObject(SYNCING_WORK_LOCK);
             }
             return null;
