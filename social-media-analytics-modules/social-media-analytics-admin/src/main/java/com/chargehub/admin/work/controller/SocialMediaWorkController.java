@@ -1,7 +1,6 @@
 package com.chargehub.admin.work.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.chargehub.admin.account.service.SocialMediaAccountService;
 import com.chargehub.admin.groupuser.service.GroupUserService;
 import com.chargehub.admin.work.dto.SocialMediaWorkCreateDto;
 import com.chargehub.admin.work.dto.SocialMediaWorkCreateQueryDto;
@@ -39,9 +38,6 @@ public class SocialMediaWorkController {
 
     @Autowired
     private GroupUserService groupUserService;
-
-    @Autowired
-    private SocialMediaAccountService socialMediaAccountService;
 
     @Autowired
     private SocialMediaWorkCreateService socialMediaWorkCreateService;

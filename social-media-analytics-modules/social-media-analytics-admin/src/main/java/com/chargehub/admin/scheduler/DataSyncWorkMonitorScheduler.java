@@ -13,6 +13,7 @@ import com.chargehub.admin.datasync.domain.DataSyncWorksParams;
 import com.chargehub.admin.datasync.domain.SocialMediaWorkResult;
 import com.chargehub.admin.enums.SocialMediaPlatformEnum;
 import com.chargehub.admin.enums.SyncWorkStatusEnum;
+import com.chargehub.admin.enums.WorkStateEnum;
 import com.chargehub.admin.playwright.PlaywrightBrowser;
 import com.chargehub.admin.playwright.PlaywrightCrawlHelper;
 import com.chargehub.admin.scheduler.domain.UpdateLoginState;
@@ -180,7 +181,7 @@ public class DataSyncWorkMonitorScheduler {
             if ("-1".equals(workUid)) {
                 String shareLink = newWork.getShareLink();
                 log.error("删除作品分享链接:" + shareLink);
-                this.socialMediaWorkService.deleteByShareLink(shareLink);
+                this.socialMediaWorkService.updateStateByShareLink(shareLink, WorkStateEnum.DELETED);
             } else {
                 SocialMediaWork existWork = workMap.get(workUid);
                 if (existWork == null) {

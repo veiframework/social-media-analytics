@@ -13,6 +13,7 @@ import com.chargehub.admin.alarm.service.AlarmNotificationConfig;
 import com.chargehub.admin.alarm.service.AlarmNotificationManager;
 import com.chargehub.admin.alarm.service.SocialMediaWorkAlarmService;
 import com.chargehub.admin.api.domain.SysUser;
+import com.chargehub.admin.enums.WorkStateEnum;
 import com.chargehub.admin.scheduler.domain.WorkAlarmRecordValue;
 import com.chargehub.admin.work.dto.SocialMediaWorkQueryDto;
 import com.chargehub.admin.work.service.SocialMediaWorkService;
@@ -21,6 +22,7 @@ import com.chargehub.biz.admin.service.ISysUserService;
 import com.chargehub.common.redis.service.RedisService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Sets;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
@@ -89,6 +91,7 @@ public class WorkAlarmIntervalScheduler {
             socialMediaAccountQueryDto.setNumber(pageNum);
             socialMediaAccountQueryDto.setSize(50L);
             socialMediaAccountQueryDto.setUpdateTime(lastDatetime);
+            socialMediaAccountQueryDto.setState(Sets.newHashSet(WorkStateEnum.OPEN.getDesc(), WorkStateEnum.PRIVATE.getDesc()));
             socialMediaAccountQueryDto.setSearchCount(false);
             if (StringUtils.isNotBlank(keyword)) {
                 ReflectUtil.setFieldValue(socialMediaAccountQueryDto, keyword, keywordValue);

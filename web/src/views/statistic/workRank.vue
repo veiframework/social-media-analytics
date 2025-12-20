@@ -65,6 +65,7 @@ const syncWorkStatusDict = ref([])
 const socialMediaAccountTypeDict = ref([])
 const socialMediaCustomTypeDict = ref([])
 const accountListDict = ref([])
+const workStateDict = ref([])
 
 const douyinChart = ref({})
 const xiaohongshuChart = ref({})
@@ -90,14 +91,15 @@ const getAccountList = async () => {
 // 获取字典数据
 const getDict = async () => {
   try {
-    const [typeRes, mediaTypeRes, platformRes, statusRes, socialMediaAccountTypeRes, socialMediaCustomTypeRes, syncDictRes] = await Promise.all([
+    const [typeRes, mediaTypeRes, platformRes, statusRes, socialMediaAccountTypeRes, socialMediaCustomTypeRes, syncDictRes, workStateDictRes] = await Promise.all([
       getDicts('work_type'),
       getDicts('media_type'),
       getDicts('social_media_platform'),
       getDicts('work_status'),
       getDicts("social_media_account_type"),
       getDicts("social_media_custom_type"),
-      getDicts('sync_work_status')
+      getDicts('sync_work_status'),
+      getDicts('work_state')
     ])
 
     typeDict.value = typeRes.data.map(i => ({label: i.dictLabel, value: i.dictValue, elTagType: i.listClass})) || []
@@ -123,6 +125,11 @@ const getDict = async () => {
       elTagType: i.listClass
     }))
     syncWorkStatusDict.value = syncDictRes.data.map(i => ({
+      label: i.dictLabel,
+      value: i.dictValue,
+      elTagType: i.listClass
+    })) || []
+    workStateDict.value = workStateDictRes.data.map(i => ({
       label: i.dictLabel,
       value: i.dictValue,
       elTagType: i.listClass
@@ -621,7 +628,17 @@ const optionInfo = reactive({
           prop: 'workUid',
           isShow: true,
           span: 2
-        }
+        },
+        {
+          type: 'tag',
+          label: '作品状态',
+          prop: 'state',
+          fixed: false,
+          sortable: false,
+          isShow: true,
+          dicData: workStateDict,
+          span: 2
+        },
       ]
     },
     {

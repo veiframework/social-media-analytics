@@ -35,9 +35,6 @@ public class SocialMediaWorkQueryDto extends Pagination implements Serializable,
     private Set<String> type;
 
     @CrudQueryField(queryType = Z9QueryTypeEnum.IN)
-    private Set<String> status;
-
-    @CrudQueryField(queryType = Z9QueryTypeEnum.IN)
     private Set<String> platformId;
 
     @CrudQueryField(queryType = Z9QueryTypeEnum.IN)
@@ -79,6 +76,9 @@ public class SocialMediaWorkQueryDto extends Pagination implements Serializable,
     private String startCreateTime;
 
     private String endCreateTime;
+
+    @CrudQueryField(queryType = Z9QueryTypeEnum.IN)
+    private Set<String> state;
 
     @Override
     public Page<SocialMediaWork> buildPageObj() {

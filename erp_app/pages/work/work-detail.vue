@@ -75,6 +75,10 @@
             <text class="info-value">{{ workDetail.mediaType_dictText }}</text>
           </view>
           <view class="info-item">
+            <text class="info-label">作品状态</text>
+            <text class="info-value">{{ workDetail.state_dictText }}</text>
+          </view>
+          <view class="info-item">
             <text class="info-label">员工</text>
             <text class="info-value">{{ workDetail.userId_dictText }}</text>
           </view>

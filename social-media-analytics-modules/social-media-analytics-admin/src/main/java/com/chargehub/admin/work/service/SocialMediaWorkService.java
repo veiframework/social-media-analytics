@@ -5,6 +5,7 @@ import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.toolkit.Db;
 import com.chargehub.admin.account.dto.SocialMediaTransferAccountDto;
+import com.chargehub.admin.enums.WorkStateEnum;
 import com.chargehub.admin.scheduler.DataSyncWorkMonitorScheduler;
 import com.chargehub.admin.work.domain.SocialMediaWork;
 import com.chargehub.admin.work.domain.SocialMediaWorkCreate;
@@ -122,6 +123,7 @@ public class SocialMediaWorkService extends AbstractZ9CrudServiceImpl<SocialMedi
     public List<SocialMediaWork> getLatestWork(String accountId) {
         long recentDays = hubProperties.getRecentDays();
         return this.baseMapper.lambdaQuery().eq(SocialMediaWork::getAccountId, accountId)
+                .ne(SocialMediaWork::getState, WorkStateEnum.DELETED.getDesc())
                 .apply("TIMESTAMPDIFF(DAY, post_time, NOW()) <= " + recentDays)
                 .list();
     }
@@ -138,10 +140,11 @@ public class SocialMediaWorkService extends AbstractZ9CrudServiceImpl<SocialMedi
         Db.saveOrUpdateBatch(works);
     }
 
-    public void deleteByShareLink(String shareLink) {
+    public void updateStateByShareLink(String shareLink, WorkStateEnum workStateEnum) {
         this.baseMapper.lambdaUpdate()
                 .eq(SocialMediaWork::getShareLink, shareLink)
-                .remove();
+                .set(SocialMediaWork::getState, workStateEnum.getDesc())
+                .update();
     }
 
     public IPage<SocialMediaWorkVo> getPurviewPage(SocialMediaWorkQueryDto queryDto) {

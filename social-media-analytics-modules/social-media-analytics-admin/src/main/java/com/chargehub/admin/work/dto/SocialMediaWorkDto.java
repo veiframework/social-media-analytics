@@ -68,8 +68,9 @@ public class SocialMediaWorkDto implements Serializable, Z9CrudDto<SocialMediaWo
     @ApiModelProperty("作品类型")
     private String type;
 
+    @Excel(name = "作品状态", width = 15, dict = "work_state", addressList = true)
     @ApiModelProperty("作品状态")
-    private String status;
+    private String state;
 
     @Excel(name = "点赞数量", width = 15)
     @ApiModelProperty("点赞数量")

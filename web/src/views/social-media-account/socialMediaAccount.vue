@@ -290,7 +290,7 @@ const handleTransferAccountForm = async (val) => {
     await transferAccount(data)
     await getData();
     transferAccountVisible.value = false
-  }finally {
+  } finally {
     loading.close()
   }
 }
@@ -308,13 +308,10 @@ const handleSyncWork = async (accountId) => {
       ElMessage.success('同步作品需要时间，请稍后前往《作品管理》查看~')
       await getData()
     } else {
-      ElMessage.error(response.msg || '同步失败')
+
     }
   } catch (error) {
-    if (error !== 'cancel') {
-      console.error('同步失败:', error)
-      ElMessage.error('同步失败')
-    }
+
   }
 }
 

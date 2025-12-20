@@ -64,8 +64,10 @@ public class SocialMediaWorkVo implements Serializable, Z9CrudVo {
     @ApiModelProperty("作品类型")
     private String type;
 
+    @Dict(dictType = "work_state")
+    @Excel(name = "作品状态", width = 15, dict = "work_state", addressList = true)
     @ApiModelProperty("作品状态")
-    private String status;
+    private String state;
 
     @ApiModelProperty("作品数量")
     private Integer workNum;

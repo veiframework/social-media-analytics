@@ -49,7 +49,7 @@ public class SocialMediaWork implements Serializable, Z9CrudEntity {
     private String type;
 
     @ApiModelProperty("作品状态")
-    private String status;
+    private String state;
 
     @ApiModelProperty("点赞数量")
     private Integer thumbNum;
