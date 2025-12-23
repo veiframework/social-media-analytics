@@ -4,8 +4,7 @@ import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.text.CharSequenceUtil;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.core.JsonPointer;
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.*;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JavaType;
@@ -417,4 +416,24 @@ public final class JacksonUtil {
         return new TypeReference<Map<T, V>>() {
         };
     }
+
+    public static <T> T readField(byte[] body, String fieldName, Class<T> clazz) {
+        JsonFactory factory = MAPPER.getFactory();
+        try (JsonParser parser = factory.createParser(body)) {
+            while (parser.nextToken() != null) {
+                if (parser.getCurrentToken() != JsonToken.FIELD_NAME) {
+                    continue;
+                }
+                String currentName = parser.getCurrentName();
+                if (fieldName.equals(currentName)) {
+                    parser.nextToken();
+                    return parser.readValueAs(clazz);
+                }
+            }
+            return null;
+        } catch (Exception e) {
+            throw new IllegalArgumentException(e);
+        }
+    }
+
 }

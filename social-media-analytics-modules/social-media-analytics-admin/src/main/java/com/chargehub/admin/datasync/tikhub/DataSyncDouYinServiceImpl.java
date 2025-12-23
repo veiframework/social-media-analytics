@@ -32,7 +32,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 /**
@@ -167,7 +166,6 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
         try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(browserContext)) {
             Page page = playwrightBrowser.getPage();
             page.route(url -> url.contains(".jpeg") || url.contains(".webp"), Route::abort);
-            AtomicBoolean stop = new AtomicBoolean(false);
             page.onResponse(res -> {
                 if (!(res.url().contains("/aweme/v1/web/aweme/post/") && res.ok())) {
                     return;
@@ -186,17 +184,14 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
                     }
                     this.buildWork(socialMediaAccountVo, item, socialMediaWorkMap);
                 }
-                JsonNode lastNode = node.get(node.size() - 1);
-                long lastTime = lastNode.get("create_time").asLong() * 1000;
-                stop.set(hubProperties.isValidDate(lastTime));
             });
             String enterUrl = "https://www.douyin.com/user/" + secUid;
             page.navigate(enterUrl, new Page.NavigateOptions().setTimeout(60_000));
-            for (int i = 0; i < 600; i++) {
-                if (page.isVisible("text=暂时没有更多了") || stop.get()) {
+            for (int i = 0; i < 300; i++) {
+                if (page.isVisible("text=暂时没有更多了")) {
                     break;
                 }
-                ThreadUtil.safeSleep(100);
+                page.waitForTimeout(200);
                 int randomInt = RandomUtil.randomInt(600, 800);
                 page.mouse().wheel(0, randomInt);
                 try {
@@ -467,7 +462,6 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
                 double x = box.x + box.width / 2;
                 double y = box.y + box.height / 2;
                 page.mouse().move(x, y);
-//                ThreadUtil.safeSleep(RandomUtil.randomInt(300, 1000));
                 page.mouse().click(x, y);
             });
             popupPage.waitForSelector("input[placeholder='请输入手机号']");

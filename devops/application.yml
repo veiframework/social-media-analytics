@@ -73,7 +73,7 @@ hub:
   third-service: localhost:9201
   job-service: localhost:9201
   standalone: true
-  recent-days: 62
+  recent-days: 31
   update-minutes: 30
   headless: true
   social-media-data-api:

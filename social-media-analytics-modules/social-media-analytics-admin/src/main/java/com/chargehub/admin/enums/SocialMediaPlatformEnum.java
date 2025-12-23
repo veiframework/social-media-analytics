@@ -28,7 +28,8 @@ public enum SocialMediaPlatformEnum {
     }),
     RED_NOTE("xiaohongshu", uri -> DOU_YIN.getSecUserId().apply(uri)),
     BILI_BILI("bilibili", uri -> DOU_YIN.getSecUserId().apply(uri)),
-    WECHAT_VIDEO("wechatvideo", uri -> null);
+    WECHAT_VIDEO("wechatvideo", uri -> null),
+    KUAI_SHOU("kuaishou", uri -> DOU_YIN.getSecUserId().apply(uri));
 
     private final String domain;
 
@@ -46,7 +47,7 @@ public enum SocialMediaPlatformEnum {
             String location = httpRequest.getUrl();
             URI uri = URLUtil.toURI(location);
             String host = uri.getHost();
-            SocialMediaPlatformEnum socialMediaPlatformEnum = Arrays.stream(values()).filter(i -> host.contains(i.domain)).findFirst().orElseThrow(() -> new IllegalArgumentException("不支持的平台类型"));
+            SocialMediaPlatformEnum socialMediaPlatformEnum = Arrays.stream(values()).filter(i -> host.contains(i.domain) || workUrl.contains(i.domain)).findFirst().orElseThrow(() -> new IllegalArgumentException("不支持的平台类型"));
             return new PlatformExtra(location, socialMediaPlatformEnum);
         }
     }

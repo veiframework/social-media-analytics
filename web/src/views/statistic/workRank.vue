@@ -12,6 +12,9 @@
     <el-card class="m5">
       <ECharts :height="500" :option="wechatvideoChart" @handleClick="handleClick" :hideSearch="true"/>
     </el-card>
+    <el-card class="m5">
+      <ECharts :height="500" :option="kuaishouChart" @handleClick="handleClick" :hideSearch="true"/>
+    </el-card>
     <!-- 详情弹窗 -->
     <CustomInfo
         :option="optionInfo"
@@ -19,7 +22,7 @@
         :rowData="rowData"
         @cancel="infoVisible = false">
       <template #custom="{ row, prop }">
-        <template v-if="prop==='topics'">
+        <template v-if="prop==='topics'&&row.topics">
           <el-tag v-if="row.topics" style="margin-right: 5px" v-for="(item, indx) in row.topics.split(',')" :key="indx">
             {{ item }}
           </el-tag>
@@ -70,6 +73,7 @@ const workStateDict = ref([])
 const douyinChart = ref({})
 const xiaohongshuChart = ref({})
 const wechatvideoChart = ref({})
+const kuaishouChart = ref({})
 
 
 const getUserList = async () => {
@@ -81,7 +85,7 @@ const getUserList = async () => {
 }
 
 const getAccountList = async () => {
-  const res = await listSocialMediaAccount({pageNum: 1, pageSize: 9999999})
+  const res = await listSocialMediaAccount({pageNum: 1, pageSize: 9999999, searchCount: false})
   accountListDict.value = res.data.records.map(i => ({
     label: i.nickname,
     value: i.id,
@@ -148,6 +152,89 @@ const getDict = async () => {
 const douyinData = ref([])
 const xiaohongshuData = ref([])
 const wechatvideoData = ref([])
+const kuaishouData = ref([])
+
+const getKuaishouData = async (queryParams) => {
+  let params = {...queryParams}
+  params.platformId = 'kuaishou'
+  params.pageSize = 10
+  params.pageNum = 1
+  params.descFields = 'playNum'
+  params.searchCount = false
+  let res = await getWorkListApi(params)
+  kuaishouData.value = res.data
+  let x = []
+  let y = []
+  let arr = []
+  for (let i = res.data.length - 1; i >= 0; i--) {
+    const item = res.data[i];
+    y.push(item.accountId_dictText)
+    x.push({
+      value: item.playNum,
+      name: item.accountId_dictText,
+      id: item.id
+    })
+    arr.push(item)
+  }
+  kuaishouChart.value = {
+    title: {
+      text: '快手',
+      show: true,  // 强制显示标题
+      textStyle: {
+        color: '#f5a216',  // 可自定义颜色
+        fontSize: 16    // 可自定义字体大小
+      }
+    },
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: {
+        type: 'shadow'
+      },
+      confine: true,
+      formatter: function (params) {
+        const param = params[0];
+        const dataIndex = param.dataIndex;
+        const item = arr[dataIndex]; // 获取原始数据
+
+        // 显示详细指标信息
+        return `${item.description}<br/> 播放数: ${item.playNum}<br/> ${item.userId_dictText}<br/> <span style="color: #00bcd4">点击查看详情</span>`;
+      }
+    },
+    legend: {},
+    xAxis: {
+      type: 'value',
+      boundaryGap: [0, 0.01]
+    },
+    yAxis: {
+      type: 'category',
+      data: y
+    },
+    series: [
+      {
+        name: queryParams.startCreateTime ? queryParams.startCreateTime + '至' + queryParams.endCreateTime : '全部',
+        type: 'bar',
+        barMaxWidth: 40,
+        data: x,
+        label: {
+          show: true,
+          position: 'right',
+          color: '#333',
+          fontSize: 12
+        },
+        itemStyle: {
+          color: {
+            type: 'linear',
+            x: 0, y: 0, x2: 0, y2: 1,
+            colorStops: [
+              {offset: 0, color: '#f5a216'},
+              {offset: 1, color: '#f5a216'}
+            ]
+          }
+        }
+      },
+    ],
+  }
+}
 
 const getDouyinData = async (queryParams) => {
   let params = {...queryParams}
@@ -720,6 +807,7 @@ const handleSearch = (queryParams) => {
   getDouyinData(queryParams)
   getXiaohongshuData(queryParams)
   getWechatvideoData(queryParams)
+  getKuaishouData(queryParams)
 }
 
 init()

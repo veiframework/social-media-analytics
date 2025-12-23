@@ -265,12 +265,12 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
         try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(browserContext)) {
             Page page = playwrightBrowser.getPage();
             page.navigate(shareLink, new Page.NavigateOptions().setTimeout(60_000));
+            page.waitForTimeout(RandomUtil.randomInt(300, 1000));
             if (page.isVisible("text=登录后推荐更懂你的笔记")) {
                 log.error("需要重新登录");
                 dataSyncParamContext.setStorageState(null);
                 return null;
             }
-            ThreadUtil.safeSleep(RandomUtil.randomInt(200, 500));
             page.waitForFunction("typeof __INITIAL_STATE__ !== 'undefined'", null, new Page.WaitForFunctionOptions().setTimeout(30_000L));
             String string = (String) page.evaluate("JSON.stringify(__INITIAL_STATE__.note.noteDetailMap)");
             JsonNode jsonNode = JacksonUtil.toObj(string);
@@ -307,10 +307,21 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
             String mediaType = workType.equals(WorkTypeEnum.RICH_TEXT.getType()) ? MediaTypeEnum.PICTURE.getType() : MediaTypeEnum.VIDEO.getType();
             String shareUrl = "https://www.xiaohongshu.com/explore/" + workUid + "?xsec_token=" + noteNode.get("xsecToken").asText();
             JsonNode interactInfo = noteNode.get("interactInfo");
-            int thumbNum = this.clearWord(interactInfo.get("likedCount").asText());
-            int collectNum = this.clearWord(interactInfo.get("collectedCount").asText());
-            int shareNum = this.clearWord(interactInfo.get("shareCount").asText());
-            int commentNum = this.clearWord(interactInfo.get("commentCount").asText());
+            int thumbNum;
+            int collectNum;
+            int shareNum;
+            int commentNum;
+            try {
+                thumbNum = this.clearWord(interactInfo.get("likedCount").asText());
+                collectNum = this.clearWord(interactInfo.get("collectedCount").asText());
+                shareNum = this.clearWord(interactInfo.get("shareCount").asText());
+                commentNum = this.clearWord(interactInfo.get("commentCount").asText());
+            } catch (Exception e) {
+                log.error("需要重新登录 {}", e.getMessage());
+                dataSyncParamContext.setStorageState(null);
+                return null;
+            }
+
             // 基于3.3%互动率估算,目前无法从 view_count获取浏览量
             int playNum = (thumbNum + collectNum + shareNum + commentNum) * 10;
             String redId = "";
@@ -322,7 +333,6 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
                     double x = box.x + box.width / 2;
                     double y = box.y + box.height / 2;
                     page.mouse().move(x, y);
-//                    ThreadUtil.safeSleep(RandomUtil.randomInt(300, 1000));
                     page.mouse().click(x, y);
                 });
                 popupPage.waitForLoadState();
@@ -582,7 +592,7 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
             String replace = text.replace("万", "");
             return new BigDecimal(replace).multiply(BigDecimal.valueOf(10000)).intValue();
         }
-        return Integer.parseInt(text);
+        return Integer.parseInt(text.replace("+", ""));
     }
 
 

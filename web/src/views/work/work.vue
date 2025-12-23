@@ -80,7 +80,7 @@
         :rowData="rowData"
         @cancel="infoVisible = false">
       <template #custom="{ row, prop }">
-        <template v-if="prop==='topics'">
+        <template v-if="prop==='topics'&&row.topics">
           <el-tag style="margin-right: 5px" v-for="(item, indx) in row.topics.split(',')" :key="indx">
             {{ item }}
           </el-tag>
@@ -150,8 +150,16 @@ import {ElMessage, ElMessageBox} from 'element-plus'
 import {
   getWorkListApi,
   getWorkApi,
-  exportWorkApi, createByWechatVideoId, createByWorkShareUrl,
-  delWork, updateViewCount, getShareLinkTaskPage, deleteShareLinkTask, retryShareLinkTask, createShareLinkTask
+  exportWorkApi,
+  createByWechatVideoId,
+  createByWorkShareUrl,
+  delWork,
+  updateViewCount,
+  getShareLinkTaskPage,
+  deleteShareLinkTask,
+  retryShareLinkTask,
+  createShareLinkTask,
+  getWorkByShareLinkApi
 } from '@/api/work'
 import {getDicts} from '@/api/system/dict/data'
 import CustomTable from "@/components/CustomTable"
@@ -267,7 +275,7 @@ const handleShareLinkMenu = async (val) => {
       await handleCreateStatus(row.id)
       break
     case 'detailByLink':
-      await showDetailByLink(row.shareLink)
+      await showDetailByLink(row)
       break
   }
 }
@@ -358,13 +366,11 @@ const handleWechatVideoForm = async (val) => {
   }
 }
 
-const showDetailByLink = async (shareLink) => {
-  const response = await getWorkListApi({shareLink: shareLink, pageNum: 1, pageSize: 10})
-  let arr = response.data.records || [];
-  if (arr.length) {
-    rowData.value = arr[0]
-    infoVisible.value = true
-  }
+const showDetailByLink = async (row) => {
+  let shareLink = row.shareLink
+  const response = await getWorkByShareLinkApi({shareLink: shareLink})
+  rowData.value = response.data
+  infoVisible.value = true
 }
 
 // 获取字典数据
@@ -424,7 +430,7 @@ const getDict = async () => {
 }
 
 const getAccountList = async () => {
-  const res = await listSocialMediaAccount({pageNum: 1, pageSize: 9999999})
+  const res = await listSocialMediaAccount({pageNum: 1, pageSize: 9999999, searchCount: false})
   accountListDict.value = res.data.records.map(i => ({
     label: i.nickname,
     value: i.id,

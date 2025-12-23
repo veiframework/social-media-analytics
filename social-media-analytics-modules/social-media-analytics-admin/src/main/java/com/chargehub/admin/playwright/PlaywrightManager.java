@@ -1,5 +1,6 @@
 package com.chargehub.admin.playwright;
 
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import com.chargehub.admin.work.domain.SocialMediaWork;
@@ -8,12 +9,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.microsoft.playwright.ElementHandle;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Response;
+import com.microsoft.playwright.options.WaitForSelectorState;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 /**
@@ -93,7 +96,8 @@ public class PlaywrightManager {
     }
 
     public static void crawlRedNoteLogin() {
-        try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(new PlaywrightCrawlTestHelper().getLoginState(""))) {
+        String s = FileUtil.readUtf8String("red_note_state.json");
+        try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(s)) {
             Page page = playwrightBrowser.newPage();
             page.navigate("https://www.xiaohongshu.com/", new Page.NavigateOptions().setTimeout(60_000));
             log.info("进入页面");
@@ -103,7 +107,7 @@ public class PlaywrightManager {
             System.out.println(src);
             page.waitForSelector("a[title='我']", new Page.WaitForSelectorOptions().setTimeout(180_000));
             String storageState = page.context().storageState();
-            FileUtil.writeUtf8String(storageState, "E:\\workspace\\social-media-analytics\\social-media-analytics-modules\\social-media-analytics-admin\\src\\main\\resources\\red_note_state.json");
+            FileUtil.writeUtf8String(storageState, "red_note_state.json");
         }
     }
 
@@ -131,7 +135,6 @@ public class PlaywrightManager {
     }
 
     public static SocialMediaWork getWork(String workUrl) {
-
         try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(new PlaywrightCrawlTestHelper().getLoginState(""))) {
             Page page = playwrightBrowser.newPage();
             Response response = page.waitForResponse(res -> res.url().contains("/creator/item/mget"), new Page.WaitForResponseOptions().setTimeout(60_000), () -> {
@@ -144,6 +147,87 @@ public class PlaywrightManager {
         }
     }
 
+    public static void crawDouYinLogin() {
+        try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(new PlaywrightCrawlTestHelper().getLoginState(""))) {
+            Page page = playwrightBrowser.newPage();
+            page.navigate("https://www.douyin.com", new Page.NavigateOptions().setTimeout(60_000));
+            log.info("进入页面");
+            ThreadUtil.safeSleep(60_0000);
+        }
+    }
+
+    public static void crawlKuaiShouLogin() {
+        String s = FileUtil.readUtf8String("kuaishou_state.json");
+        try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(s)) {
+            Page page = playwrightBrowser.newPage();
+            page.navigate("https://v.kuaishou.com/7GK5P2ic", new Page.NavigateOptions().setTimeout(60_000));
+            log.info("进入页面");
+            page.click("[class*='sidebar-login-button']");
+            page.waitForSelector(".qrcode-img");
+            ElementHandle element = page.querySelector(".qrcode-img");
+            element.waitForSelector("img");
+            ElementHandle imgElement = element.querySelector("img");
+            String src = imgElement.getAttribute("src");
+            System.out.println(src);
+            page.waitForSelector("[class*='sidebar-login-button']", new Page.WaitForSelectorOptions().setState(WaitForSelectorState.HIDDEN));
+            String storageState = page.context().storageState();
+            FileUtil.writeUtf8String(storageState, "kuaishou_state.json");
+        }
+    }
+
+    public static void kuaishouWorks() {
+        String s = FileUtil.readUtf8String("kuaishou_state.json");
+        try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(s)) {
+            Page page = playwrightBrowser.newPage();
+            log.info("进入页面");
+            try {
+                Response response = page.waitForResponse(url -> url.ok() && url.url().contains("graphql"), new Page.WaitForResponseOptions().setTimeout(10_000), () -> {
+                    page.navigate("https://v.kuaishou.com/7GK5P2ic", new Page.NavigateOptions().setTimeout(60_000));
+                    String url = page.url();
+                    if (url.contains("short-video")) {
+
+                        return;
+                    }
+                    System.out.println("图文");
+                    ThreadUtil.safeSleep(40_000);
+                    throw new IllegalArgumentException("不是图文");
+                });
+                byte[] body = response.body();
+                System.out.println(new String(body) + "结果" + DateUtil.now());
+            } catch (Exception e) {
+                if (e.getMessage().equals("不是图文")) {
+                    System.out.println(e.getMessage());
+                }
+                System.out.println("结果" + DateUtil.now());
+            }
+        }
+    }
+
+    public static void kuaishouWorks2() {
+        String s = FileUtil.readUtf8String("kuaishou_state.json");
+        try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(s)) {
+            Page page = playwrightBrowser.newPage();
+            log.info("进入页面");
+
+            AtomicInteger atomicInteger = new AtomicInteger(-1);
+            page.onResponse(response -> {
+                if (response.url().contains("graphql")) {
+                    String str = new String(response.body());
+                    if (str.contains("commentCount")) {
+                        atomicInteger.set(233);
+                    }
+                }
+            });
+            page.navigate("https://v.kuaishou.com/7GK5P2ic", new Page.NavigateOptions().setTimeout(60_000));
+//            while (atomicInteger.get() == -1) {
+//                page.waitForTimeout(1000);
+//            }
+//            System.out.println(atomicInteger.get());
+            page.waitForFunction("typeof INIT_STATE !== 'undefined'", null, new Page.WaitForFunctionOptions().setTimeout(30_000L));
+
+        }
+    }
+
 
     public static void main(String[] args) {
         String douyin = "https://www.douyin.com/user/MS4wLjABAAAAhSaD3wD3rsLVCezq2LaPpCXrRDjBb8R8Np4SnAcZQE4";
@@ -151,12 +235,15 @@ public class PlaywrightManager {
         String shareUrl = "https://v.douyin.com/BnP9rp9WtMw/ 11/28 nqR:/ x@s.eO";
         String xiaohongshu = "http://xhslink.com/o/6vwGmnLDROY";
 //        getWork("https://creator.douyin.com/creator-micro/work-management/work-detail/7578754998953051121");
-                crawlRedNoteLogin();
 //        String read = FileUtil.readUtf8String("E:\\workspace\\social-media-analytics\\social-media-analytics-modules\\social-media-analytics-admin\\src\\main\\resources\\login_state.json");
 //        AtomicInteger a = new AtomicInteger();
 //        crawlDouYinWorkList("https://www.douyin.com/user/MS4wLjABAAAAJ6GUXA-U_4pDM-vPq_Xl2onTfM-MFA2j9WEjH9mzk-BOiM2MoNcRp56juY9Pbb_c", read, (res) -> {
 //            System.out.println(a.getAndIncrement());
 //        });
+        crawlRedNoteLogin();
+//        crawlKuaiShouLogin();
+//        crawDouYinLogin();
+//        kuaishouWorks2();
     }
 
 

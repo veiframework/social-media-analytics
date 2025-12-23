@@ -1,5 +1,7 @@
 package com.chargehub.admin.work.mapper;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.chargehub.admin.work.domain.SocialMediaWork;
 import com.chargehub.common.security.template.mybatis.Z9MpCrudMapper;
 import org.apache.ibatis.annotations.Mapper;
@@ -17,11 +19,11 @@ import java.util.Set;
 @Mapper
 public interface SocialMediaWorkMapper extends Z9MpCrudMapper<SocialMediaWork> {
 
-    default List<SocialMediaWork> groupByAccountId(Collection<String> userIds, Set<String> ascFields, Set<String> descFields) {
+    default IPage<SocialMediaWork> groupByAccountId(Page<SocialMediaWork> page, Collection<String> userIds, Set<String> ascFields, Set<String> descFields) {
         if (userIds != null && userIds.isEmpty()) {
-            return new ArrayList<>();
+            return new Page<>();
         }
-        return this.groupByAccountId0(userIds, ascFields, descFields);
+        return this.groupByAccountId0(page, userIds, ascFields, descFields);
     }
 
     default List<SocialMediaWork> groupByUserIdAndPlatform(@Param("userIds") Collection<String> userIds) {
@@ -31,7 +33,10 @@ public interface SocialMediaWorkMapper extends Z9MpCrudMapper<SocialMediaWork> {
         return this.groupByUserIdAndPlatform0(userIds);
     }
 
-    List<SocialMediaWork> groupByAccountId0(@Param("userIds") Collection<String> userIds, @Param("ascFields") Set<String> ascFields, @Param("descFields") Set<String> descFields);
+    IPage<SocialMediaWork> groupByAccountId0(Page<SocialMediaWork> page,
+                                             @Param("userIds") Collection<String> userIds,
+                                             @Param("ascFields") Set<String> ascFields,
+                                             @Param("descFields") Set<String> descFields);
 
 
     List<SocialMediaWork> groupByUserIdAndPlatform0(@Param("userIds") Collection<String> userIds);

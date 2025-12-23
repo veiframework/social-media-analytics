@@ -86,3 +86,11 @@ export function deleteShareLinkTask(id) {
         method: 'delete',
     })
 }
+
+export function getWorkByShareLinkApi(params) {
+    return request({
+        url: `${prefix}/share-link/detail`,
+        method: 'get',
+        params
+    })
+}

@@ -12,6 +12,7 @@ public interface DataSyncService {
 
     SocialMediaPlatformEnum platform();
 
+    @Deprecated
     SocialMediaUserInfo getSocialMediaUserInfo(String secUserId);
 
     <T> SocialMediaWorkResult<T> getWorks(SocialMediaAccountVo socialMediaAccount, String cursor, Integer count);

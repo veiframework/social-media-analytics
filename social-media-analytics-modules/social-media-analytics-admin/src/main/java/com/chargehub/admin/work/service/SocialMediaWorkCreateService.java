@@ -73,6 +73,10 @@ public class SocialMediaWorkCreateService extends AbstractZ9CrudServiceImpl<Soci
                 .update();
     }
 
+    public boolean hasTask() {
+        return this.baseMapper.lambdaQuery().gt(SocialMediaWorkCreate::getRetryCount, 0).count() > 0;
+    }
+
     @Override
     public IExcelDictHandler getDictHandler() {
         return chargeExcelDictHandler;

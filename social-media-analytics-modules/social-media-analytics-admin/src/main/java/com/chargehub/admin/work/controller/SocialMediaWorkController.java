@@ -1,6 +1,7 @@
 package com.chargehub.admin.work.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.chargehub.admin.api.model.LoginUser;
 import com.chargehub.admin.groupuser.service.GroupUserService;
 import com.chargehub.admin.work.dto.SocialMediaWorkCreateDto;
 import com.chargehub.admin.work.dto.SocialMediaWorkCreateQueryDto;
@@ -128,6 +129,18 @@ public class SocialMediaWorkController {
     @DeleteMapping("/social-media/work/share-link/task/{ids}")
     public void deleteCreateShareLinkTask(@PathVariable String ids) {
         this.socialMediaWorkCreateService.deleteByIds(ids);
+    }
+
+
+    @RequiresLogin
+    @ApiOperation("通过分享链接获取详情")
+    @Operation(summary = "通过分享链接获取详情")
+    @GetMapping("/social-media/work/share-link/detail")
+    public SocialMediaWorkVo getWorkDetailByLink(String shareLink) {
+        LoginUser loginUser = SecurityUtils.getLoginUser();
+        Set<String> roles = loginUser.getRoles();
+        String userId = loginUser.getUserid() + "";
+        return this.socialMediaWorkService.getWorkDetail(shareLink, roles, userId);
     }
 
 }

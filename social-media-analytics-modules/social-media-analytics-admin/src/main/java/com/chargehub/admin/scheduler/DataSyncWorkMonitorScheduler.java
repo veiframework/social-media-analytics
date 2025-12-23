@@ -18,6 +18,7 @@ import com.chargehub.admin.playwright.PlaywrightBrowser;
 import com.chargehub.admin.playwright.PlaywrightCrawlHelper;
 import com.chargehub.admin.scheduler.domain.UpdateLoginState;
 import com.chargehub.admin.work.domain.SocialMediaWork;
+import com.chargehub.admin.work.service.SocialMediaWorkCreateService;
 import com.chargehub.admin.work.service.SocialMediaWorkService;
 import com.chargehub.common.core.properties.HubProperties;
 import com.chargehub.common.redis.service.RedisService;
@@ -64,6 +65,9 @@ public class DataSyncWorkMonitorScheduler {
     private SocialMediaWorkService socialMediaWorkService;
 
     @Autowired
+    private SocialMediaWorkCreateService socialMediaWorkCreateService;
+
+    @Autowired
     private HubProperties hubProperties;
 
 
@@ -72,6 +76,11 @@ public class DataSyncWorkMonitorScheduler {
     public void execute() {
         redisService.lock(DATA_SYNC_WORK_LOCK, locked -> {
             if (BooleanUtils.isFalse(locked)) {
+                return null;
+            }
+            boolean hasTask = socialMediaWorkCreateService.hasTask();
+            if (hasTask) {
+                log.error("正在创建作品，本次监控任务不执行");
                 return null;
             }
             List<SocialMediaAccountTask> socialMediaAccounts = socialMediaAccountTaskService.getAll();
@@ -93,7 +102,7 @@ public class DataSyncWorkMonitorScheduler {
             StopWatch stopWatch = new StopWatch("作品同步监控");
             stopWatch.start();
             log.info("作品同步监控开始 {}", now);
-            redisService.setCacheObject(SYNCING_WORK_LOCK, now);
+            redisService.setCacheObject(SYNCING_WORK_LOCK, now.toString());
             try {
                 CompletableFuture.allOf(allFutures.toArray(new CompletableFuture[0])).get(1, TimeUnit.HOURS);
                 newStorageStateMap.forEach((platform, storageState) -> this.playwrightCrawlHelper.updateCrawlerLoginState(platform, storageState.getLoginState()));
@@ -173,6 +182,8 @@ public class DataSyncWorkMonitorScheduler {
         SocialMediaWorkResult<SocialMediaWork> result = this.dataSyncManager.getWorks(platformId, dataSyncWorksParams);
         List<SocialMediaWork> newWorks = result.getWorks();
         if (CollectionUtils.isEmpty(newWorks)) {
+            String storageState = result.getStorageState();
+            newStorageStateMap.put(platformId, new UpdateLoginState(storageState));
             return;
         }
         List<SocialMediaWork> updateList = new ArrayList<>();

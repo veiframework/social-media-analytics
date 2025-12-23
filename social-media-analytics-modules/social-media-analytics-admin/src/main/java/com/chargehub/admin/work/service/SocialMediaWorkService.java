@@ -3,6 +3,7 @@ package com.chargehub.admin.work.service;
 import cn.afterturn.easypoi.handler.inter.IExcelDictHandler;
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.toolkit.Db;
 import com.chargehub.admin.account.dto.SocialMediaTransferAccountDto;
 import com.chargehub.admin.enums.WorkStateEnum;
@@ -90,12 +91,18 @@ public class SocialMediaWorkService extends AbstractZ9CrudServiceImpl<SocialMedi
     }
 
 
-    public List<SocialMediaWork> groupByAccountId(Collection<String> userIds, Set<String> ascFields, Set<String> descFields) {
-        List<SocialMediaWork> socialMediaWorks = this.baseMapper.groupByAccountId(userIds, ascFields, descFields);
-        if (CollectionUtils.isEmpty(socialMediaWorks)) {
-            return new ArrayList<>();
+    public IPage<SocialMediaWork> groupByAccountId(Page<SocialMediaWork> page, Collection<String> userIds, Set<String> ascFields, Set<String> descFields) {
+        return this.baseMapper.groupByAccountId(page, userIds, ascFields, descFields);
+    }
+
+    public SocialMediaWorkVo getWorkDetail(String shareLink, Set<String> roles, String userId) {
+        SocialMediaWork work = this.baseMapper.lambdaQuery().like(SocialMediaWork::getShareLink, shareLink).one();
+        Assert.notNull(work, "作品不存在了: " + shareLink);
+        String targetUserId = work.getUserId();
+        if (roles.contains("员工") && !targetUserId.equals(userId)) {
+            throw new IllegalArgumentException("该作品账号归属于其他员工，请联系组长或主管");
         }
-        return socialMediaWorks;
+        return BeanUtil.copyProperties(work, SocialMediaWorkVo.class);
     }
 
     public void deleteByAccountIds(String accountIds) {
@@ -110,21 +117,11 @@ public class SocialMediaWorkService extends AbstractZ9CrudServiceImpl<SocialMedi
 
 
     @SuppressWarnings("all")
-    public List<SocialMediaWork> getWorkIds(Set<String> accountIds) {
-        long recentDays = hubProperties.getRecentDays();
-        return this.baseMapper.lambdaQuery()
-                .select(SocialMediaWork::getId, SocialMediaWork::getPlatformId, SocialMediaWork::getMediaType, SocialMediaWork::getAccountId)
-                .in(accountIds != null, SocialMediaWork::getAccountId, accountIds)
-                .apply("TIMESTAMPDIFF(DAY, post_time, NOW()) <= " + recentDays)
-                .list();
-    }
-
-    @SuppressWarnings("all")
     public List<SocialMediaWork> getLatestWork(String accountId) {
         long recentDays = hubProperties.getRecentDays();
         return this.baseMapper.lambdaQuery().eq(SocialMediaWork::getAccountId, accountId)
                 .ne(SocialMediaWork::getState, WorkStateEnum.DELETED.getDesc())
-                .apply("TIMESTAMPDIFF(DAY, post_time, NOW()) <= " + recentDays)
+                .apply("TIMESTAMPDIFF(DAY, create_time, NOW()) <= " + recentDays)
                 .list();
     }
 

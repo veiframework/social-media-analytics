@@ -176,19 +176,21 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
 
     public IPage<SocialMediaAccountStatisticVo> getAccountStatistic(SocialMediaAccountQueryDto queryDto) {
         Set<String> userId = queryDto.getUserId();
-        List<SocialMediaWork> socialMediaWorks = socialMediaWorkService.groupByAccountId(userId, queryDto.getAscFields(), queryDto.getDescFields());
-        if (CollectionUtils.isEmpty(socialMediaWorks)) {
+        Page<SocialMediaWork> pagination = new Page<>(queryDto.getPageNum(), queryDto.getPageSize());
+        IPage<SocialMediaWork> socialMediaWorksPage = socialMediaWorkService.groupByAccountId(pagination, userId, queryDto.getAscFields(), queryDto.getDescFields());
+        if (CollectionUtils.isEmpty(socialMediaWorksPage.getRecords())) {
             return new Page<>();
         }
+        List<SocialMediaWork> socialMediaWorks = socialMediaWorksPage.getRecords();
         Set<String> accountIds = socialMediaWorks.stream().map(SocialMediaWork::getAccountId).collect(Collectors.toSet());
         queryDto.setUserId(null);
         queryDto.setId(accountIds);
         queryDto.setAscFields(null);
         queryDto.setDescFields(null);
-        IPage<SocialMediaAccountStatisticVo> page = this.baseMapper.doGetPage(queryDto).convert(i -> BeanUtil.copyProperties(i, SocialMediaAccountStatisticVo.class));
-        List<SocialMediaAccountStatisticVo> records = page.getRecords();
+        queryDto.setSearchCount(false);
+        List<SocialMediaAccountStatisticVo> records = this.baseMapper.doGetAll(queryDto).stream().map(i -> BeanUtil.copyProperties(i, SocialMediaAccountStatisticVo.class)).collect(Collectors.toList());
         if (CollectionUtils.isEmpty(records)) {
-            return page;
+            return new Page<>();
         }
         Map<String, SocialMediaAccountStatisticVo> collect = records.stream().collect(Collectors.toMap(SocialMediaAccountStatisticVo::getId, Function.identity()));
         List<SocialMediaAccountStatisticVo> list = new ArrayList<>();
@@ -200,6 +202,7 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
             BeanUtil.copyProperties(socialMediaWork, statisticVo, CopyOptions.create().setIgnoreNullValue(true));
             list.add(statisticVo);
         });
+        Page<SocialMediaAccountStatisticVo> page = new Page<>(socialMediaWorksPage.getCurrent(), socialMediaWorksPage.getSize(), socialMediaWorksPage.getTotal());
         page.setRecords(list);
         return page;
     }

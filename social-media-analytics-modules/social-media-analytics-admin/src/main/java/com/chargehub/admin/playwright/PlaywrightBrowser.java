@@ -92,6 +92,7 @@ public class PlaywrightBrowser implements AutoCloseable {
         browserConfig.setPlaywright(playwright);
         BrowserType browserType = browserConfig.getBrowserType();
         Browser.NewContextOptions newContextOptions = new Browser.NewContextOptions()
+                .setIgnoreHTTPSErrors(true)
                 .setLocale("zh-CN")
                 .setTimezoneId("Asia/Shanghai")
                 .setDeviceScaleFactor(1)
@@ -104,8 +105,10 @@ public class PlaywrightBrowser implements AutoCloseable {
                 .setUserAgent(browserConfig.getRandomUa());
         // 启动选项（可统一配置）
         BrowserContext browserContext = browserType.launch(new BrowserType.LaunchOptions()
-//                .setProxy("socks5://106.15.129.14:8081")
                 .setHeadless(headless)
+//                .setProxy(new Proxy("https://net-193-233-89-41.mcccx.com:8444").setUsername("mix353OJEL5NY").setPassword("RHPFApsS"))
+                //设置启动系统浏览器
+//                .setExecutablePath(Paths.get("C://Program Files (x86)//Microsoft//Edge//Application//msedge.exe"))
                 .setArgs(Arrays.asList(
                         "--no-sandbox"
 //                        , "-private"

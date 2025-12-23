@@ -20,6 +20,7 @@ import com.chargehub.common.core.utils.ExceptionUtil;
 import com.chargehub.common.redis.service.RedisService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.BooleanUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -71,12 +72,12 @@ public class CreateWorkScheduler {
             this.createWorkByShareUrl(socialMediaWorkCreateVo);
         } catch (Exception e) {
             String errorMsg = e.getMessage();
-            if (errorMsg.contains("重复") || errorMsg.contains("下架")) {
+            if (StringUtils.isNotBlank(errorMsg) && (errorMsg.contains("重复") || errorMsg.contains("下架"))) {
                 this.socialMediaWorkCreateService.updateStatusNoRetry(id, WorkCreateStatusEnum.FAIL, errorMsg);
-            } else {
-                String errorStack = com.chargehub.common.core.utils.StringUtils.substring(ExceptionUtil.getExceptionMessage(e), 0, 2000);
-                this.socialMediaWorkCreateService.updateCreateStatus(id, WorkCreateStatusEnum.FAIL, errorMsg, errorStack, true);
+                return;
             }
+            String errorStack = com.chargehub.common.core.utils.StringUtils.substring(ExceptionUtil.getExceptionMessage(e), 0, 2000);
+            this.socialMediaWorkCreateService.updateCreateStatus(id, WorkCreateStatusEnum.FAIL, errorMsg, errorStack, true);
         }
     }
 

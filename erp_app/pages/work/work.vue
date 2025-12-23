@@ -195,6 +195,7 @@ export default {
     const platformOptions = ref([
       {label: '全部', value: null},
       {label: '抖音', value: 'douyin'},
+      {label: '快手', value: 'kuaishou'},
       {label: '小红书', value: 'xiaohongshu'},
       {label: '视频号', value: 'wechatvideo'},
       {label: 'B站', value: 'bilibili'}
