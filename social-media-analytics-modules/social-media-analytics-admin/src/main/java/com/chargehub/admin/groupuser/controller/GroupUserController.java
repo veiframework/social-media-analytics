@@ -12,6 +12,7 @@ import com.chargehub.common.security.annotation.RequiresLogin;
 import com.chargehub.common.security.annotation.RequiresPermissions;
 import com.chargehub.common.security.annotation.UnifyResult;
 import com.chargehub.common.security.utils.SecurityUtils;
+import com.google.common.collect.Lists;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -72,21 +73,28 @@ public class GroupUserController {
         this.groupUserService.deleteByIds(ids);
     }
 
+    //组员管理在用
     @RequiresLogin
     @ApiOperation("获取用户下拉列表")
     @Operation(summary = "获取用户下拉列表")
     @GetMapping("/user/selector")
     public List<SysUser> getUserSelector() {
-        return this.groupUserService.getUsers();
+        LoginUser loginUser = SecurityUtils.getLoginUser();
+        String tenantId = null;
+        if (loginUser.isNormalUser()) {
+            tenantId = loginUser.getShopId() + "";
+        }
+        return this.groupUserService.getUsers(tenantId);
     }
 
+    //作品列表在用，首页在用，账号列表在用
     @RequiresLogin
     @ApiOperation("获取group用户下拉列表")
     @Operation(summary = "获取group用户下拉列表")
     @GetMapping("/user/query/selector")
     public List<GroupUserVo> getGroupUsers() {
         LoginUser loginUser = SecurityUtils.getLoginUser();
-        if (loginUser.isAdmin() || loginUser.isSuperAdmin()) {
+        if (!loginUser.isNormalUser()) {
             List<SysUser> list = sysUserService.selectUserList(new SysUser());
             return list.stream().map(i -> {
                 GroupUserVo vo = new GroupUserVo();
@@ -95,10 +103,29 @@ public class GroupUserController {
                 return vo;
             }).collect(Collectors.toList());
         }
+        if (loginUser.isSuperAdmin()) {
+            SysUser sysUser = new SysUser();
+            sysUser.setShopId(loginUser.getShopId());
+            List<SysUser> list = sysUserService.selectUserList(sysUser);
+            return list.stream().map(i -> {
+                GroupUserVo vo = new GroupUserVo();
+                vo.setId(i.getUserId() + "");
+                vo.setUserId(i.getUserId() + "");
+                return vo;
+            }).collect(Collectors.toList());
+        }
+        if (loginUser.isLabor()) {
+            GroupUserVo vo = new GroupUserVo();
+            vo.setId(loginUser.getUserid() + "");
+            vo.setUserId(loginUser.getUserid() + "");
+            return Lists.newArrayList(vo);
+        }
+
         String userId = SecurityUtils.getUserId() + "";
         return this.groupUserService.getGroupUsers(userId);
     }
 
+    //数据分析在用
     @RequiresLogin
     @ApiOperation("获取用户下拉列表")
     @Operation(summary = "获取用户下拉列表")
@@ -112,7 +139,11 @@ public class GroupUserController {
         if (roles.contains("组长") || roles.contains("员工")) {
             return Stream.of(sysUser).collect(Collectors.toList());
         }
-        return this.groupUserService.getLeaderUsers();
+        String tenantId = null;
+        if (loginUser.isNormalUser()) {
+            tenantId = loginUser.getShopId() + "";
+        }
+        return this.groupUserService.getLeaderUsers(tenantId);
     }
 
 }

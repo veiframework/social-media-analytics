@@ -5,6 +5,7 @@ import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.RandomUtil;
 import com.chargehub.admin.account.domain.SocialMediaAccount;
 import com.chargehub.admin.account.service.SocialMediaAccountService;
+import com.chargehub.admin.api.domain.SysUser;
 import com.chargehub.admin.datasync.DataSyncManager;
 import com.chargehub.admin.datasync.domain.SocialMediaUserInfo;
 import com.chargehub.admin.datasync.domain.SocialMediaWorkDetail;
@@ -16,6 +17,7 @@ import com.chargehub.admin.work.dto.SocialMediaWorkDto;
 import com.chargehub.admin.work.service.SocialMediaWorkCreateService;
 import com.chargehub.admin.work.service.SocialMediaWorkService;
 import com.chargehub.admin.work.vo.SocialMediaWorkCreateVo;
+import com.chargehub.biz.admin.service.ISysUserService;
 import com.chargehub.common.core.utils.ExceptionUtil;
 import com.chargehub.common.redis.service.RedisService;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +39,9 @@ public class CreateWorkScheduler {
 
     @Autowired
     private RedisService redisService;
+
+    @Autowired
+    private ISysUserService sysUserService;
 
     @Autowired
     private SocialMediaWorkService socialMediaWorkService;
@@ -85,6 +90,12 @@ public class CreateWorkScheduler {
         String id = dto.getId();
         String shareLink = dto.getShareLink();
         String userId = dto.getCreator();
+        SysUser sysUser = sysUserService.selectUserById(Long.parseLong(userId));
+        if (sysUser == null) {
+            log.error("用户找不到了");
+            return;
+        }
+        String tenantId = sysUser.getShopId() + "";
         String accountType = dto.getAccountType();
         SocialMediaPlatformEnum.PlatformExtra platformEnum = SocialMediaPlatformEnum.getPlatformByWorkUrl(shareLink);
         SocialMediaWorkDetail<SocialMediaWork> socialMediaWorkDetail = this.dataSyncManager.getWork("", shareLink, platformEnum);
@@ -92,12 +103,13 @@ public class CreateWorkScheduler {
         SocialMediaWork socialMediaWork = socialMediaWorkDetail.getWork();
         Assert.isTrue(!"-1".equals(socialMediaWork.getWorkUid()), "作品已经下架,无法添加");
         SocialMediaUserInfo socialMediaUserInfo = socialMediaWorkDetail.getSocialMediaUserInfo();
-        SocialMediaAccount socialMediaAccount = socialMediaAccountService.getAndSave(socialMediaUserInfo, userId, accountType, platformEnum.getPlatformEnum());
+        SocialMediaAccount socialMediaAccount = socialMediaAccountService.getAndSave(socialMediaUserInfo, userId, accountType, platformEnum.getPlatformEnum(), tenantId);
         socialMediaWork.setUserId(socialMediaAccount.getUserId());
         socialMediaWork.setAccountId(socialMediaAccount.getId());
         socialMediaWork.setTenantId(socialMediaAccount.getTenantId());
         socialMediaWork.setAccountType(socialMediaAccount.getType());
         socialMediaWork.setShareLink(shareLink);
+        socialMediaWork.setTenantId(tenantId);
         SocialMediaWorkDto socialMediaWorkDto = BeanUtil.copyProperties(socialMediaWork, SocialMediaWorkDto.class);
         socialMediaWorkService.create(socialMediaWorkDto);
         String dbUserId = socialMediaAccount.getUserId();

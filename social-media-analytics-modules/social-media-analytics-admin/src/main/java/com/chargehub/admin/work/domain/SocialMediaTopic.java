@@ -22,6 +22,8 @@ public class SocialMediaTopic implements Serializable, Z9CrudEntity {
 
     private String topic;
 
+    private String tenantId;
+
     @Override
     public String getUniqueId() {
         return this.id;

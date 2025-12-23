@@ -5,6 +5,7 @@ import com.chargehub.admin.account.mapper.SocialMediaAccountMapper;
 import com.chargehub.common.core.properties.HubProperties;
 import com.chargehub.common.redis.service.RedisService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -84,6 +85,10 @@ public class PlaywrightCrawlHelperImpl implements PlaywrightCrawlHelper {
 
     @Override
     public void updateCrawlerLoginState(String platform, String content) {
+        if (StringUtils.isNotBlank(content)) {
+            //此处不再更新cookie，只有为空的时候更新
+            return;
+        }
         this.socialMediaAccountMapper.lambdaUpdate()
                 .set(SocialMediaAccount::getStorageState, content)
                 .eq(SocialMediaAccount::getPlatformId, platform)

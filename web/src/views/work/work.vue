@@ -449,8 +449,8 @@ const getUserList = async () => {
 const getData = async () => {
   loading.value = true
   try {
-    await getUserList()
-    await getAccountList()
+      getUserList()
+      getAccountList()
     const params = {
       pageNum: pageNum.value,
       pageSize: pageSize.value,

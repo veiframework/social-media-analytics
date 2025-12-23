@@ -356,6 +356,7 @@ const handleHeader = (key) => {
     case 'batchAdd':
       form.value = {userIds: []}
       visible.value = true
+      getUserSelector()
       break
     case 'delete':
       handleDelete()
@@ -440,7 +441,6 @@ const handleSave = async (val) => {
  * 初始化数据
  */
 const init = () => {
-  getUserSelector()
 }
 
 // 初始化

@@ -15,11 +15,11 @@ import java.util.List;
 @Mapper
 public interface GroupUserMapper extends Z9MpCrudMapper<GroupUser> {
 
-    @Select("select user_id,nick_name from sys_user where del_flag = '0' and user_id in (select user_id from sys_user_role where role_id = '157')")
-    List<SysUser> getLeaderUsers();
+    @Select("<script> select user_id,nick_name from sys_user where del_flag = '0' and user_id in (select user_id from sys_user_role where role_id = '157') <if test='tenantId!=null'> and shop_id = #{tenantId} </if></script>")
+    List<SysUser> getLeaderUsers(String tenantId);
 
-    @Select("select user_id,nick_name from sys_user where del_flag = '0' and user_id not in (select user_id from group_user)")
-    List<SysUser> getUsers();
+    @Select("<script> select user_id,nick_name from sys_user where del_flag = '0' and user_id not in (select user_id from group_user) <if test='tenantId!=null'> and shop_id = #{tenantId} </if></script>")
+    List<SysUser> getUsers(String tenantId);
 
 
     @Select("select id,parent_user_id,user_id,id_path from group_user where FIND_IN_SET(#{userid}, id_path)")

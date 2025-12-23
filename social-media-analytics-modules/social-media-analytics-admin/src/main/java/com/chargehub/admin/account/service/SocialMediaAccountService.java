@@ -66,7 +66,7 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
         super(baseMapper);
     }
 
-    public synchronized SocialMediaAccount getAndSave(SocialMediaUserInfo socialMediaUserInfo, String userId, String type, SocialMediaPlatformEnum platformEnum) {
+    public synchronized SocialMediaAccount getAndSave(SocialMediaUserInfo socialMediaUserInfo, String userId, String type, SocialMediaPlatformEnum platformEnum, String tenantId) {
         String uid = socialMediaUserInfo.getUid();
         String secUid = socialMediaUserInfo.getSecUid();
         String nickname = socialMediaUserInfo.getNickname();
@@ -81,6 +81,7 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
             socialMediaAccount.setUid(uid);
             socialMediaAccount.setAutoSync(AutoSyncEnum.ENABLE.getDesc());
             socialMediaAccount.setSyncWorkDate(new Date());
+            socialMediaAccount.setTenantId(tenantId);
             this.baseMapper.insert(socialMediaAccount);
         }
         return socialMediaAccount;
@@ -177,7 +178,7 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
     public IPage<SocialMediaAccountStatisticVo> getAccountStatistic(SocialMediaAccountQueryDto queryDto) {
         Set<String> userId = queryDto.getUserId();
         Page<SocialMediaWork> pagination = new Page<>(queryDto.getPageNum(), queryDto.getPageSize());
-        IPage<SocialMediaWork> socialMediaWorksPage = socialMediaWorkService.groupByAccountId(pagination, userId, queryDto.getAscFields(), queryDto.getDescFields());
+        IPage<SocialMediaWork> socialMediaWorksPage = socialMediaWorkService.groupByAccountId(pagination, userId, queryDto.getAscFields(), queryDto.getDescFields(), queryDto.getTenantId());
         if (CollectionUtils.isEmpty(socialMediaWorksPage.getRecords())) {
             return new Page<>();
         }
@@ -257,6 +258,7 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
         socialMediaAccountDto.setType(type);
         socialMediaAccountDto.setAutoSync(AutoSyncEnum.ENABLE.getDesc());
         socialMediaAccountDto.setSyncWorkDate(new Date());
+        socialMediaAccountDto.setTenantId(dto.getTenantId());
         this.create(socialMediaAccountDto);
     }
 

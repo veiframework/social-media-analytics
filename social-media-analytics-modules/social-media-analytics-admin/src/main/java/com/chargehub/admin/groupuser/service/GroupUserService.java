@@ -59,12 +59,12 @@ public class GroupUserService extends AbstractZ9CrudServiceImpl<GroupUserMapper,
         this.baseMapper.doSaveExcelData(collect);
     }
 
-    public List<SysUser> getUsers() {
-        return this.baseMapper.getUsers();
+    public List<SysUser> getUsers(String tenantId) {
+        return this.baseMapper.getUsers(tenantId);
     }
 
-    public List<SysUser> getLeaderUsers() {
-        return this.baseMapper.getLeaderUsers();
+    public List<SysUser> getLeaderUsers(String tenantId) {
+        return this.baseMapper.getLeaderUsers(tenantId);
     }
 
 
@@ -76,7 +76,10 @@ public class GroupUserService extends AbstractZ9CrudServiceImpl<GroupUserMapper,
     public Set<String> checkPurview() {
         Set<String> userIds = new HashSet<>();
         LoginUser loginUser = SecurityUtils.getLoginUser();
-        if (loginUser.isAdmin() || loginUser.isSuperAdmin()) {
+        if (!loginUser.isNormalUser()) {
+            return null;
+        }
+        if (loginUser.isSuperAdmin()) {
             return null;
         }
         String userid = loginUser.getUserid() + "";
@@ -98,6 +101,15 @@ public class GroupUserService extends AbstractZ9CrudServiceImpl<GroupUserMapper,
         }
         return userIds;
     }
+
+    public String tenantPurview() {
+        LoginUser loginUser = SecurityUtils.getLoginUser();
+        if (loginUser.isNormalUser()) {
+            return loginUser.getShopId() + "";
+        }
+        return null;
+    }
+
 
     @Override
     public IExcelDictHandler getDictHandler() {

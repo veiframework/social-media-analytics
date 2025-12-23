@@ -101,6 +101,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		<if test="nickName != null and nickName != ''">
 			AND u.nick_name like concat('%', #{nickName}, '%')
 		</if>
+		<if test="shopId != null">
+			AND u.shop_id = #{shopId}
+		</if>
 		<!-- 数据范围过滤 -->
 		${params.dataScope}
 		ORDER BY u.user_id DESC
@@ -179,6 +182,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
  			<if test="remark != null and remark != ''">remark,</if>
  			create_time
 			<if test="regionId != null">,region_id</if>
+		    <if test="shopId != null">,shop_id</if>
  		)values(
  			<if test="userId != null and userId != ''">#{userId},</if>
  			<if test="deptId != null and deptId != ''">#{deptId},</if>
@@ -194,6 +198,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
  			<if test="remark != null and remark != ''">#{remark},</if>
  			sysdate()
 			<if test="regionId != null">,#{regionId}</if>
+		    <if test="shopId != null">,#{shopId}</if>
  		)
 	</insert>
 	

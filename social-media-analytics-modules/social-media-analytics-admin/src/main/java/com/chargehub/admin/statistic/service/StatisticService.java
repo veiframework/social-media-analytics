@@ -30,6 +30,7 @@ public class StatisticService {
         if (CollectionUtils.isEmpty(userId)) {
             Set<String> userIds = this.groupUserService.checkPurview();
             queryDto.setUserId(userIds);
+            queryDto.setTenantId(this.groupUserService.tenantPurview());
         } else {
             Set<String> userIds = this.groupUserService.checkPurview(new ArrayList<>(userId).get(0));
             queryDto.setUserId(userIds);

@@ -19,26 +19,28 @@ import java.util.Set;
 @Mapper
 public interface SocialMediaWorkMapper extends Z9MpCrudMapper<SocialMediaWork> {
 
-    default IPage<SocialMediaWork> groupByAccountId(Page<SocialMediaWork> page, Collection<String> userIds, Set<String> ascFields, Set<String> descFields) {
+    default IPage<SocialMediaWork> groupByAccountId(Page<SocialMediaWork> page, Collection<String> userIds, Set<String> ascFields, Set<String> descFields, String tenantId) {
         if (userIds != null && userIds.isEmpty()) {
             return new Page<>();
         }
-        return this.groupByAccountId0(page, userIds, ascFields, descFields);
+        return this.groupByAccountId0(page, userIds, ascFields, descFields, tenantId);
     }
 
-    default List<SocialMediaWork> groupByUserIdAndPlatform(@Param("userIds") Collection<String> userIds) {
+    default List<SocialMediaWork> groupByUserIdAndPlatform(@Param("userIds") Collection<String> userIds, @Param("tenantId") String tenantId) {
         if (userIds != null && userIds.isEmpty()) {
             return new ArrayList<>();
         }
-        return this.groupByUserIdAndPlatform0(userIds);
+        return this.groupByUserIdAndPlatform0(userIds, tenantId);
     }
 
     IPage<SocialMediaWork> groupByAccountId0(Page<SocialMediaWork> page,
                                              @Param("userIds") Collection<String> userIds,
                                              @Param("ascFields") Set<String> ascFields,
-                                             @Param("descFields") Set<String> descFields);
+                                             @Param("descFields") Set<String> descFields,
+                                             @Param("tenantId") String tenantId);
 
 
-    List<SocialMediaWork> groupByUserIdAndPlatform0(@Param("userIds") Collection<String> userIds);
+    List<SocialMediaWork> groupByUserIdAndPlatform0(@Param("userIds") Collection<String> userIds,
+                                                    @Param("tenantId") String tenantId);
 
 }

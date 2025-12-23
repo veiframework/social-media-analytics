@@ -85,14 +85,14 @@ public class SocialMediaWorkService extends AbstractZ9CrudServiceImpl<SocialMedi
                 .collect(Collectors.toMap(SocialMediaWork::getWorkUid, Function.identity()));
     }
 
-    public List<SocialMediaWorkVo> groupByUserIdAndPlatform(Collection<String> userIds) {
-        List<SocialMediaWork> socialMediaWorks = this.baseMapper.groupByUserIdAndPlatform(userIds);
+    public List<SocialMediaWorkVo> groupByUserIdAndPlatform(Collection<String> userIds, String tenantId) {
+        List<SocialMediaWork> socialMediaWorks = this.baseMapper.groupByUserIdAndPlatform(userIds, tenantId);
         return BeanUtil.copyToList(socialMediaWorks, SocialMediaWorkVo.class);
     }
 
 
-    public IPage<SocialMediaWork> groupByAccountId(Page<SocialMediaWork> page, Collection<String> userIds, Set<String> ascFields, Set<String> descFields) {
-        return this.baseMapper.groupByAccountId(page, userIds, ascFields, descFields);
+    public IPage<SocialMediaWork> groupByAccountId(Page<SocialMediaWork> page, Collection<String> userIds, Set<String> ascFields, Set<String> descFields, String tenantId) {
+        return this.baseMapper.groupByAccountId(page, userIds, ascFields, descFields, tenantId);
     }
 
     public SocialMediaWorkVo getWorkDetail(String shareLink, Set<String> roles, String userId) {

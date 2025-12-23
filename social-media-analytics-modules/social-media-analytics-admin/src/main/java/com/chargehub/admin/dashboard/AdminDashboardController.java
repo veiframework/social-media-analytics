@@ -45,6 +45,7 @@ public class AdminDashboardController {
             Set<String> userIds = this.groupUserService.checkPurview();
             queryDto.setUserId(userIds);
         }
+        queryDto.setTenantId(this.groupUserService.tenantPurview());
         return this.socialMediaAccountService.getAccountStatistic(queryDto);
     }
 
@@ -53,7 +54,8 @@ public class AdminDashboardController {
     @GetMapping("/statistic/platform")
     public List<SocialMediaWorkVo> groupByUserIdAndPlatform() {
         Set<String> userIds = this.groupUserService.checkPurview();
-        return this.socialMediaWorkService.groupByUserIdAndPlatform(userIds);
+        String tenantId = this.groupUserService.tenantPurview();
+        return this.socialMediaWorkService.groupByUserIdAndPlatform(userIds, tenantId);
     }
 
 

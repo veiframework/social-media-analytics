@@ -61,6 +61,9 @@ public class SocialMediaAccountQueryDto extends Pagination implements Z9CrudQuer
     @CrudQueryField
     private Integer crawler;
 
+    @CrudQueryField
+    private String tenantId;
+
     private Set<String> userId_dictText;
 
     public SocialMediaAccountQueryDto() {

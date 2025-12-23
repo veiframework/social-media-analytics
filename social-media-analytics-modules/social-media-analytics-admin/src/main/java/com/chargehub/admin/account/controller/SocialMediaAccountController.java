@@ -2,11 +2,15 @@ package com.chargehub.admin.account.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.chargehub.admin.account.domain.SocialMediaAccount;
-import com.chargehub.admin.account.dto.*;
+import com.chargehub.admin.account.dto.SocialMediaAccountDto;
+import com.chargehub.admin.account.dto.SocialMediaAccountQueryDto;
+import com.chargehub.admin.account.dto.SocialMediaAccountWechatVideoNicknameDto;
+import com.chargehub.admin.account.dto.SocialMediaTransferAccountDto;
 import com.chargehub.admin.account.mapper.SocialMediaAccountMapper;
 import com.chargehub.admin.account.service.SocialMediaAccountService;
 import com.chargehub.admin.account.service.SocialMediaAccountTaskService;
 import com.chargehub.admin.account.vo.SocialMediaAccountVo;
+import com.chargehub.admin.api.model.LoginUser;
 import com.chargehub.admin.groupuser.service.GroupUserService;
 import com.chargehub.common.security.annotation.Debounce;
 import com.chargehub.common.security.annotation.RequiresLogin;
@@ -54,27 +58,19 @@ public class SocialMediaAccountController extends AbstractZ9Controller<SocialMed
             Set<String> userIds = this.groupUserService.checkPurview();
             queryDto.setUserId(userIds);
         }
+        queryDto.setTenantId(this.groupUserService.tenantPurview());
         return (IPage<SocialMediaAccountVo>) this.getCrudService().getPage(queryDto);
     }
 
-    @Deprecated
-    @RequiresLogin
-    @Debounce
-    @PostMapping("/share-link")
-    @ApiOperation("根据分享链接添加账号")
-    public void createByShareLink(@RequestBody @Validated SocialMediaAccountShareLinkDto dto) {
-        Long userId = SecurityUtils.getUserId();
-        dto.setUserId(userId + "");
-        this.getCrudService().createByShareLink(dto);
-    }
 
     @RequiresLogin
     @Debounce
     @PostMapping("/wechat-video-nickname")
     @ApiOperation("微信视频号添加")
     public void createByWechatVideoNickname(@RequestBody @Validated SocialMediaAccountWechatVideoNicknameDto dto) {
-        Long userId = SecurityUtils.getUserId();
-        dto.setUserId(userId + "");
+        LoginUser loginUser = SecurityUtils.getLoginUser();
+        dto.setUserId(loginUser.getUserid() + "");
+        dto.setTenantId(loginUser.getShopId() + "");
         this.getCrudService().createByWechatVideoNickname(dto);
     }
 

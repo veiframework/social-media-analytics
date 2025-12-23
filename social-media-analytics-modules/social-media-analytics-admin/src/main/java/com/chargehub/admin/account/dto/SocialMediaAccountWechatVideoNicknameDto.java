@@ -24,4 +24,6 @@ public class SocialMediaAccountWechatVideoNicknameDto implements Serializable {
 
     private String userId;
 
+    private String tenantId;
+
 }

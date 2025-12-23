@@ -104,7 +104,7 @@ public class DataSyncWorkMonitorScheduler {
             log.info("作品同步监控开始 {}", now);
             redisService.setCacheObject(SYNCING_WORK_LOCK, now.toString());
             try {
-                CompletableFuture.allOf(allFutures.toArray(new CompletableFuture[0])).get(1, TimeUnit.HOURS);
+                CompletableFuture.allOf(allFutures.toArray(new CompletableFuture[0])).get(2, TimeUnit.HOURS);
                 newStorageStateMap.forEach((platform, storageState) -> this.playwrightCrawlHelper.updateCrawlerLoginState(platform, storageState.getLoginState()));
                 Date endDate = new Date();
                 List<SocialMediaAccount> completeList = completeAccountIds.stream().map(i -> {

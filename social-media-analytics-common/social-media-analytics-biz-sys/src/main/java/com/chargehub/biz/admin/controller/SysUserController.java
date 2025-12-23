@@ -78,6 +78,10 @@ public class SysUserController extends BaseController
     public TableDataInfo list(SysUser user)
     {
         startPage();
+        LoginUser loginUser = SecurityUtils.getLoginUser();
+        if(loginUser.isNormalUser()){
+            user.setShopId(loginUser.getShopId());
+        }
         List<SysUser> list = userService.selectUserList(user);
         for(SysUser sysUser : list){
             sysUser.setRoles(sysRoleMapper.selectRolePermissionByUserId(sysUser.getUserId()));
@@ -282,6 +286,9 @@ public class SysUserController extends BaseController
         {
             return error("新增用户'" + user.getUserName() + "'失败，邮箱账号已存在");
         }
+        LoginUser loginUser = SecurityUtils.getLoginUser();
+        Integer shopId = loginUser.getShopId();
+        user.setShopId(shopId);
         user.setCreateBy(SecurityUtils.getNickname());
         user.setPassword(SecurityUtils.encryptPassword(user.getPassword()));
         userService.insertUser(user);

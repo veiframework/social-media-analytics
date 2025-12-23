@@ -49,6 +49,7 @@ public class SocialMediaTopicService extends AbstractZ9CrudServiceImpl<SocialMed
                 SocialMediaTopic socialMediaTopic = new SocialMediaTopic();
                 socialMediaTopic.setTopic(topic);
                 socialMediaTopic.setWorkId(datum.getId());
+                socialMediaTopic.setTenantId(datum.getTenantId());
                 this.baseMapper.insert(socialMediaTopic);
             }
         }
