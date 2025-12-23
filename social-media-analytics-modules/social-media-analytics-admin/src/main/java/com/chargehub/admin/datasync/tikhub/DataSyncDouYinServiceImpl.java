@@ -191,7 +191,7 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
                 if (page.isVisible("text=暂时没有更多了")) {
                     break;
                 }
-                page.waitForTimeout(200);
+                page.waitForTimeout(400);
                 int randomInt = RandomUtil.randomInt(600, 800);
                 page.mouse().wheel(0, randomInt);
                 try {
