@@ -32,6 +32,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 /**
@@ -163,33 +164,43 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
         try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(browserContext)) {
             Page page = playwrightBrowser.getPage();
             page.route(url -> url.contains(".jpeg") || url.contains(".webp"), Route::abort);
+            AtomicBoolean hasMore = new AtomicBoolean(true);
             page.onResponse(res -> {
-                if (!(res.url().contains("/aweme/v1/web/aweme/post/") && "get".equalsIgnoreCase(res.request().method()) && res.ok())) {
-                    return;
-                }
-                String body = new String(res.body());
-                JsonNode jsonNode = JacksonUtil.toObj(body);
-                JsonNode node = jsonNode.get("aweme_list");
-                if (node.isEmpty() || node.isNull()) {
-                    log.error("抖音获取主页数据空了: " + secUid);
-                    return;
-                }
-                for (JsonNode item : node) {
-                    String workUid = item.get("aweme_id").asText("");
-                    if (!workUids.containsKey(workUid)) {
-                        continue;
+                if (res.url().contains("/aweme/v1/web/aweme/post/") && res.ok()) {
+                    String body = new String(res.body());
+                    if (StringUtils.isBlank(body)) {
+                        log.error("抖音获取响应数据空了: " + secUid + "\n" + body);
+                        return;
                     }
-                    this.buildWork(socialMediaAccountVo, item, socialMediaWorkMap);
+                    JsonNode jsonNode = JacksonUtil.toObj(body);
+                    int more = jsonNode.get("has_more").asInt();
+                    hasMore.set(more > 0);
+                    JsonNode node = jsonNode.get("aweme_list");
+                    if (node == null || node.isEmpty() || node.isNull()) {
+                        log.error("抖音获取主页数据空了: " + secUid + "\n" + body);
+                        return;
+                    }
+                    for (JsonNode item : node) {
+                        String workUid = item.get("aweme_id").asText("");
+                        if (!workUids.containsKey(workUid)) {
+                            continue;
+                        }
+                        this.buildWork(socialMediaAccountVo, item, socialMediaWorkMap);
+                    }
                 }
             });
             String enterUrl = "https://www.douyin.com/user/" + secUid;
             page.navigate(enterUrl, new Page.NavigateOptions().setTimeout(60_000));
+            if (page.isVisible("text=登陆")) {
+                log.error("抖音需要重新登陆! {}", enterUrl);
+            }
             for (int i = 0; i < 300; i++) {
-                if (page.isVisible("text=暂时没有更多了")) {
+                if (!hasMore.get()) {
                     break;
                 }
                 page.waitForTimeout(400);
                 int randomInt = RandomUtil.randomInt(600, 800);
+                page.mouse().wheel(0, randomInt);
                 try {
                     page.evaluate("const container = document.querySelector(\"div[class*='parent-route-container']\"); container.scrollBy(0," + randomInt + ")");
                 } catch (Exception e) {

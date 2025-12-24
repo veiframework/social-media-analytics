@@ -90,6 +90,9 @@ public class PlaywrightBrowser implements AutoCloseable {
     public static Proxy buildProxy() {
         try {
             Map<String, String> crawlerProxy = DictUtils.getDictLabelMap("crawler_proxy");
+            if (MapUtil.isEmpty(crawlerProxy)) {
+                return null;
+            }
             return new Proxy(crawlerProxy.get("proxy_url"))
                     .setUsername(crawlerProxy.get("proxy_username"))
                     .setPassword(crawlerProxy.get("proxy_password"));

@@ -157,7 +157,11 @@ public class PlaywrightManager {
             Page page = playwrightBrowser.newPage();
             page.navigate("https://www.douyin.com", new Page.NavigateOptions().setTimeout(60_000));
             log.info("进入页面");
-            ThreadUtil.safeSleep(60_0000);
+            page.waitForSelector("span[data-e2e='live-avatar']",
+                    new Page.WaitForSelectorOptions().setTimeout(60_000));
+            String s = page.context().storageState();
+            FileUtil.writeUtf8String(s,"douyin_state");
+
         }
     }
 
@@ -345,6 +349,7 @@ public class PlaywrightManager {
 //        kuaishouWorks2();
 //        String xiaohongshuPage = "https://www.xiaohongshu.com/user/profile/5ac0afbf4eacab35ebf496e4?xsec_token=ABPbIISrLrVsEu64NSoMv-V0lvBpAH-ur4ae-fAkwioWY=&xsec_source=pc_note";
 //        crawlRedNotes(xiaohongshuPage, Lists.newArrayList("691edd120000000019026f42", "68fa296400000000030136a3", "691890fb000000001b026c6a", "6841441e000000000303f9f1", "6749618f00000000060176e7", "63c60db0000000001b026b20"));
+        crawDouYinLogin();
     }
 
 
