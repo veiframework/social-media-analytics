@@ -28,7 +28,7 @@ public class DataSyncMessageQueue {
 
     private static final ExecutorService FIXED_BILIBILI_THREAD_POOL = Executors.newFixedThreadPool(10);
 
-    private static final ExecutorService FIXED_DOUYIN_DETAIL_THREAD_POOL = Executors.newFixedThreadPool(1);
+    private static final ExecutorService FIXED_DOUYIN_DETAIL_THREAD_POOL = Executors.newFixedThreadPool(2);
 
     private static final ExecutorService WECHAT_VIDEO_POOL = Executors.newFixedThreadPool(1);
 

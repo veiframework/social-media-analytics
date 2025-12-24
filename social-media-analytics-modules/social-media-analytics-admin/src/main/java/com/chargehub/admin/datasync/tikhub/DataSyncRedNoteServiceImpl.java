@@ -2,7 +2,6 @@ package com.chargehub.admin.datasync.tikhub;
 
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.map.MapUtil;
-import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.URLUtil;
 import cn.hutool.http.HttpResponse;
@@ -458,7 +457,6 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
         List<SocialMediaWork> socialMediaWorks = new ArrayList<>();
         String storageState = null;
         for (Map.Entry<String, String> entry : workUids.entrySet()) {
-            ThreadUtil.safeSleep(RandomUtil.randomInt(500, 3000));
             String url = entry.getValue();
             DataSyncParamContext dataSyncParamContext = new DataSyncParamContext();
             dataSyncParamContext.setShareLink(url);

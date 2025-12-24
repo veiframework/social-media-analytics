@@ -19,6 +19,7 @@ import com.chargehub.admin.enums.SyncWorkStatusEnum;
 import com.chargehub.admin.scheduler.DataSyncWorkMonitorScheduler;
 import com.chargehub.admin.work.domain.SocialMediaWork;
 import com.chargehub.admin.work.service.SocialMediaWorkService;
+import com.chargehub.common.core.properties.HubProperties;
 import com.chargehub.common.redis.service.RedisService;
 import com.chargehub.common.security.service.ChargeExcelDictHandler;
 import com.chargehub.common.security.template.dto.Z9CrudDto;
@@ -62,6 +63,9 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
     @Autowired
     private RedisService redisService;
 
+    @Autowired
+    private HubProperties hubProperties;
+
     public SocialMediaAccountService(SocialMediaAccountMapper baseMapper) {
         super(baseMapper);
     }
@@ -99,10 +103,11 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
                 .update();
     }
 
-    public List<SocialMediaAccount> getAccountIdsByUserIds(Collection<String> userIds) {
+    public List<SocialMediaAccount> getAccountIdsByUserIds(Collection<String> userIds, String tenantId) {
         SocialMediaAccountQueryDto socialMediaAccountQueryDto = new SocialMediaAccountQueryDto();
         socialMediaAccountQueryDto.setCrawler(0);
         socialMediaAccountQueryDto.setAutoSync(AutoSyncEnum.ENABLE.getDesc());
+        socialMediaAccountQueryDto.setTenantId(tenantId);
         if (CollectionUtils.isNotEmpty(userIds)) {
             socialMediaAccountQueryDto.setUserId(new HashSet<>(userIds));
         }
@@ -160,12 +165,14 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
         Set<String> platformId = dto.getPlatformId();
         String autoSync = dto.getAutoSync();
         Set<String> userId = dto.getUserId();
+        long recentDays = hubProperties.getRecentDays();
         return this.baseMapper.lambdaQuery().select(SocialMediaAccount::getId, SocialMediaAccount::getPlatformId, SocialMediaAccount::getSyncWorkDate)
                 .eq(StringUtils.isNotBlank(autoSync), SocialMediaAccount::getAutoSync, autoSync)
                 .in(CollectionUtils.isNotEmpty(ids), SocialMediaAccount::getId, ids)
                 .in(CollectionUtils.isNotEmpty(userId), SocialMediaAccount::getUserId, userId)
                 .in(CollectionUtils.isNotEmpty(syncWorkStatus), SocialMediaAccount::getSyncWorkStatus, syncWorkStatus)
                 .in(CollectionUtils.isNotEmpty(platformId), SocialMediaAccount::getPlatformId, platformId)
+                .inSql(SocialMediaAccount::getId, "SELECT account_id FROM social_media_work WHERE state != 'deleted' AND TIMESTAMPDIFF(DAY, create_time, NOW()) <= " + recentDays)
                 .eq(crawler != null, SocialMediaAccount::getCrawler, crawler)
                 .orderByAsc(SocialMediaAccount::getSyncWorkDate)
                 .list();

@@ -1,6 +1,9 @@
 package com.chargehub.admin.work.domain;
 
-import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
 import com.chargehub.common.security.template.annotation.CrudSubUniqueId;
 import com.chargehub.common.security.template.domain.Z9CrudEntity;
 import io.swagger.annotations.ApiModelProperty;
@@ -140,7 +143,7 @@ public class SocialMediaWork implements Serializable, Z9CrudEntity {
                 this.shareNum.toString(),
                 this.collectNum.toString(),
                 this.commentNum.toString(),
-                this.playNum.toString());
+                this.playNum == null ? "" : this.playNum.toString());
     }
 
     public SocialMediaWork computeMd5(SocialMediaWork newWork) {
@@ -170,14 +173,7 @@ public class SocialMediaWork implements Serializable, Z9CrudEntity {
         if (!this.getCommentNum().equals(newWork.getCommentNum())) {
             updateWork.setCommentNum(newWork.getCommentNum());
         }
-        if (this.playFixed.equals(0) && !this.getPlayNum().equals(newWork.getPlayNum())) {
-            updateWork.setPlayNum(newWork.getPlayNum());
-            int upNum = newWork.getPlayNum() - this.getPlayNum();
-            if (upNum >= 0) {
-                updateWork.setPlayNumUp(upNum);
-                updateWork.setPlayNumChange(upNum - this.getPlayNumUp());
-            }
-        }
+        this.computePlayNum(newWork, updateWork);
         if (!this.getCustomType().equals(newWork.getCustomType())) {
             updateWork.setCustomType(newWork.getCustomType());
         }
@@ -192,6 +188,17 @@ public class SocialMediaWork implements Serializable, Z9CrudEntity {
         }
         updateWork.setStatisticMd5(newWork.getStatisticMd5());
         return updateWork;
+    }
+
+    public void computePlayNum(SocialMediaWork newWork, SocialMediaWork updateWork) {
+        if (newWork.getPlayNum() != null && this.playFixed.equals(0) && !this.getPlayNum().equals(newWork.getPlayNum())) {
+            updateWork.setPlayNum(newWork.getPlayNum());
+            int upNum = newWork.getPlayNum() - this.getPlayNum();
+            if (upNum >= 0) {
+                updateWork.setPlayNumUp(upNum);
+                updateWork.setPlayNumChange(upNum - this.getPlayNumUp());
+            }
+        }
     }
 
 }

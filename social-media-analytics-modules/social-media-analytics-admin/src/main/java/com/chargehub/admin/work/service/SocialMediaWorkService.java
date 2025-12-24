@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.toolkit.Db;
 import com.chargehub.admin.account.dto.SocialMediaTransferAccountDto;
+import com.chargehub.admin.enums.SocialMediaPlatformEnum;
 import com.chargehub.admin.enums.WorkStateEnum;
 import com.chargehub.admin.scheduler.DataSyncWorkMonitorScheduler;
 import com.chargehub.admin.work.domain.SocialMediaWork;
@@ -125,6 +126,17 @@ public class SocialMediaWorkService extends AbstractZ9CrudServiceImpl<SocialMedi
                 .list();
     }
 
+    @SuppressWarnings("unchecked")
+    public List<SocialMediaWork> getDouYinLatestWork() {
+        long recentDays = hubProperties.getRecentDays();
+        return this.baseMapper.lambdaQuery()
+                .select(SocialMediaWork::getId, SocialMediaWork::getPlayFixed, SocialMediaWork::getPlayNum, SocialMediaWork::getPlayNumChange, SocialMediaWork::getPlayNumUp, SocialMediaWork::getWorkUid)
+                .eq(SocialMediaWork::getPlatformId, SocialMediaPlatformEnum.DOU_YIN.getDomain())
+                .inSql(SocialMediaWork::getAccountId, "SELECT id FROM social_media_account WHERE auto_sync = 'enable' AND crawler = '0'")
+                .ne(SocialMediaWork::getState, WorkStateEnum.DELETED.getDesc())
+                .apply("TIMESTAMPDIFF(DAY, create_time, NOW()) <= " + recentDays)
+                .list();
+    }
 
     public void transferAccount(SocialMediaTransferAccountDto dto) {
         this.baseMapper.lambdaUpdate()

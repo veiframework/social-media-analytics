@@ -14,6 +14,7 @@ import com.chargehub.admin.api.model.LoginUser;
 import com.chargehub.admin.groupuser.service.GroupUserService;
 import com.chargehub.common.security.annotation.Debounce;
 import com.chargehub.common.security.annotation.RequiresLogin;
+import com.chargehub.common.security.annotation.RequiresPermissions;
 import com.chargehub.common.security.annotation.UnifyResult;
 import com.chargehub.common.security.template.controller.AbstractZ9Controller;
 import com.chargehub.common.security.template.enums.Z9CrudApiCodeEnum;
@@ -87,12 +88,13 @@ public class SocialMediaAccountController extends AbstractZ9Controller<SocialMed
         this.socialMediaAccountTaskService.batchAddTask(Sets.newHashSet(socialMediaAccount));
     }
 
-    @RequiresLogin
+    @RequiresPermissions("sync:all:work")
     @GetMapping("/sync/work")
     @ApiOperation("同步全部作品")
     public synchronized void syncWorkData() {
         Set<String> userIds = groupUserService.checkPurview();
-        List<SocialMediaAccount> accounts = this.getCrudService().getAccountIdsByUserIds(userIds);
+        String tenantId = this.groupUserService.tenantPurview();
+        List<SocialMediaAccount> accounts = this.getCrudService().getAccountIdsByUserIds(userIds, tenantId);
         this.socialMediaAccountTaskService.batchAddTask(accounts);
     }
 

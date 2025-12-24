@@ -2,8 +2,10 @@ package com.chargehub.admin.playwright;
 
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.RandomUtil;
+import com.chargehub.common.security.utils.DictUtils;
 import com.google.common.collect.Lists;
 import com.microsoft.playwright.*;
+import com.microsoft.playwright.options.Proxy;
 import com.microsoft.playwright.options.ServiceWorkerPolicy;
 import com.microsoft.playwright.options.ViewportSize;
 import lombok.Data;
@@ -14,6 +16,7 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author Zhanghaowei
@@ -84,6 +87,18 @@ public class PlaywrightBrowser implements AutoCloseable {
         PlaywrightBrowser.headless = headless;
     }
 
+    public static Proxy buildProxy() {
+        try {
+            Map<String, String> crawlerProxy = DictUtils.getDictLabelMap("crawler_proxy");
+            return new Proxy(crawlerProxy.get("proxy_url"))
+                    .setUsername(crawlerProxy.get("proxy_username"))
+                    .setPassword(crawlerProxy.get("proxy_password"));
+        } catch (Exception e) {
+            return new Proxy("tun-uzqqwl.qg.net:13396")
+                    .setUsername("9E96975B")
+                    .setPassword("6C1776616155");
+        }
+    }
 
     @SuppressWarnings("all")
     public static BrowserContext buildBrowserContext(String storageState, Playwright playwright) {
@@ -106,7 +121,7 @@ public class PlaywrightBrowser implements AutoCloseable {
         // 启动选项（可统一配置）
         BrowserContext browserContext = browserType.launch(new BrowserType.LaunchOptions()
                 .setHeadless(headless)
-//                .setProxy(new Proxy("https://net-193-233-89-41.mcccx.com:8444").setUsername("mix353OJEL5NY").setPassword("RHPFApsS"))
+                .setProxy(PlaywrightBrowser.buildProxy())
                 //设置启动系统浏览器
 //                .setExecutablePath(Paths.get("C://Program Files (x86)//Microsoft//Edge//Application//msedge.exe"))
                 .setArgs(Arrays.asList(

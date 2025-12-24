@@ -1,8 +1,6 @@
 package com.chargehub.admin.datasync.tikhub;
 
 import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.map.MapUtil;
-import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpStatus;
@@ -21,7 +19,6 @@ import com.chargehub.common.core.utils.MessageFormatUtils;
 import com.chargehub.common.security.utils.DictUtils;
 import com.chargehub.common.security.utils.JacksonUtil;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.google.common.collect.Lists;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.BoundingBox;
 import lombok.extern.slf4j.Slf4j;
@@ -31,7 +28,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
-import java.util.*;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -50,8 +50,8 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
 
     private static final String GET_USER_PROFILE = "/api/v1/douyin/web/handler_user_profile";
     private static final String GET_USER_WORKS = "/api/v1/douyin/app/v3/fetch_user_post_videos";
-    private static final String GET_WORK_STATISTIC = "/api/v1/douyin/app/v3/fetch_multi_video_statistics";
-    private static final String GET_ONE_WORK_STATISTIC = "/api/v1/douyin/app/v3/fetch_video_statistics";
+    public static final String GET_WORK_STATISTIC = "/api/v1/douyin/app/v3/fetch_multi_video_statistics";
+    public static final String GET_ONE_WORK_STATISTIC = "/api/v1/douyin/app/v3/fetch_video_statistics";
     private static final String WORK_DETAIL_URL = "/api/v1/douyin/web/fetch_one_video_v2";
 
     private static final Integer RETRY = 4;
@@ -153,9 +153,6 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
     @SuppressWarnings("unchecked")
     @Override
     public <T> SocialMediaWorkResult<T> getWorks(DataSyncWorksParams params) {
-        HubProperties.SocialMediaDataApi socialMediaDataApi = hubProperties.getSocialMediaDataApi().get("tikhub");
-        String token = socialMediaDataApi.getToken();
-        String host = socialMediaDataApi.getHost();
         Map<String, String> workUids = params.getWorkUids();
         String secUid = params.getSecUid();
         SocialMediaAccountVo socialMediaAccountVo = new SocialMediaAccountVo();
@@ -167,7 +164,7 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
             Page page = playwrightBrowser.getPage();
             page.route(url -> url.contains(".jpeg") || url.contains(".webp"), Route::abort);
             page.onResponse(res -> {
-                if (!(res.url().contains("/aweme/v1/web/aweme/post/") && res.ok())) {
+                if (!(res.url().contains("/aweme/v1/web/aweme/post/") && "get".equalsIgnoreCase(res.request().method()) && res.ok())) {
                     return;
                 }
                 String body = new String(res.body());
@@ -193,52 +190,17 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
                 }
                 page.waitForTimeout(400);
                 int randomInt = RandomUtil.randomInt(600, 800);
-                page.mouse().wheel(0, randomInt);
                 try {
                     page.evaluate("const container = document.querySelector(\"div[class*='parent-route-container']\"); container.scrollBy(0," + randomInt + ")");
                 } catch (Exception e) {
                     //nothing to do
                 }
             }
-            if (MapUtil.isNotEmpty(socialMediaWorkMap)) {
-                List<String> strings = new ArrayList<>(socialMediaWorkMap.keySet());
-                boolean over = strings.size() > 50;
-                String url = over ? GET_WORK_STATISTIC : GET_ONE_WORK_STATISTIC;
-                List<List<String>> partition = Lists.partition(strings, over ? 50 : 2);
-                for (List<String> awemeIds : partition) {
-                    dataSyncMessageQueue.syncDouyinExecuteSignal(() -> {
-                        ThreadUtil.safeSleep(RandomUtil.randomInt(500, 1000));
-                        try (HttpResponse multiWorksExecute = HttpUtil.createGet(host + url).timeout(60_000).bearerAuth(token).form("aweme_ids", awemeIds).execute()) {
-                            String result = multiWorksExecute.body();
-                            JsonNode multiWorkNode = JacksonUtil.toObj(result);
-                            int code = multiWorkNode.path("code").asInt(500);
-                            if (code != HttpStatus.HTTP_OK) {
-                                return new DataSyncMessageQueue.AsyncResult(false, result);
-                            }
-                            JsonNode statisticsNode = multiWorkNode.at("/data/statistics_list");
-                            for (JsonNode node : statisticsNode) {
-                                String workUid = node.get("aweme_id").asText("");
-                                int playNum = node.at("/play_count").asInt(0);
-                                SocialMediaWork socialMediaWork = socialMediaWorkMap.get(workUid);
-                                if (socialMediaWork != null) {
-                                    socialMediaWork.setPlayNum(playNum);
-                                }
-                            }
-                            return new DataSyncMessageQueue.AsyncResult(true, null);
-                        } catch (Exception e) {
-                            return new DataSyncMessageQueue.AsyncResult(false, String.join(",", awemeIds) + ": " + e.getMessage());
-                        }
-                    }, RETRY);
-                }
-            }
             List<SocialMediaWork> socialMediaWorks = socialMediaWorkMap.values().stream().map(i -> {
-                if (i.getPlayNum() == null) {
-                    return null;
-                }
                 String md5 = i.generateStatisticMd5();
                 i.setStatisticMd5(md5);
                 return i;
-            }).filter(Objects::nonNull).collect(Collectors.toList());
+            }).collect(Collectors.toList());
             socialMediaWorkResult.setWorks(socialMediaWorks);
             socialMediaWorkResult.setStorageState(page.context().storageState());
             return (SocialMediaWorkResult<T>) socialMediaWorkResult;
@@ -416,7 +378,7 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
         socialMediaWork.setShareNum(shareNum);
         socialMediaWork.setCommentNum(commentNum);
         socialMediaWork.setLikeNum(likeNum);
-        socialMediaWork.setPlayNum(0);
+        socialMediaWork.setPlayNum(null);
         socialMediaWork.setAccountType(accountType);
         socialMediaWork.setCustomType(customType);
         socialMediaWork.setTitle(title);

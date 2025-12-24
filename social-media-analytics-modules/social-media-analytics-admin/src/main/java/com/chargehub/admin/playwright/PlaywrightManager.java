@@ -3,12 +3,14 @@ package com.chargehub.admin.playwright;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.RandomUtil;
 import com.chargehub.admin.work.domain.SocialMediaWork;
 import com.chargehub.common.security.utils.JacksonUtil;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.microsoft.playwright.ElementHandle;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Response;
+import com.microsoft.playwright.Route;
 import com.microsoft.playwright.options.WaitForSelectorState;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -16,6 +18,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
+import java.util.List;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
@@ -228,6 +233,100 @@ public class PlaywrightManager {
         }
     }
 
+    public static void crawlRedNotes(String url, List<String> workIds) {
+        String s = FileUtil.readUtf8String("red_note_state.json");
+        try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(s)) {
+            Page page = playwrightBrowser.newPage();
+            page.navigate(url, new Page.NavigateOptions().setTimeout(60_000));
+            log.info("进入页面");
+            page.waitForTimeout(RandomUtil.randomInt(300, 500));
+            if (page.isVisible("text=登录后推荐更懂你的笔记")) {
+                log.error("需要重新登录");
+                return;
+            }
+            page.route(route -> route.contains(".jpeg") || route.contains(".webp") || route.contains(".png") || route.contains(".jpg"), Route::abort);
+            LinkedBlockingQueue<JsonNode> list = new LinkedBlockingQueue<>();
+            AtomicBoolean hasMore = new AtomicBoolean(true);
+            AtomicBoolean processing = new AtomicBoolean(false);
+            page.onResponse(res -> {
+                if (!(res.url().contains("/api/sns/web/v1/user_posted") && "get".equalsIgnoreCase(res.request().method()) && res.ok())) {
+                    return;
+                }
+                processing.set(true);
+                String body = new String(res.body());
+                JsonNode jsonNode = JacksonUtil.toObj(body);
+                JsonNode notes = jsonNode.at("/data/notes");
+                if (notes.isEmpty()) {
+                    return;
+                }
+                fetchDetail(workIds, notes, page, list);
+                processing.set(false);
+                hasMore.set(jsonNode.at("/data/has_more").asBoolean());
+            });
+            page.navigate(url, new Page.NavigateOptions().setTimeout(60_000));
+            page.waitForFunction("typeof __INITIAL_STATE__ !== 'undefined'", null, new Page.WaitForFunctionOptions().setTimeout(30_000L));
+            String string = (String) page.evaluate("JSON.stringify(__INITIAL_STATE__.user.notes._rawValue)");
+            if (StringUtils.isBlank(string)) {
+                return;
+            }
+            JsonNode jsonNode = JacksonUtil.toObj(string);
+            if (jsonNode.isEmpty()) {
+                return;
+            }
+            JsonNode firstPage = jsonNode.get(0);
+            if (firstPage.isEmpty()) {
+                return;
+            }
+            fetchDetail(workIds, firstPage, page, list);
+            int size = 0;
+            while (hasMore.get()) {
+                page.waitForTimeout(2000);
+                if (processing.get()) {
+                    continue;
+                }
+                JsonNode poll = list.poll();
+                if (poll != null) {
+                    FileUtil.writeUtf8String(poll + "\r\n", "tikhub-rednote-work.json");
+                    size = size + poll.size();
+                }
+                page.mouse().wheel(0, 400);
+            }
+            System.out.println("结束" + size);
+            page.waitForTimeout(600_00000);
+
+        }
+    }
+
+    private static void fetchDetail(List<String> workIds, JsonNode firstPage, Page page, LinkedBlockingQueue<JsonNode> list) {
+        for (JsonNode node : firstPage) {
+            String noteId = node.at("/id").asText();
+            if (StringUtils.isBlank(noteId)) {
+                noteId = node.at("/note_id").asText();
+            }
+            if (workIds.contains(noteId)) {
+                try {
+                    String finalNoteId = noteId;
+                    Response response = page.waitForResponse(res -> res.ok() && res.url().contains("/api/sns/web/v1/feed") && "post".equalsIgnoreCase(res.request().method()), () -> {
+                        ElementHandle elementHandle = page.querySelector("a[href*='/user/profile/'][href*='" + finalNoteId + "']");
+                        elementHandle.click();
+                    });
+                    if (response != null && response.ok()) {
+                        String body = new String(response.body());
+                        JsonNode jsonNode = JacksonUtil.toObj(body);
+                        JsonNode items = jsonNode.at("/data/items");
+                        if (!items.isEmpty()) {
+                            JsonNode item = items.get(0);
+                            System.out.println(item);
+                            list.offer(item);
+                        }
+                    }
+                    page.click("div[class*='close close-mask-dark']");
+                } catch (Exception e) {
+                    log.error("错误" + noteId);
+                }
+            }
+        }
+    }
 
     public static void main(String[] args) {
         String douyin = "https://www.douyin.com/user/MS4wLjABAAAAhSaD3wD3rsLVCezq2LaPpCXrRDjBb8R8Np4SnAcZQE4";
@@ -240,10 +339,12 @@ public class PlaywrightManager {
 //        crawlDouYinWorkList("https://www.douyin.com/user/MS4wLjABAAAAJ6GUXA-U_4pDM-vPq_Xl2onTfM-MFA2j9WEjH9mzk-BOiM2MoNcRp56juY9Pbb_c", read, (res) -> {
 //            System.out.println(a.getAndIncrement());
 //        });
-        crawlRedNoteLogin();
+//        crawlRedNoteLogin();
 //        crawlKuaiShouLogin();
 //        crawDouYinLogin();
 //        kuaishouWorks2();
+//        String xiaohongshuPage = "https://www.xiaohongshu.com/user/profile/5ac0afbf4eacab35ebf496e4?xsec_token=ABPbIISrLrVsEu64NSoMv-V0lvBpAH-ur4ae-fAkwioWY=&xsec_source=pc_note";
+//        crawlRedNotes(xiaohongshuPage, Lists.newArrayList("691edd120000000019026f42", "68fa296400000000030136a3", "691890fb000000001b026c6a", "6841441e000000000303f9f1", "6749618f00000000060176e7", "63c60db0000000001b026b20"));
     }
 
 

@@ -746,7 +746,7 @@ const option = reactive({
   /** 表格顶部左侧 button 配置项 */
   headerBtn: [
     {key: "export", text: "导出", icon: "Download", isShow: true, type: "primary", disabled: false},
-    {key: "syncWork", text: "同步作品", icon: "Refresh", isShow: true, type: "primary", disabled: false},
+    {key: "syncWork", text: "同步作品", icon: "Refresh", isShow: true, type: "primary", disabled: false,hasPermi: ['sync:all:work']},
     {key: "shareLink", text: "通过作品分享链接添加", icon: "Link", isShow: true, type: "primary", disabled: false},
     // {
     //   key: "wechatVideo",
