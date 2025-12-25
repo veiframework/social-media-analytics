@@ -40,7 +40,7 @@ public class HubProperties {
 
     private Integer updateMinutes;
 
-    public boolean headless = false;
+    private boolean headless = false;
 
     @Data
     public static class SocialMediaDataApi {

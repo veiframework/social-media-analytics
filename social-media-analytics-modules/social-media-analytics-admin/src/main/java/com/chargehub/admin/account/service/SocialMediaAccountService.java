@@ -105,7 +105,6 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
 
     public List<SocialMediaAccount> getAccountIdsByUserIds(Collection<String> userIds, String tenantId) {
         SocialMediaAccountQueryDto socialMediaAccountQueryDto = new SocialMediaAccountQueryDto();
-        socialMediaAccountQueryDto.setCrawler(0);
         socialMediaAccountQueryDto.setAutoSync(AutoSyncEnum.ENABLE.getDesc());
         socialMediaAccountQueryDto.setTenantId(tenantId);
         if (CollectionUtils.isNotEmpty(userIds)) {

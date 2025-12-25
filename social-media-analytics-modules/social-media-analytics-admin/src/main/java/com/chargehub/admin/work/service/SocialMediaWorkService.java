@@ -132,7 +132,7 @@ public class SocialMediaWorkService extends AbstractZ9CrudServiceImpl<SocialMedi
         return this.baseMapper.lambdaQuery()
                 .select(SocialMediaWork::getId, SocialMediaWork::getPlayFixed, SocialMediaWork::getPlayNum, SocialMediaWork::getPlayNumChange, SocialMediaWork::getPlayNumUp, SocialMediaWork::getWorkUid)
                 .eq(SocialMediaWork::getPlatformId, SocialMediaPlatformEnum.DOU_YIN.getDomain())
-                .inSql(SocialMediaWork::getAccountId, "SELECT id FROM social_media_account WHERE auto_sync = 'enable' AND crawler = '0'")
+                .inSql(SocialMediaWork::getAccountId, "SELECT id FROM social_media_account WHERE auto_sync = 'enable'")
                 .ne(SocialMediaWork::getState, WorkStateEnum.DELETED.getDesc())
                 .apply("TIMESTAMPDIFF(DAY, create_time, NOW()) <= " + recentDays)
                 .list();
