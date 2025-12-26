@@ -8,7 +8,7 @@ import com.baomidou.mybatisplus.extension.toolkit.Db;
 import com.chargehub.admin.account.dto.SocialMediaTransferAccountDto;
 import com.chargehub.admin.enums.SocialMediaPlatformEnum;
 import com.chargehub.admin.enums.WorkStateEnum;
-import com.chargehub.admin.scheduler.DataSyncWorkMonitorScheduler;
+import com.chargehub.admin.scheduler.AbstractWorkScheduler;
 import com.chargehub.admin.work.domain.SocialMediaWork;
 import com.chargehub.admin.work.domain.SocialMediaWorkCreate;
 import com.chargehub.admin.work.dto.SocialMediaWorkDto;
@@ -59,7 +59,7 @@ public class SocialMediaWorkService extends AbstractZ9CrudServiceImpl<SocialMedi
     public void updateViewNum(SocialMediaWorkPlayNumDto dto) {
         String workId = dto.getWorkId();
         Integer playNum = dto.getPlayNum();
-        Boolean hasKey = redisService.hasKey(DataSyncWorkMonitorScheduler.SYNCING_WORK_LOCK);
+        Boolean hasKey = redisService.hasKey(AbstractWorkScheduler.SYNCING_WORK_LOCK);
         cn.hutool.core.lang.Assert.isFalse(hasKey, "该作品账号正在同步数据请稍后再修改");
         SocialMediaWork work = this.baseMapper.lambdaQuery().eq(SocialMediaWork::getId, workId).one();
         int playNumUp = 0;
@@ -147,6 +147,13 @@ public class SocialMediaWorkService extends AbstractZ9CrudServiceImpl<SocialMedi
 
     public void saveOrUpdateBatch(Collection<SocialMediaWork> works) {
         Db.saveOrUpdateBatch(works);
+    }
+
+    public void deletedWechatVideo(String id) {
+        this.baseMapper.lambdaUpdate()
+                .eq(SocialMediaWork::getId, id)
+                .set(SocialMediaWork::getState, WorkStateEnum.DELETED.getDesc())
+                .update();
     }
 
     public void updateStateByShareLink(String shareLink, WorkStateEnum workStateEnum) {

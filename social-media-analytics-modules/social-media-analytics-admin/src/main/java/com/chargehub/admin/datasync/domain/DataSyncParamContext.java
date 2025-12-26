@@ -3,6 +3,8 @@ package com.chargehub.admin.datasync.domain;
 import com.microsoft.playwright.BrowserContext;
 import lombok.Data;
 
+import java.net.Proxy;
+
 /**
  * @author zhanghaowei
  * @since 1.0
@@ -20,6 +22,9 @@ public class DataSyncParamContext {
 
     private BrowserContext browserContext;
 
-
     private String redirectUrl;
+
+    private String mediaType;
+
+    private Proxy proxy;
 }

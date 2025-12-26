@@ -14,9 +14,11 @@ import com.chargehub.admin.datasync.domain.*;
 import com.chargehub.admin.enums.MediaTypeEnum;
 import com.chargehub.admin.enums.SocialMediaPlatformEnum;
 import com.chargehub.admin.enums.WorkTypeEnum;
+import com.chargehub.admin.playwright.BrowserConfig;
 import com.chargehub.admin.playwright.PlaywrightBrowser;
 import com.chargehub.admin.work.domain.SocialMediaWork;
 import com.chargehub.common.core.properties.HubProperties;
+import com.chargehub.common.core.utils.JsoupUtil;
 import com.chargehub.common.core.utils.MessageFormatUtils;
 import com.chargehub.common.core.utils.ThreadHelper;
 import com.chargehub.common.redis.service.RedisService;
@@ -24,19 +26,22 @@ import com.chargehub.common.security.utils.DictUtils;
 import com.chargehub.common.security.utils.JacksonUtil;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.MissingNode;
+import com.microsoft.playwright.APIResponse;
 import com.microsoft.playwright.BrowserContext;
-import com.microsoft.playwright.ElementHandle;
 import com.microsoft.playwright.Page;
-import com.microsoft.playwright.options.BoundingBox;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.parser.Parser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
-import java.math.BigDecimal;
+import java.io.InputStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -74,9 +79,12 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
 
     public static final String ONE_NOTE_V7 = "/api/v1/xiaohongshu/web/get_note_info_v7";
 
+    private static final String PROFILE_INFO_URI = "/api/v1/xiaohongshu/web_v2/fetch_user_info_app";
+
     private static final List<String> USER_INFO_URL = Stream.of(
-            "/api/v1/xiaohongshu/web_v2/fetch_user_info_app",
-            "/api/v1/xiaohongshu/web_v2/fetch_user_info").collect(Collectors.toList());
+            "/api/v1/xiaohongshu/web_v2/fetch_user_info_app"
+//            , "/api/v1/xiaohongshu/web_v2/fetch_user_info"
+    ).collect(Collectors.toList());
 
     private static final List<String> WORKS_URL = Stream.of(
             "/api/v1/xiaohongshu/web/get_user_notes_v2",
@@ -259,21 +267,109 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
     }
 
     @SuppressWarnings("unchecked")
+    @Override
+    public <T> SocialMediaWorkDetail<T> fetchWork(DataSyncParamContext dataSyncParamContext) {
+        String shareLink = dataSyncParamContext.getShareLink();
+        try (HttpResponse response = HttpUtil.createGet(shareLink)
+                .setFollowRedirects(true)
+                .setProxy(dataSyncParamContext.getProxy())
+                .headerMap(BrowserConfig.BROWSER_HEADERS, true)
+                .execute()) {
+            InputStream inputStream = response.bodyStream();
+            String globalJson = JsoupUtil.findContentInScript(inputStream, "window.__INITIAL_STATE__=", shareLink).replace("undefined", "null");
+            JsonNode jsonNode = JacksonUtil.toObj(globalJson).at("/note/noteDetailMap");
+            JsonNode detailNode = jsonNode.get(jsonNode.fieldNames().next());
+            JsonNode noteNode = detailNode.get("note");
+            if (noteNode.isEmpty()) {
+                log.error("小红书笔记不存在" + shareLink);
+                SocialMediaWork socialMediaWork = new SocialMediaWork();
+                socialMediaWork.setShareLink(shareLink);
+                socialMediaWork.setWorkUid("-1");
+                return (SocialMediaWorkDetail<T>) new SocialMediaWorkDetail<>(socialMediaWork, null);
+            }
+            JsonNode userNode = noteNode.get("user");
+            String nickname = userNode.get("nickname").asText();
+            String secUid = userNode.get("userId").asText();
+            String workUid = noteNode.get("noteId").asText();
+            String desc = noteNode.get("desc").asText("");
+            String title = noteNode.get("title").asText();
+            String topics = MessageFormatUtils.extractHashtagsStr(desc);
+            String customType = "";
+            Map<String, String> socialMediaCustomType = DictUtils.getDictLabelMap("social_media_custom_type");
+            for (Map.Entry<String, String> entry : socialMediaCustomType.entrySet()) {
+                String k = entry.getKey();
+                String v = entry.getValue();
+                if (desc.contains(k)) {
+                    customType = v;
+                }
+            }
+            Date postTime = DateUtil.date(noteNode.get("time").asLong(0));
+            //内容类型 （normal=图文笔记，video=视频笔记）
+            String workType = "normal".equals(noteNode.get("type").asText()) ? WorkTypeEnum.RICH_TEXT.getType() : WorkTypeEnum.NORMAL_VIDEO.getType();
+            //媒体类型 (2=图片, 4=视频)
+            String mediaType = workType.equals(WorkTypeEnum.RICH_TEXT.getType()) ? MediaTypeEnum.PICTURE.getType() : MediaTypeEnum.VIDEO.getType();
+            String shareUrl = "https://www.xiaohongshu.com/explore/" + workUid + "?xsec_token=" + noteNode.get("xsecToken").asText();
+            JsonNode interactInfo = noteNode.get("interactInfo");
+
+            int thumbNum = BrowserConfig.clearWord(interactInfo.get("likedCount").asText());
+            int collectNum = BrowserConfig.clearWord(interactInfo.get("collectedCount").asText());
+            int shareNum = BrowserConfig.clearWord(interactInfo.get("shareCount").asText());
+            int commentNum = BrowserConfig.clearWord(interactInfo.get("commentCount").asText());
+            // 基于3.3%互动率估算,目前无法从 view_count获取浏览量
+            int playNum = (thumbNum + collectNum + shareNum + commentNum) * 10;
+            String uid = "";
+            if (!dataSyncParamContext.isScheduler()) {
+                HubProperties.SocialMediaDataApi socialMediaDataApi = hubProperties.getSocialMediaDataApi().get("tikhub");
+                String token = socialMediaDataApi.getToken();
+                String host = socialMediaDataApi.getHost();
+                JsonNode profileNode = this.request(host, PROFILE_INFO_URI, token, MapUtil.of("user_id", secUid));
+                int code = profileNode.path("code").asInt(500);
+                Assert.isTrue(code == HttpStatus.HTTP_OK, "小红书获取用户UID失败");
+                uid = profileNode.at("/data/red_id").asText();
+            }
+            SocialMediaWork socialMediaWork = new SocialMediaWork();
+            socialMediaWork.setUrl(shareUrl);
+            socialMediaWork.setPlatformId(SocialMediaPlatformEnum.RED_NOTE.getDomain());
+            socialMediaWork.setDescription(desc);
+            socialMediaWork.setTitle(StringUtils.isNotBlank(title) ? title : MessageFormatUtils.cleanDescription(desc));
+            socialMediaWork.setTopics(topics);
+            socialMediaWork.setWorkUid(workUid);
+            socialMediaWork.setPostTime(postTime);
+            socialMediaWork.setMediaType(mediaType);
+            socialMediaWork.setType(workType);
+            socialMediaWork.setThumbNum(thumbNum);
+            socialMediaWork.setCollectNum(collectNum);
+            socialMediaWork.setShareNum(shareNum);
+            socialMediaWork.setCommentNum(commentNum);
+            socialMediaWork.setLikeNum(thumbNum);
+            socialMediaWork.setPlayNum(playNum);
+            socialMediaWork.setCustomType(customType);
+            socialMediaWork.setStatisticMd5(socialMediaWork.generateStatisticMd5());
+            SocialMediaUserInfo socialMediaUserInfo = new SocialMediaUserInfo();
+            socialMediaUserInfo.setSecUid(secUid);
+            socialMediaUserInfo.setNickname(nickname);
+            socialMediaUserInfo.setUid(uid);
+            return (SocialMediaWorkDetail<T>) new SocialMediaWorkDetail<>(socialMediaWork, socialMediaUserInfo);
+        }
+    }
+
+
+    @SuppressWarnings("unchecked")
     public <T> SocialMediaWorkDetail<T> getWork0(DataSyncParamContext dataSyncParamContext) {
         BrowserContext browserContext = dataSyncParamContext.getBrowserContext();
         String shareLink = dataSyncParamContext.getShareLink();
         try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(browserContext)) {
             Page page = playwrightBrowser.getPage();
-            page.navigate(shareLink, new Page.NavigateOptions().setTimeout(60_000));
-            page.waitForTimeout(RandomUtil.randomInt(300, 1000));
-            if (page.isVisible("text=登录后推荐更懂你的笔记")) {
-                log.error("需要重新登录");
-                dataSyncParamContext.setStorageState(null);
+            APIResponse apiResponse = page.request().get(shareLink);
+            String html = apiResponse.text();
+            Document doc = Jsoup.parse(html, "", Parser.htmlParser());
+            Element script = doc.select("script").stream().filter(i -> i.html(new StringBuilder()).toString().contains("window.__INITIAL_STATE__="))
+                    .findFirst().orElse(null);
+            if (script == null) {
                 return null;
             }
-            page.waitForFunction("typeof __INITIAL_STATE__ !== 'undefined'", null, new Page.WaitForFunctionOptions().setTimeout(30_000L));
-            String string = (String) page.evaluate("JSON.stringify(__INITIAL_STATE__.note.noteDetailMap)");
-            JsonNode jsonNode = JacksonUtil.toObj(string);
+            String globalJson = script.html().replace("window.__INITIAL_STATE__=", "").replace("undefined", "null");
+            JsonNode jsonNode = JacksonUtil.toObj(globalJson).at("/note/noteDetailMap");
 
             JsonNode detailNode = jsonNode.get(jsonNode.fieldNames().next());
             JsonNode noteNode = detailNode.get("note");
@@ -307,40 +403,15 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
             String mediaType = workType.equals(WorkTypeEnum.RICH_TEXT.getType()) ? MediaTypeEnum.PICTURE.getType() : MediaTypeEnum.VIDEO.getType();
             String shareUrl = "https://www.xiaohongshu.com/explore/" + workUid + "?xsec_token=" + noteNode.get("xsecToken").asText();
             JsonNode interactInfo = noteNode.get("interactInfo");
-            int thumbNum;
-            int collectNum;
-            int shareNum;
-            int commentNum;
-            try {
-                thumbNum = this.clearWord(interactInfo.get("likedCount").asText());
-                collectNum = this.clearWord(interactInfo.get("collectedCount").asText());
-                shareNum = this.clearWord(interactInfo.get("shareCount").asText());
-                commentNum = this.clearWord(interactInfo.get("commentCount").asText());
-            } catch (Exception e) {
-                log.error("需要重新登录 {}", e.getMessage());
-                dataSyncParamContext.setStorageState(null);
-                return null;
-            }
+
+            int thumbNum = BrowserConfig.clearWord(interactInfo.get("likedCount").asText());
+            int collectNum = BrowserConfig.clearWord(interactInfo.get("collectedCount").asText());
+            int shareNum = BrowserConfig.clearWord(interactInfo.get("shareCount").asText());
+            int commentNum = BrowserConfig.clearWord(interactInfo.get("commentCount").asText());
+
 
             // 基于3.3%互动率估算,目前无法从 view_count获取浏览量
             int playNum = (thumbNum + collectNum + shareNum + commentNum) * 10;
-            String redId = "";
-            if (!dataSyncParamContext.isScheduler()) {
-                //不是定时任务则需要获取redId
-                Page popupPage = page.waitForPopup(() -> {
-                    ElementHandle element = page.querySelector(".outer-link-container #noteContainer .interaction-container .author-container .author-wrapper .info .username");
-                    BoundingBox box = element.boundingBox();
-                    double x = box.x + box.width / 2;
-                    double y = box.y + box.height / 2;
-                    page.mouse().move(x, y);
-                    page.mouse().click(x, y);
-                });
-                popupPage.waitForLoadState();
-                // 在弹窗页面执行 JS
-                redId = String.valueOf(popupPage.evaluate("__INITIAL_STATE__.user.userPageData._rawValue.basicInfo.redId"));
-            } else {
-                playwrightBrowser.randomMove();
-            }
 
             SocialMediaWork socialMediaWork = new SocialMediaWork();
             socialMediaWork.setUrl(shareUrl);
@@ -363,7 +434,7 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
             SocialMediaUserInfo socialMediaUserInfo = new SocialMediaUserInfo();
             socialMediaUserInfo.setSecUid(secUid);
             socialMediaUserInfo.setNickname(nickname);
-            socialMediaUserInfo.setUid(redId);
+            socialMediaUserInfo.setUid("");
             dataSyncParamContext.setStorageState(page.context().storageState());
             return (SocialMediaWorkDetail<T>) new SocialMediaWorkDetail<>(socialMediaWork, socialMediaUserInfo);
         }
@@ -585,14 +656,6 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
         socialMediaWork.setAccountType(accountType);
         socialMediaWork.setCustomType(customType);
         socialMediaWorkMap.put(workUid, socialMediaWork);
-    }
-
-    public Integer clearWord(String text) {
-        if (text.contains("万")) {
-            String replace = text.replace("万", "");
-            return new BigDecimal(replace).multiply(BigDecimal.valueOf(10000)).intValue();
-        }
-        return Integer.parseInt(text.replace("+", ""));
     }
 
 

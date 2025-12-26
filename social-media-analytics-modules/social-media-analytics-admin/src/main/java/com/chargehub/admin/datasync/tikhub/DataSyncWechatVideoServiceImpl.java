@@ -226,6 +226,12 @@ public class DataSyncWechatVideoServiceImpl implements DataSyncService {
         }
     }
 
+    @Override
+    public <T> SocialMediaWorkDetail<T> fetchWork(DataSyncParamContext dataSyncParamContext) {
+        return this.getWork(dataSyncParamContext);
+    }
+
+
     public void buildWork(SocialMediaAccountVo socialMediaAccount, JsonNode node, Map<String, SocialMediaWork> socialMediaWorkMap) {
         String userId = socialMediaAccount.getUserId();
         String accountId = socialMediaAccount.getId();

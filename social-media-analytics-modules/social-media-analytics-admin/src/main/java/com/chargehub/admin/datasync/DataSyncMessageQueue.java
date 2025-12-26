@@ -122,6 +122,25 @@ public class DataSyncMessageQueue {
         future.join();
     }
 
+    public String retryExecute(Callable<AsyncResult> callable, int retry) {
+        int realRetry = retry + 1;
+        String result = "";
+        for (int i = 0; i <= realRetry; i++) {
+            try {
+                ThreadUtil.safeSleep(RandomUtil.randomInt(300, 500));
+                AsyncResult call = callable.call();
+                result = call.getResult();
+                if (call.isSuccess()) {
+                    return result;
+                }
+            } catch (Exception e) {
+                result = e.getMessage();
+            }
+        }
+        log.error("任务重试失败: {}", result);
+        return null;
+    }
+
     @Data
     public static class AsyncResult {
         private boolean success;

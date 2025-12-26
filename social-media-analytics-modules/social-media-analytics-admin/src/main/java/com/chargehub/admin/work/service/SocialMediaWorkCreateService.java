@@ -58,6 +58,7 @@ public class SocialMediaWorkCreateService extends AbstractZ9CrudServiceImpl<Soci
         this.baseMapper.lambdaUpdate()
                 .set(SocialMediaWorkCreate::getCreateStatus, status.getDesc())
                 .set(SocialMediaWorkCreate::getErrorMsg, errorMsg)
+                .set(errorMsg == null, SocialMediaWorkCreate::getErrorStack, null)
                 .set(SocialMediaWorkCreate::getRetryCount, 0)
                 .eq(SocialMediaWorkCreate::getId, id)
                 .update();

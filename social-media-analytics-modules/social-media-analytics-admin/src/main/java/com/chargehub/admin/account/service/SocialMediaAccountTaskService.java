@@ -47,6 +47,12 @@ public class SocialMediaAccountTaskService {
         }, 60);
     }
 
+    public List<SocialMediaAccountTask> getAllByPlatformId(String platformId, boolean noLoginState) {
+        return socialMediaAccountTaskMapper.lambdaQuery().eq(SocialMediaAccountTask::getPlatformId, platformId)
+                .inSql(SocialMediaAccountTask::getAccountId, "select id from social_media_account where storage_state is " + (noLoginState ? "null" : "not null"))
+                .list();
+    }
+
     public List<SocialMediaAccountTask> getAll() {
         List<SocialMediaAccountTask> accounts = socialMediaAccountTaskMapper.lambdaQuery().list();
         Map<String, Queue<SocialMediaAccountTask>> platformQueues = new HashMap<>();

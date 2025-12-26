@@ -89,7 +89,7 @@ public class PlaywrightBrowser implements AutoCloseable {
 
     public static Proxy buildProxy() {
         try {
-            Map<String, String> crawlerProxy = DictUtils.getDictLabelMap("crawler_proxy");
+            Map<String, String> crawlerProxy = DictUtils.getDictLabelMap("crawler_proxy_chrome");
             if (MapUtil.isEmpty(crawlerProxy)) {
                 return null;
             }
@@ -97,14 +97,17 @@ public class PlaywrightBrowser implements AutoCloseable {
                     .setUsername(crawlerProxy.get("proxy_username"))
                     .setPassword(crawlerProxy.get("proxy_password"));
         } catch (Exception e) {
-            return new Proxy("tun-uzqqwl.qg.net:13396")
-                    .setUsername("9E96975B")
-                    .setPassword("6C1776616155");
+            return null;
         }
     }
 
-    @SuppressWarnings("all")
     public static BrowserContext buildBrowserContext(String storageState, Playwright playwright) {
+        Proxy proxy = buildProxy();
+        return buildBrowserContext(storageState, playwright, proxy);
+    }
+
+    @SuppressWarnings("all")
+    public static BrowserContext buildBrowserContext(String storageState, Playwright playwright, Proxy proxy) {
         // 随机选择一个浏览器
         BrowserConfig browserConfig = new BrowserConfig(Internet.UserAgent.CHROME);
         browserConfig.setPlaywright(playwright);
@@ -117,14 +120,14 @@ public class PlaywrightBrowser implements AutoCloseable {
                 .setServiceWorkers(ServiceWorkerPolicy.BLOCK)
                 .setStorageState(storageState)
                 .setExtraHTTPHeaders(MapUtil.builder(new HashMap<String, String>())
-                        .put("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8")
+                        .put("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6")
                         .build())
                 .setViewportSize(1920, 1080)
                 .setUserAgent(browserConfig.getRandomUa());
         // 启动选项（可统一配置）
         BrowserContext browserContext = browserType.launch(new BrowserType.LaunchOptions()
                 .setHeadless(headless)
-                .setProxy(PlaywrightBrowser.buildProxy())
+                .setProxy(proxy)
                 //设置启动系统浏览器
 //                .setExecutablePath(Paths.get("C://Program Files (x86)//Microsoft//Edge//Application//msedge.exe"))
                 .setArgs(Arrays.asList(

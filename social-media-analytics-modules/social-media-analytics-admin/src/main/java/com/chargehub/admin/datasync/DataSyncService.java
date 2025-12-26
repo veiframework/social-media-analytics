@@ -30,4 +30,7 @@ public interface DataSyncService {
 
     <T> SocialMediaWorkDetail<T> getWork(DataSyncParamContext dataSyncParamContext);
 
+    <T> SocialMediaWorkDetail<T> fetchWork(DataSyncParamContext dataSyncParamContext);
+
+
 }

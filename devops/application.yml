@@ -74,7 +74,7 @@ hub:
   job-service: localhost:9201
   standalone: true
   recent-days: 31
-  update-minutes: 30
+  update-minutes: 1
   headless: true
   social-media-data-api:
     tikhub:

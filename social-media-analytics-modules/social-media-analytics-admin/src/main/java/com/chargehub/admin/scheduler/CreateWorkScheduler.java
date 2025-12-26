@@ -1,8 +1,6 @@
 package com.chargehub.admin.scheduler;
 
 import cn.hutool.core.bean.BeanUtil;
-import cn.hutool.core.thread.ThreadUtil;
-import cn.hutool.core.util.RandomUtil;
 import com.chargehub.admin.account.domain.SocialMediaAccount;
 import com.chargehub.admin.account.service.SocialMediaAccountService;
 import com.chargehub.admin.api.domain.SysUser;
@@ -57,7 +55,7 @@ public class CreateWorkScheduler {
 
     @SuppressWarnings("unchecked")
     public void execute() {
-        Boolean hasKey = redisService.hasKey(DataSyncWorkMonitorScheduler.SYNCING_WORK_LOCK);
+        Boolean hasKey = redisService.hasKey(AbstractWorkScheduler.SYNCING_WORK_LOCK);
         if (BooleanUtils.isTrue(hasKey)) {
             return;
         }
@@ -73,7 +71,6 @@ public class CreateWorkScheduler {
         String id = socialMediaWorkCreateVo.getId();
         try {
             this.socialMediaWorkCreateService.updateCreateStatus(id, WorkCreateStatusEnum.PROCESSING, null, null, false);
-            ThreadUtil.safeSleep(RandomUtil.randomInt(300, 700));
             this.createWorkByShareUrl(socialMediaWorkCreateVo);
         } catch (Exception e) {
             String errorMsg = e.getMessage();
@@ -98,7 +95,7 @@ public class CreateWorkScheduler {
         String tenantId = sysUser.getShopId() + "";
         String accountType = dto.getAccountType();
         SocialMediaPlatformEnum.PlatformExtra platformEnum = SocialMediaPlatformEnum.getPlatformByWorkUrl(shareLink);
-        SocialMediaWorkDetail<SocialMediaWork> socialMediaWorkDetail = this.dataSyncManager.getWork("", shareLink, platformEnum);
+        SocialMediaWorkDetail<SocialMediaWork> socialMediaWorkDetail = this.dataSyncManager.fetchWork("", shareLink, platformEnum);
         Assert.notNull(socialMediaWorkDetail, "获取作品失败,请重试");
         SocialMediaWork socialMediaWork = socialMediaWorkDetail.getWork();
         Assert.isTrue(!"-1".equals(socialMediaWork.getWorkUid()), "作品已经下架,无法添加");

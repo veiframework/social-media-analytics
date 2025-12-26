@@ -200,6 +200,12 @@ public class DataSyncBiliBiliServiceImpl implements DataSyncService {
         }
     }
 
+    @Override
+    public <T> SocialMediaWorkDetail<T> fetchWork(DataSyncParamContext dataSyncParamContext) {
+        return null;
+    }
+
+
     public void buildWork(SocialMediaAccountVo socialMediaAccount, JsonNode node, Map<String, SocialMediaWork> socialMediaWorkMap) {
         String userId = socialMediaAccount.getUserId();
         String accountId = socialMediaAccount.getId();

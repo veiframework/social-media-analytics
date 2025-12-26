@@ -15,6 +15,7 @@ import com.chargehub.admin.enums.WorkTypeEnum;
 import com.chargehub.admin.playwright.PlaywrightBrowser;
 import com.chargehub.admin.work.domain.SocialMediaWork;
 import com.chargehub.common.core.properties.HubProperties;
+import com.chargehub.common.core.utils.JsoupUtil;
 import com.chargehub.common.core.utils.MessageFormatUtils;
 import com.chargehub.common.security.utils.DictUtils;
 import com.chargehub.common.security.utils.JacksonUtil;
@@ -24,6 +25,7 @@ import com.microsoft.playwright.options.BoundingBox;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -169,7 +171,7 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
                 if (res.url().contains("/aweme/v1/web/aweme/post/") && res.ok()) {
                     String body = new String(res.body());
                     if (StringUtils.isBlank(body)) {
-                        log.error("抖音获取响应数据空了: " + secUid + "\n" + body);
+                        log.error("抖音响应数据空了: " + secUid + "\n" + body);
                         return;
                     }
                     JsonNode jsonNode = JacksonUtil.toObj(body);
@@ -177,7 +179,6 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
                     hasMore.set(more > 0);
                     JsonNode node = jsonNode.get("aweme_list");
                     if (node == null || node.isEmpty() || node.isNull()) {
-                        log.error("抖音获取主页数据空了: " + secUid + "\n" + body);
                         return;
                     }
                     for (JsonNode item : node) {
@@ -222,36 +223,50 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
     @SuppressWarnings("unchecked")
     @Override
     public <T> SocialMediaWorkDetail<T> getWork(DataSyncParamContext dataSyncParamContext) {
-        HubProperties.SocialMediaDataApi socialMediaDataApi = hubProperties.getSocialMediaDataApi().get("tikhub");
-        String token = socialMediaDataApi.getToken();
-        String host = socialMediaDataApi.getHost();
         BrowserContext browserContext = dataSyncParamContext.getBrowserContext();
         String shareLink = dataSyncParamContext.getShareLink();
         String redirectUrl = dataSyncParamContext.getRedirectUrl();
         try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(browserContext)) {
             Page page = playwrightBrowser.getPage();
+            page.route(url -> url.contains(".jpeg") || url.contains(".webp"), Route::abort);
             boolean isNote;
             if (StringUtils.isBlank(redirectUrl)) {
-                isNote = shareLink.contains("note");
+                isNote = dataSyncParamContext.getMediaType().equals(MediaTypeEnum.PICTURE.getType());
             } else {
                 isNote = redirectUrl.contains("note");
             }
-            page.route(url -> url.contains(".jpeg") || url.contains(".webp"), Route::abort);
             if (isNote) {
-                navigateToPage(page, shareLink);
+                navigateToPage(page, shareLink, dataSyncParamContext.isScheduler());
                 return this.getNoteWork(playwrightBrowser, dataSyncParamContext);
             }
-            Response response = page.waitForResponse(res -> res.url().contains("/aweme/detail/"), new Page.WaitForResponseOptions().setTimeout(90_000), () -> page.navigate(shareLink, new Page.NavigateOptions().setTimeout(60_000)));
-            playwrightBrowser.randomMove();
-            String body = new String(response.body());
+            String body;
+            try {
+                Response response = page.waitForResponse(res -> res.url().contains("/aweme/detail/"), () -> {
+                    page.navigate(shareLink, new Page.NavigateOptions().setTimeout(90_000));
+                    if (page.isVisible("text=你要观看的视频不存在")) {
+                        throw new IllegalArgumentException("return");
+                    }
+                });
+                body = new String(response.body());
+            } catch (Exception e) {
+                if ("return".equals(e.getMessage())) {
+                    log.error("抖音检测到对方已删除视频作品! {}", dataSyncParamContext.getShareLink());
+                    SocialMediaWork socialMediaWork = new SocialMediaWork();
+                    socialMediaWork.setShareLink(dataSyncParamContext.getShareLink());
+                    socialMediaWork.setWorkUid("-1");
+                    return (SocialMediaWorkDetail<T>) new SocialMediaWorkDetail<>(socialMediaWork, null);
+                }
+                throw e;
+            }
             if (StringUtils.isBlank(body)) {
-                log.error("抖音获取作品为空");
+                log.error("抖音获取作品为空" + shareLink);
                 return null;
             }
+            playwrightBrowser.randomMove();
             JsonNode jsonNode = JacksonUtil.toObj(body);
             JsonNode node = jsonNode.get("aweme_detail");
             if (node.isEmpty()) {
-                log.warn("抖音获取作品不存在了" + body);
+                log.error("抖音获取作品详情空了" + shareLink);
                 return null;
             }
             String secUid = node.at("/author/sec_uid").asText();
@@ -298,26 +313,28 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
             socialMediaWork.setTitle(title);
             socialMediaWork.setTopics(topics);
             socialMediaWork.setCustomType(customType);
-            log.debug("抖音开始获取播放量");
-            dataSyncMessageQueue.syncDouyinExecuteSignal(() -> {
-                try (HttpResponse multiWorksExecute = HttpUtil.createGet(host + GET_ONE_WORK_STATISTIC).timeout(60_000).bearerAuth(token).form("aweme_ids", workUid).execute()) {
-                    String result = multiWorksExecute.body();
-                    JsonNode multiWorkNode = JacksonUtil.toObj(result);
-                    int code0 = multiWorkNode.path("code").asInt(500);
-                    if (code0 != HttpStatus.HTTP_OK) {
-                        return new DataSyncMessageQueue.AsyncResult(false, result);
+            if (!dataSyncParamContext.isScheduler()) {
+                log.debug("抖音开始获取播放量");
+                HubProperties.SocialMediaDataApi socialMediaDataApi = hubProperties.getSocialMediaDataApi().get("tikhub");
+                String token = socialMediaDataApi.getToken();
+                String host = socialMediaDataApi.getHost();
+                dataSyncMessageQueue.syncDouyinExecuteSignal(() -> {
+                    try (HttpResponse multiWorksExecute = HttpUtil.createGet(host + GET_ONE_WORK_STATISTIC).timeout(60_000).bearerAuth(token).form("aweme_ids", workUid).execute()) {
+                        String result = multiWorksExecute.body();
+                        JsonNode multiWorkNode = JacksonUtil.toObj(result);
+                        int code0 = multiWorkNode.path("code").asInt(500);
+                        if (code0 != HttpStatus.HTTP_OK) {
+                            return new DataSyncMessageQueue.AsyncResult(false, result);
+                        }
+                        JsonNode statisticsNodes = multiWorkNode.at("/data/statistics_list");
+                        JsonNode statisticsNode = statisticsNodes.get(0);
+                        int playNum = statisticsNode.get("play_count").asInt(0);
+                        socialMediaWork.setPlayNum(playNum);
+                        return new DataSyncMessageQueue.AsyncResult(true, null);
+                    } catch (Exception e) {
+                        return new DataSyncMessageQueue.AsyncResult(false, workUid + ": " + e.getMessage());
                     }
-                    JsonNode statisticsNodes = multiWorkNode.at("/data/statistics_list");
-                    JsonNode statisticsNode = statisticsNodes.get(0);
-                    int playNum = statisticsNode.get("play_count").asInt(0);
-                    socialMediaWork.setPlayNum(playNum);
-                    return new DataSyncMessageQueue.AsyncResult(true, null);
-                } catch (Exception e) {
-                    return new DataSyncMessageQueue.AsyncResult(false, workUid + ": " + e.getMessage());
-                }
-            }, RETRY);
-            if (socialMediaWork.getPlayNum() == null) {
-                return null;
+                }, RETRY);
             }
             socialMediaWork.setStatisticMd5(socialMediaWork.generateStatisticMd5());
             SocialMediaUserInfo socialMediaUserInfo = new SocialMediaUserInfo();
@@ -329,16 +346,29 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
         }
     }
 
-    private static void navigateToPage(Page page, String shareLink) {
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> SocialMediaWorkDetail<T> fetchWork(DataSyncParamContext dataSyncParamContext) {
+        return this.getWork(dataSyncParamContext);
+    }
+
+
+    private void navigateToPage(Page page, String shareLink, boolean isScheduler) {
         //关闭登录弹窗
         page.navigate(shareLink, new Page.NavigateOptions().setTimeout(90_000));
-        page.waitForSelector("input[placeholder='请输入手机号']");
-        ElementHandle element = page.querySelector("article[id='douyin_login_comp_flat_panel'] svg[xmlns='http://www.w3.org/2000/svg']");
-        BoundingBox box = element.boundingBox();
-        double x = box.x + box.width / 2;
-        double y = box.y + box.height / 2;
-        page.mouse().move(x, y);
-        page.mouse().click(x, y);
+        if (!isScheduler) {
+            try {
+                page.waitForSelector("input[placeholder='请输入手机号']");
+                ElementHandle element = page.querySelector("article[id='douyin_login_comp_flat_panel'] svg[xmlns='http://www.w3.org/2000/svg']");
+                BoundingBox box = element.boundingBox();
+                double x = box.x + box.width / 2;
+                double y = box.y + box.height / 2;
+                page.mouse().move(x, y);
+                page.mouse().click(x, y);
+            } catch (Exception e) {
+                log.error("抖音没有弹出登录弹窗 {}", shareLink);
+            }
+        }
     }
 
     public void buildWork(SocialMediaAccountVo socialMediaAccount, JsonNode node, Map<String, SocialMediaWork> socialMediaWorkMap) {
@@ -401,25 +431,30 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
     public <T> SocialMediaWorkDetail<T> getNoteWork(PlaywrightBrowser playwrightBrowser, DataSyncParamContext dataSyncParamContext) {
         boolean isScheduler = dataSyncParamContext.isScheduler();
         Page page = playwrightBrowser.getPage();
-        if (page.isVisible("text='你要观看的图文不存在'")) {
+        HubProperties.SocialMediaDataApi socialMediaDataApi = hubProperties.getSocialMediaDataApi().get("tikhub");
+        String token = socialMediaDataApi.getToken();
+        String host = socialMediaDataApi.getHost();
+        page.waitForFunction("window.__pace_f !== undefined && window.__pace_f.length > 0", null, new Page.WaitForFunctionOptions().setTimeout(60000));
+        String content = page.content();
+        Document document = JsoupUtil.parse(content);
+        if (document.text().contains("你要观看的图文不存在") || page.isVisible("text=你要观看的图文不存在")) {
             log.error("抖音检测到对方已删除此作品! {}", dataSyncParamContext.getShareLink());
             SocialMediaWork socialMediaWork = new SocialMediaWork();
             socialMediaWork.setShareLink(dataSyncParamContext.getShareLink());
             socialMediaWork.setWorkUid("-1");
             return (SocialMediaWorkDetail<T>) new SocialMediaWorkDetail<>(socialMediaWork, null);
         }
-        HubProperties.SocialMediaDataApi socialMediaDataApi = hubProperties.getSocialMediaDataApi().get("tikhub");
-        String token = socialMediaDataApi.getToken();
-        String host = socialMediaDataApi.getHost();
-        List<Object> list = (List<Object>) page.evaluate("__pace_f[__pace_f.length-1]");
-        Assert.notEmpty(list, "获取抖音作品笔记失败");
-        String read = (String) list.get(list.size() - 1);
+        List<String> scriptContents = JsoupUtil.findContentsInScript(document, "self.__pace_f.push(");
+        String lastItem = scriptContents.get(scriptContents.size() - 1);
+        String jsonArr = lastItem.substring(0, lastItem.length() - 1);
+        JsonNode list = JacksonUtil.toObj(jsonArr);
+        String read = list.get(list.size() - 1).asText();
         String[] split = read.split(":", 2);
         String array = split[1];
         JsonNode arrayNode = JacksonUtil.toObj(array);
         JsonNode readNode = arrayNode.get(arrayNode.size() - 1);
         if (!readNode.has("awemeId")) {
-            log.warn("抖音笔记异常!" + read);
+            log.warn("抖音笔记异常!" + dataSyncParamContext.getShareLink());
             return null;
         }
         String workUid = readNode.get("awemeId").asText();
@@ -437,9 +472,6 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
                 page.mouse().move(x, y);
                 page.mouse().click(x, y);
             });
-            popupPage.waitForSelector("input[placeholder='请输入手机号']");
-            //关闭登录弹窗
-            popupPage.click("article[id='douyin_login_comp_flat_panel'] svg[xmlns='http://www.w3.org/2000/svg']");
             String fullText = popupPage.textContent(":text-matches('抖音号：.*')");
             uid = fullText.replace("抖音号：", "");
         } else {
@@ -485,25 +517,24 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
         socialMediaWork.setTitle(title);
         socialMediaWork.setTopics(topics);
         socialMediaWork.setCustomType(customType);
-        dataSyncMessageQueue.syncDouyinExecuteSignal(() -> {
-            try (HttpResponse multiWorksExecute = HttpUtil.createGet(host + GET_ONE_WORK_STATISTIC).bearerAuth(token).form("aweme_ids", workUid).execute()) {
-                String result = multiWorksExecute.body();
-                JsonNode multiWorkNode = JacksonUtil.toObj(result);
-                int code0 = multiWorkNode.path("code").asInt(500);
-                if (code0 != HttpStatus.HTTP_OK) {
-                    return new DataSyncMessageQueue.AsyncResult(false, result);
+        if (!isScheduler) {
+            dataSyncMessageQueue.syncDouyinExecuteSignal(() -> {
+                try (HttpResponse multiWorksExecute = HttpUtil.createGet(host + GET_ONE_WORK_STATISTIC).bearerAuth(token).form("aweme_ids", workUid).execute()) {
+                    String result = multiWorksExecute.body();
+                    JsonNode multiWorkNode = JacksonUtil.toObj(result);
+                    int code0 = multiWorkNode.path("code").asInt(500);
+                    if (code0 != HttpStatus.HTTP_OK) {
+                        return new DataSyncMessageQueue.AsyncResult(false, result);
+                    }
+                    JsonNode statisticsNodes = multiWorkNode.at("/data/statistics_list");
+                    JsonNode statisticsNode = statisticsNodes.get(0);
+                    int playNum = statisticsNode.get("play_count").asInt(0);
+                    socialMediaWork.setPlayNum(playNum);
+                    return new DataSyncMessageQueue.AsyncResult(true, null);
+                } catch (Exception e) {
+                    return new DataSyncMessageQueue.AsyncResult(false, workUid + ": " + e.getMessage());
                 }
-                JsonNode statisticsNodes = multiWorkNode.at("/data/statistics_list");
-                JsonNode statisticsNode = statisticsNodes.get(0);
-                int playNum = statisticsNode.get("play_count").asInt(0);
-                socialMediaWork.setPlayNum(playNum);
-                return new DataSyncMessageQueue.AsyncResult(true, null);
-            } catch (Exception e) {
-                return new DataSyncMessageQueue.AsyncResult(false, workUid + ": " + e.getMessage());
-            }
-        }, RETRY);
-        if (socialMediaWork.getPlayNum() == null) {
-            return null;
+            }, RETRY);
         }
         socialMediaWork.setStatisticMd5(socialMediaWork.generateStatisticMd5());
         SocialMediaUserInfo socialMediaUserInfo = new SocialMediaUserInfo();

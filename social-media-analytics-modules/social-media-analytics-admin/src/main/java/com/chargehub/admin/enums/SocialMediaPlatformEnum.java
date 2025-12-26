@@ -4,12 +4,14 @@ import cn.hutool.core.util.URLUtil;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpUtil;
+import com.chargehub.admin.playwright.BrowserConfig;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.Assert;
 
+import java.net.Proxy;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.function.Function;
@@ -43,7 +45,8 @@ public enum SocialMediaPlatformEnum {
 
     public static PlatformExtra getPlatformByWorkUrl(String workUrl) {
         HttpRequest httpRequest = HttpUtil.createGet(workUrl);
-        try (HttpResponse execute = httpRequest.setFollowRedirects(true).execute()) {
+        Proxy proxy = BrowserConfig.getProxy();
+        try (HttpResponse execute = httpRequest.setFollowRedirects(true).setProxy(proxy).execute()) {
             String location = httpRequest.getUrl();
             URI uri = URLUtil.toURI(location);
             String host = uri.getHost();
