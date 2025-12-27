@@ -276,7 +276,11 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
                 .headerMap(BrowserConfig.BROWSER_HEADERS, true)
                 .execute()) {
             InputStream inputStream = response.bodyStream();
-            String globalJson = JsoupUtil.findContentInScript(inputStream, "window.__INITIAL_STATE__=", shareLink).replace("undefined", "null");
+            String globalJson = JsoupUtil.findContentInScript(inputStream, "window.__INITIAL_STATE__=", shareLink);
+            if (StringUtils.isBlank(globalJson)) {
+                return null;
+            }
+            globalJson = globalJson.replace("undefined", "null");
             JsonNode jsonNode = JacksonUtil.toObj(globalJson).at("/note/noteDetailMap");
             if (jsonNode.isEmpty()) {
                 log.error("无法获取小红书作品" + shareLink);

@@ -7,6 +7,9 @@ import com.chargehub.common.core.utils.JsoupUtil;
 import com.chargehub.common.security.utils.JacksonUtil;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.SneakyThrows;
+import org.springframework.util.Assert;
+
+import java.io.InputStream;
 
 /**
  * @author Zhanghaowei
@@ -26,25 +29,17 @@ public class PlainClass {
         });
         System.out.println("--------------------------------");
         System.out.println(collect);
-        HttpRequest get = HttpUtil.createGet("https://v.kuaishou.com/7GK5P2ic")
+        HttpRequest get = HttpUtil.createGet("http://xhslink.com/o/58YhtOXdUf7")
                 .headerMap(BrowserConfig.BROWSER_HEADERS, true);
         get.setFollowRedirects(true);
         HttpResponse execute = get.execute();
-        System.out.println(execute.body());
-        String json = JsoupUtil.findContentInScript(execute.bodyStream(), "window.INIT_STATE = ", "");
-        JsonNode obj = JacksonUtil.toObj(json);
-
-        JsonNode jsonNode0 = null;
-        int idx = 0;
-        for (JsonNode node : obj) {
-            if (idx == 2) {
-                jsonNode0 = node;
-                break;
-            }
-            idx++;
-        }
-        JsonNode countsNode = jsonNode0.get("counts");
-        System.out.println(countsNode);
+        InputStream inputStream = execute.bodyStream();
+        String globalJson = JsoupUtil.findContentInScript(inputStream, "window.__INITIAL_STATE__=", "").replace("undefined", "null");
+        System.out.println(globalJson);
+        Assert.hasText(globalJson, "can not be null");
+        JsonNode node = JacksonUtil.toObj(globalJson).at("/note/noteDetailMap");
+        JsonNode detailNode = node.get(node.fieldNames().next());
+        JsonNode noteNode = detailNode.get("note");
     }
 
 }
