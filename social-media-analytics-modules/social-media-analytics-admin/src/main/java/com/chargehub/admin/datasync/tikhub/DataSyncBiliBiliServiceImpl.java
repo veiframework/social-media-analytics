@@ -195,7 +195,6 @@ public class DataSyncBiliBiliServiceImpl implements DataSyncService {
             userInfo.setNickname(nickname);
             userInfo.setSecUid(uid);
             userInfo.setUid(uid);
-            dataSyncParamContext.setStorageState(page.context().storageState());
             return (SocialMediaWorkDetail<T>) new SocialMediaWorkDetail<>(socialMediaWork, userInfo);
         }
     }

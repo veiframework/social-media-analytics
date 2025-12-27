@@ -1,6 +1,7 @@
 package com.chargehub.admin.datasync.tikhub;
 
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.RandomUtil;
@@ -83,7 +84,6 @@ public class KuaiShouSyncServiceImpl implements DataSyncService {
         BrowserContext browserContext = params.getBrowserContext();
         SocialMediaWorkResult<SocialMediaWork> socialMediaWorkResult = new SocialMediaWorkResult<>();
         List<SocialMediaWork> socialMediaWorks = new ArrayList<>();
-        String storageState = null;
         for (Map.Entry<String, String> entry : workUids.entrySet()) {
             ThreadUtil.safeSleep(RandomUtil.randomInt(500, 3000));
             String url = entry.getValue();
@@ -95,10 +95,8 @@ public class KuaiShouSyncServiceImpl implements DataSyncService {
             if (workDetail == null) {
                 continue;
             }
-            storageState = dataSyncParamContext.getStorageState();
             socialMediaWorks.add(workDetail.getWork());
         }
-        socialMediaWorkResult.setStorageState(storageState);
         socialMediaWorkResult.setWorks(socialMediaWorks);
         return (SocialMediaWorkResult<T>) socialMediaWorkResult;
     }
@@ -149,7 +147,6 @@ public class KuaiShouSyncServiceImpl implements DataSyncService {
             if (currentUrl.contains("short-video")) {
                 if (page.isVisible("text=立即登录")) {
                     log.error("快手需要重新登陆");
-                    dataSyncParamContext.setStorageState(null);
                     return null;
                 }
                 if (page.isVisible("text=作品已失效")) {
@@ -230,13 +227,11 @@ public class KuaiShouSyncServiceImpl implements DataSyncService {
                 String json = script.html().replace("window.INIT_STATE = ", "");
                 JsonNode obj = JacksonUtil.toObj(json);
                 JsonNode jsonNode = null;
-                int idx = 0;
                 for (JsonNode node : obj) {
-                    if (idx == 2) {
+                    if (node.has("photo")) {
                         jsonNode = node;
                         break;
                     }
-                    idx++;
                 }
                 Assert.notNull(jsonNode, "快手获取作品失败" + shareLink);
                 JsonNode countsNode = jsonNode.get("counts");
@@ -291,7 +286,6 @@ public class KuaiShouSyncServiceImpl implements DataSyncService {
             socialMediaUserInfo.setSecUid(secUid);
             socialMediaUserInfo.setNickname(nickname);
             socialMediaUserInfo.setUid(uid);
-            dataSyncParamContext.setStorageState(page.context().storageState());
             return (SocialMediaWorkDetail<T>) new SocialMediaWorkDetail<>(socialMediaWork, socialMediaUserInfo);
         }
     }
@@ -381,13 +375,11 @@ public class KuaiShouSyncServiceImpl implements DataSyncService {
                 String json = JsoupUtil.findContentInScript(inputStream, "window.INIT_STATE = ", shareLink);
                 JsonNode obj = JacksonUtil.toObj(json);
                 JsonNode jsonNode = null;
-                int idx = 0;
                 for (JsonNode node : obj) {
-                    if (idx == 2) {
+                    if (node.has("photo")) {
                         jsonNode = node;
                         break;
                     }
-                    idx++;
                 }
                 if (jsonNode == null) {
                     log.error("快手检测到对方已删除此作品! {}", dataSyncParamContext.getShareLink());

@@ -20,7 +20,7 @@ public class DataSyncWorksParams {
 
     private BrowserContext browserContext;
 
-    private BrowserContext stateBrowserContext;
+    private String storageState;
 
     private Proxy proxy;
 

@@ -100,7 +100,11 @@
             <version>1.9.0</version> <!-- 检查最新版 -->
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.jsoup/jsoup -->
-
+        <dependency>
+            <groupId>org.brotli</groupId>
+            <artifactId>dec</artifactId>
+            <version>0.1.2</version>
+        </dependency>
 <!--        <dependency>-->
 <!--            <groupId>io.appium</groupId>-->
 <!--            <artifactId>java-client</artifactId>-->

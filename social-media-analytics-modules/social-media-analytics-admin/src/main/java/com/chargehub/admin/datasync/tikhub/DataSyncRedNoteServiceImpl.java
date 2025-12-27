@@ -439,7 +439,6 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
             socialMediaUserInfo.setSecUid(secUid);
             socialMediaUserInfo.setNickname(nickname);
             socialMediaUserInfo.setUid("");
-            dataSyncParamContext.setStorageState(page.context().storageState());
             return (SocialMediaWorkDetail<T>) new SocialMediaWorkDetail<>(socialMediaWork, socialMediaUserInfo);
         }
     }
@@ -543,7 +542,6 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
             if (workDetail == null) {
                 continue;
             }
-            storageState = dataSyncParamContext.getStorageState();
             socialMediaWorks.add(workDetail.getWork());
         }
         socialMediaWorkResult.setStorageState(storageState);

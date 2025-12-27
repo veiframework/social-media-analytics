@@ -1,12 +1,20 @@
+import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.http.HttpRequest;
+import cn.hutool.http.HttpResponse;
+import cn.hutool.http.HttpUtil;
 import com.chargehub.admin.AdminApplication;
 
 import com.chargehub.admin.datasync.DataSyncManager;
 import com.chargehub.admin.datasync.domain.SocialMediaWorkDetail;
 import com.chargehub.admin.enums.SocialMediaPlatformEnum;
+import com.chargehub.admin.playwright.BrowserConfig;
 import com.chargehub.admin.work.domain.SocialMediaWork;
 import com.chargehub.biz.region.service.impl.RegionInitService;
 import com.chargehub.common.redis.service.RedisService;
+import com.chargehub.common.security.utils.JacksonUtil;
+import com.fasterxml.jackson.databind.JsonNode;
+import lombok.SneakyThrows;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,7 +41,7 @@ public class TestAdmin {
     RegionInitService regionInitService;
 
     @Test
-    public void test(){
+    public void test() {
         regionInitService.addAddList();
     }
 
@@ -41,7 +49,7 @@ public class TestAdmin {
     private DataSyncManager dataSyncManager;
 
     @Test
-    public void tests(){
+    public void tests() {
         SocialMediaWorkDetail<SocialMediaWork> socialMediaWorkDetail = this.dataSyncManager.fetchWork("", "https://www.douyin.com/note/7567620465126195045", new SocialMediaPlatformEnum.PlatformExtra(SocialMediaPlatformEnum.DOU_YIN));
         System.out.println(socialMediaWorkDetail);
     }
@@ -50,12 +58,14 @@ public class TestAdmin {
     private RedisService redisService;
 
     @Test
-    public void testCache(){
-        redisService.setHashEx("a","b","1",1, TimeUnit.DAYS);
-        redisService.setHashEx("a","c","1",1, TimeUnit.DAYS);
+    public void testCache() {
+        redisService.setHashEx("a", "b", "1", 1, TimeUnit.DAYS);
+        redisService.setHashEx("a", "c", "1", 1, TimeUnit.DAYS);
         ThreadUtil.safeSleep(5000);
-        redisService.deleteCacheMapValue("a","b");
+        redisService.deleteCacheMapValue("a", "b");
         ThreadUtil.safeSleep(5000);
-        redisService.deleteCacheMapValue("a","c");
+        redisService.deleteCacheMapValue("a", "c");
     }
+
+
 }

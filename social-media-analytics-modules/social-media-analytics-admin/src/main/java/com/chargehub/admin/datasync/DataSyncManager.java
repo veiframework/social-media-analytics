@@ -85,16 +85,12 @@ public class DataSyncManager {
         dataSyncParamContext.setShareLink(shareLink);
         dataSyncParamContext.setProxy(BrowserConfig.getProxy());
         if (platform == SocialMediaPlatformEnum.DOU_YIN) {
+            String crawlerLoginState = playwrightCrawlHelper.getCrawlerLoginState(platform.getDomain());
+            com.microsoft.playwright.options.Proxy browserProxy = PlaywrightBrowser.buildProxy();
             Playwright playwright = Playwright.create();
-            BrowserContext browserContext;
-            boolean isNote = location.contains("note");
-            if (isNote) {
-                browserContext = PlaywrightBrowser.buildBrowserContext(null, playwright);
-            } else {
-                String crawlerLoginState = playwrightCrawlHelper.getCrawlerLoginState(platform.getDomain());
-                browserContext = PlaywrightBrowser.buildBrowserContext(crawlerLoginState, playwright);
-            }
+            BrowserContext browserContext = PlaywrightBrowser.buildBrowserContext(crawlerLoginState, playwright, browserProxy);
             try {
+                dataSyncParamContext.setStorageState(crawlerLoginState);
                 dataSyncParamContext.setBrowserContext(browserContext);
                 return dataSyncService.fetchWork(dataSyncParamContext);
             } finally {
@@ -111,7 +107,6 @@ public class DataSyncManager {
         DataSyncService dataSyncService = SERVICES.get(platform);
         Assert.notNull(dataSyncService, "不支持的数据同步平台");
         BrowserContext browserContext = dataSyncWorksParams.getBrowserContext();
-        BrowserContext stateBrowserContext = dataSyncWorksParams.getStateBrowserContext();
         Map<String, SocialMediaWork> workMap = dataSyncWorksParams.getWorkMap();
         SocialMediaWorkResult<SocialMediaWork> socialMediaWorkResult = new SocialMediaWorkResult<>();
         List<SocialMediaWork> socialMediaWorks = new ArrayList<>();
@@ -120,13 +115,10 @@ public class DataSyncManager {
             DataSyncParamContext dataSyncParamContext = new DataSyncParamContext();
             dataSyncParamContext.setShareLink(v.getShareLink());
             dataSyncParamContext.setBrowserContext(browserContext);
-            if (SocialMediaPlatformEnum.DOU_YIN.getDomain().equals(v.getPlatformId())) {
-                dataSyncParamContext.setBrowserContext(mediaType.equals(MediaTypeEnum.VIDEO.getType()) ? stateBrowserContext : browserContext);
-            } else {
-                dataSyncParamContext.setBrowserContext(browserContext);
-            }
             dataSyncParamContext.setScheduler(true);
             dataSyncParamContext.setMediaType(mediaType);
+            dataSyncParamContext.setProxy(dataSyncWorksParams.getProxy());
+            dataSyncParamContext.setStorageState(dataSyncWorksParams.getStorageState());
             SocialMediaWorkDetail<SocialMediaWork> workDetail = dataSyncService.fetchWork(dataSyncParamContext);
             if (workDetail == null) {
                 return;

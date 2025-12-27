@@ -14,6 +14,7 @@ import java.math.BigDecimal;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -31,21 +32,21 @@ public class BrowserConfig {
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36"
     );
 
-    public static final Map<String, String> BROWSER_HEADERS = MapUtil.builder(new HashMap<String, String>())
-            .put(HttpHeaders.USER_AGENT, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0")
+    public static final Map<String, String> BROWSER_HEADERS = MapUtil.builder(new LinkedHashMap<String, String>())
             .put(HttpHeaders.ACCEPT, "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7")
-            .put(HttpHeaders.ACCEPT_LANGUAGE, "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6")
             .put(HttpHeaders.ACCEPT_ENCODING, "gzip, deflate, br, zstd")
-            .put(HttpHeaders.CONNECTION, "keep-alive")
+            .put(HttpHeaders.ACCEPT_LANGUAGE, "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6")
             .put(HttpHeaders.CACHE_CONTROL, "max-age=0")
-            .put("Upgrade-Insecure-Requests", "1")
+            .put(HttpHeaders.CONNECTION, "keep-alive")
+            .put("Sec-Ch-Ua", "\"Microsoft Edge\";v=\"143\", \"Chromium\";v=\"143\", \"Not A(Brand\";v=\"24\"")
+            .put("Sec-Ch-Ua-Mobile", "?0")
+            .put("Sec-Ch-Ua-Platform", "\"Windows\"")
             .put("Sec-Fetch-Dest", "document")
             .put("Sec-Fetch-Mode", "navigate")
             .put("Sec-Fetch-Site", "same-origin")
-            .put("sec-ch-ua-mobile", "?0")
-            .put("sec-ch-ua-platform", "\"Windows\"")
-            .put("sec-fetch-user", "?1")
-            .put("sec-ch-ua", "\"Microsoft Edge\";v=\"143\", \"Chromium\";v=\"143\", \"Not A(Brand\";v=\"24\"")
+            .put("Sec-Fetch-User", "?1")
+            .put("Upgrade-Insecure-Requests", "1")
+            .put(HttpHeaders.USER_AGENT, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0")
             .build();
 
     private BrowserType browserType;

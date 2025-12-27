@@ -259,7 +259,6 @@ public class RedisService implements ApplicationContextAware {
 
     public void setHashEx(String listKey, String key, Object value, int expire, TimeUnit timeUnit) {
         BoundHashOperations<Object, Object, Object> operations = redisTemplate.boundHashOps(listKey);
-        log.info(MessageFormat.format("添加时限hash缓存集合 >>{0}\r\n键 >>{1}\r\n值 >>{2}", listKey, key, value));
         operations.put(key, value);
         operations.expire(expire, timeUnit);
     }

@@ -58,15 +58,13 @@ public class DouYinWorkScheduler extends AbstractWorkScheduler {
         }
         DataSyncWorksParams dataSyncWorksParams = new DataSyncWorksParams();
         com.microsoft.playwright.options.Proxy browserProxy = PlaywrightBrowser.buildProxy();
-        Playwright playwright = Playwright.create();
-        BrowserContext browserContext = PlaywrightBrowser.buildBrowserContext(null, playwright, browserProxy);
-        Playwright videoPlayWright = null;
-        BrowserContext videoBrowserContext = null;
+        Playwright playwright = null;
+        BrowserContext browserContext = null;
+        String crawlerLoginState = playwrightCrawlHelper.getCrawlerLoginState(SocialMediaPlatformEnum.DOU_YIN.getDomain());
         boolean hasVideo = latestWork.stream().anyMatch(i -> i.getMediaType().equals(MediaTypeEnum.VIDEO.getType()));
         if (hasVideo) {
-            String crawlerLoginState = playwrightCrawlHelper.getCrawlerLoginState(SocialMediaPlatformEnum.DOU_YIN.getDomain());
-            videoPlayWright = Playwright.create();
-            videoBrowserContext = PlaywrightBrowser.buildBrowserContext(crawlerLoginState, videoPlayWright, browserProxy);
+            playwright = Playwright.create();
+            browserContext = PlaywrightBrowser.buildBrowserContext(crawlerLoginState, playwright, browserProxy);
         }
         try {
             this.socialMediaAccountService.updateSyncWorkStatus(accountId, SyncWorkStatusEnum.SYNCING);
@@ -78,7 +76,7 @@ public class DouYinWorkScheduler extends AbstractWorkScheduler {
             dataSyncWorksParams.setWorkMap(workMap);
             dataSyncWorksParams.setProxy(proxy);
             dataSyncWorksParams.setBrowserContext(browserContext);
-            dataSyncWorksParams.setStateBrowserContext(videoBrowserContext);
+            dataSyncWorksParams.setStorageState(crawlerLoginState);
             SocialMediaWorkResult<SocialMediaWork> result = this.dataSyncManager.fetchWorks(platformId, dataSyncWorksParams);
             List<SocialMediaWork> newWorks = result.getWorks();
             if (CollectionUtils.isEmpty(newWorks)) {
@@ -104,11 +102,9 @@ public class DouYinWorkScheduler extends AbstractWorkScheduler {
             }
             this.socialMediaWorkService.saveOrUpdateBatch(updateList);
         } finally {
-            browserContext.close();
-            playwright.close();
-            if (videoPlayWright != null) {
-                videoBrowserContext.close();
-                videoPlayWright.close();
+            if (playwright != null) {
+                browserContext.close();
+                playwright.close();
             }
         }
 
