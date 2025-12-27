@@ -12,6 +12,7 @@ import com.chargehub.admin.playwright.PlaywrightCrawlHelper;
 import com.chargehub.admin.work.domain.SocialMediaWork;
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Playwright;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -25,6 +26,7 @@ import java.util.Map;
  * @author : zhanghaowei
  * @since : 1.0
  */
+@Slf4j
 @Component
 public class DataSyncManager {
 
@@ -119,11 +121,15 @@ public class DataSyncManager {
             dataSyncParamContext.setMediaType(mediaType);
             dataSyncParamContext.setProxy(dataSyncWorksParams.getProxy());
             dataSyncParamContext.setStorageState(dataSyncWorksParams.getStorageState());
-            SocialMediaWorkDetail<SocialMediaWork> workDetail = dataSyncService.fetchWork(dataSyncParamContext);
-            if (workDetail == null) {
-                return;
+            try {
+                SocialMediaWorkDetail<SocialMediaWork> workDetail = dataSyncService.fetchWork(dataSyncParamContext);
+                if (workDetail == null) {
+                    return;
+                }
+                socialMediaWorks.add(workDetail.getWork());
+            } catch (Exception e) {
+                log.error("{}获取作品失败, {}", v.getShareLink(), e);
             }
-            socialMediaWorks.add(workDetail.getWork());
         });
         socialMediaWorkResult.setWorks(socialMediaWorks);
         return (SocialMediaWorkResult<T>) socialMediaWorkResult;
