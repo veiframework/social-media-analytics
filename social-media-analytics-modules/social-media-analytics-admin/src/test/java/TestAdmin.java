@@ -45,14 +45,6 @@ public class TestAdmin {
         regionInitService.addAddList();
     }
 
-    @Autowired
-    private DataSyncManager dataSyncManager;
-
-    @Test
-    public void tests() {
-        SocialMediaWorkDetail<SocialMediaWork> socialMediaWorkDetail = this.dataSyncManager.fetchWork("", "https://www.douyin.com/note/7567620465126195045", new SocialMediaPlatformEnum.PlatformExtra(SocialMediaPlatformEnum.DOU_YIN));
-        System.out.println(socialMediaWorkDetail);
-    }
 
     @Autowired
     private RedisService redisService;

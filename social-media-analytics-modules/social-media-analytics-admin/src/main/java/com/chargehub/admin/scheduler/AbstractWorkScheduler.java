@@ -19,6 +19,7 @@ import com.chargehub.admin.work.service.SocialMediaWorkCreateService;
 import com.chargehub.admin.work.service.SocialMediaWorkService;
 import com.chargehub.common.core.properties.HubProperties;
 import com.chargehub.common.redis.service.RedisService;
+import com.microsoft.playwright.Page;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
@@ -52,10 +53,10 @@ public abstract class AbstractWorkScheduler {
 
     public final HubProperties hubProperties;
 
-    public final ThreadPoolExecutor fixedThreadPool;
+    public ThreadPoolExecutor fixedThreadPool;
 
     @Setter
-    private String taskName;
+    public String taskName;
 
     protected AbstractWorkScheduler(SocialMediaAccountTaskService socialMediaAccountTaskService,
                                     RedisService redisService,
@@ -64,7 +65,7 @@ public abstract class AbstractWorkScheduler {
                                     SocialMediaWorkService socialMediaWorkService,
                                     SocialMediaWorkCreateService socialMediaWorkCreateService,
                                     HubProperties hubProperties,
-                                    int threads) {
+                                    Integer threads) {
         this.socialMediaAccountTaskService = socialMediaAccountTaskService;
         this.redisService = redisService;
         this.dataSyncManager = dataSyncManager;
@@ -72,7 +73,10 @@ public abstract class AbstractWorkScheduler {
         this.socialMediaWorkService = socialMediaWorkService;
         this.socialMediaWorkCreateService = socialMediaWorkCreateService;
         this.hubProperties = hubProperties;
-        fixedThreadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool(threads);
+        if (threads == null) {
+            return;
+        }
+        this.fixedThreadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool(threads);
     }
 
     public void execute() {
@@ -91,7 +95,7 @@ public abstract class AbstractWorkScheduler {
         Proxy proxy = BrowserConfig.getProxy();
         for (SocialMediaAccountTask socialMediaAccount : socialMediaAccounts) {
             String accountId = socialMediaAccount.getAccountId();
-            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> this.fetchWorks(now, accountId, completeAccountIds, proxy), fixedThreadPool);
+            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> this.fetchWorks(now, accountId, completeAccountIds, proxy, null), fixedThreadPool);
             allFutures.add(future);
         }
         StopWatch stopWatch = new StopWatch(taskName);
@@ -121,7 +125,7 @@ public abstract class AbstractWorkScheduler {
         }
     }
 
-    public void fetchWorks(Date now, String accountId, List<String> completeAccountIds, Proxy proxy) {
+    public void fetchWorks(Date now, String accountId, List<String> completeAccountIds, Proxy proxy, Page page) {
         SocialMediaAccount socialMediaAccountVo = this.socialMediaAccountService.getById(accountId);
         if (socialMediaAccountVo == null) {
             log.error(accountId + "账号已被删除");
@@ -135,7 +139,7 @@ public abstract class AbstractWorkScheduler {
             return;
         }
         try {
-            this.fetchWorks(socialMediaAccountVo, proxy);
+            this.fetchWorks(socialMediaAccountVo, proxy, page);
             this.socialMediaAccountTaskService.deleteTaskById(accountId);
             completeAccountIds.add(accountId);
         } catch (Exception e) {
@@ -143,7 +147,7 @@ public abstract class AbstractWorkScheduler {
         }
     }
 
-    public void fetchWorks(SocialMediaAccount socialMediaAccountVo, Proxy proxy) {
+    public void fetchWorks(SocialMediaAccount socialMediaAccountVo, Proxy proxy, Page page) {
         String accountId = socialMediaAccountVo.getId();
         String platformId = socialMediaAccountVo.getPlatformId();
         String secUid = socialMediaAccountVo.getSecUid();
@@ -160,6 +164,7 @@ public abstract class AbstractWorkScheduler {
         dataSyncWorksParams.setSecUid(secUid);
         dataSyncWorksParams.setWorkMap(workMap);
         dataSyncWorksParams.setProxy(proxy);
+        dataSyncWorksParams.setPage(page);
         SocialMediaWorkResult<SocialMediaWork> result = this.dataSyncManager.fetchWorks(platformId, dataSyncWorksParams);
         List<SocialMediaWork> newWorks = result.getWorks();
         if (CollectionUtils.isEmpty(newWorks)) {

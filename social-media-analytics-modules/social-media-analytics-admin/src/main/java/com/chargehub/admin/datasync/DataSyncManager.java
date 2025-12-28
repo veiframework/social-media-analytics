@@ -9,8 +9,11 @@ import com.chargehub.admin.enums.SocialMediaPlatformEnum;
 import com.chargehub.admin.playwright.BrowserConfig;
 import com.chargehub.admin.playwright.PlaywrightBrowser;
 import com.chargehub.admin.playwright.PlaywrightCrawlHelper;
+import com.chargehub.admin.scheduler.DouYinWorkScheduler;
 import com.chargehub.admin.work.domain.SocialMediaWork;
+import com.chargehub.common.core.properties.HubProperties;
 import com.microsoft.playwright.BrowserContext;
+import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,9 +36,6 @@ public class DataSyncManager {
     private static final Map<SocialMediaPlatformEnum, DataSyncService> SERVICES = new EnumMap<>(SocialMediaPlatformEnum.class);
 
     private static final boolean TEST = false;
-
-    @Autowired
-    private PlaywrightCrawlHelper playwrightCrawlHelper;
 
 
     public DataSyncManager(List<DataSyncService> services) {
@@ -76,63 +76,24 @@ public class DataSyncManager {
         }
     }
 
-    public <T> SocialMediaWorkDetail<T> fetchWork(String accountId, String shareLink, SocialMediaPlatformEnum.PlatformExtra platformExtra) {
+    public <T> SocialMediaWorkDetail<T> fetchWork(Page page, String shareLink, SocialMediaPlatformEnum.PlatformExtra platformExtra) {
         DataSyncParamContext dataSyncParamContext = new DataSyncParamContext();
         SocialMediaPlatformEnum platform = platformExtra.getPlatformEnum();
         DataSyncService dataSyncService = SERVICES.get(platform);
         Assert.notNull(dataSyncService, "不支持的数据同步平台");
         String location = platformExtra.getLocation();
         dataSyncParamContext.setRedirectUrl(location);
-        dataSyncParamContext.setAccountId(accountId);
+        dataSyncParamContext.setPage(page);
         dataSyncParamContext.setShareLink(shareLink);
         dataSyncParamContext.setProxy(BrowserConfig.getProxy());
-        if (platform == SocialMediaPlatformEnum.DOU_YIN) {
-            String crawlerLoginState = playwrightCrawlHelper.getCrawlerLoginState(platform.getDomain());
-            com.microsoft.playwright.options.Proxy browserProxy = PlaywrightBrowser.buildProxy();
-            Playwright playwright = Playwright.create();
-            BrowserContext browserContext = PlaywrightBrowser.buildBrowserContext(crawlerLoginState, playwright, browserProxy);
-            try {
-                dataSyncParamContext.setStorageState(crawlerLoginState);
-                dataSyncParamContext.setBrowserContext(browserContext);
-                return dataSyncService.fetchWork(dataSyncParamContext);
-            } finally {
-                browserContext.close();
-                playwright.close();
-            }
-        }
         return dataSyncService.fetchWork(dataSyncParamContext);
     }
 
-    @SuppressWarnings("unchecked")
     public <T> SocialMediaWorkResult<T> fetchWorks(String platformId, DataSyncWorksParams dataSyncWorksParams) {
         SocialMediaPlatformEnum platform = SocialMediaPlatformEnum.getByDomain(platformId);
         DataSyncService dataSyncService = SERVICES.get(platform);
         Assert.notNull(dataSyncService, "不支持的数据同步平台");
-        BrowserContext browserContext = dataSyncWorksParams.getBrowserContext();
-        Map<String, SocialMediaWork> workMap = dataSyncWorksParams.getWorkMap();
-        SocialMediaWorkResult<SocialMediaWork> socialMediaWorkResult = new SocialMediaWorkResult<>();
-        List<SocialMediaWork> socialMediaWorks = new ArrayList<>();
-        workMap.forEach((k, v) -> {
-            String mediaType = v.getMediaType();
-            DataSyncParamContext dataSyncParamContext = new DataSyncParamContext();
-            dataSyncParamContext.setShareLink(v.getShareLink());
-            dataSyncParamContext.setBrowserContext(browserContext);
-            dataSyncParamContext.setScheduler(true);
-            dataSyncParamContext.setMediaType(mediaType);
-            dataSyncParamContext.setProxy(dataSyncWorksParams.getProxy());
-            dataSyncParamContext.setStorageState(dataSyncWorksParams.getStorageState());
-            try {
-                SocialMediaWorkDetail<SocialMediaWork> workDetail = dataSyncService.fetchWork(dataSyncParamContext);
-                if (workDetail == null) {
-                    return;
-                }
-                socialMediaWorks.add(workDetail.getWork());
-            } catch (Exception e) {
-                log.error("{}获取作品失败, {}", v.getShareLink(), e);
-            }
-        });
-        socialMediaWorkResult.setWorks(socialMediaWorks);
-        return (SocialMediaWorkResult<T>) socialMediaWorkResult;
+        return dataSyncService.fetchWorks(dataSyncWorksParams);
     }
 
 

@@ -1,8 +1,11 @@
 package com.chargehub.admin.playwright;
 
+import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.RandomUtil;
 import com.chargehub.common.security.utils.DictUtils;
+import com.chargehub.common.security.utils.JacksonUtil;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Lists;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.Proxy;
@@ -11,12 +14,16 @@ import com.microsoft.playwright.options.ViewportSize;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import net.datafaker.providers.base.Internet;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+import org.springframework.core.io.support.ResourcePatternResolver;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.text.MessageFormat;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * @author Zhanghaowei
@@ -26,24 +33,6 @@ import java.util.Map;
 @Data
 public class PlaywrightBrowser implements AutoCloseable {
 
-
-    private static final String SCRIPT = "Object.defineProperty(navigator, 'webdriver', { get: () => undefined });\n" +
-            "    window.chrome = { runtime: {} };\n" +
-            "    Object.defineProperty(navigator, 'plugins', { \n" +
-            "        get: () => [\n" +
-            "            { 0: { type: \"application/x-google-chrome-pdf\", suffixes: \"pdf\", description: \"Chrome PDF Plugin\" } },\n" +
-            "            { 0: { type: \"application/pdf\", suffixes: \"pdf\", description: \"Chrome PDF Viewer\" } }\n" +
-            "        ] \n" +
-            "    });\n" +
-            "    Object.defineProperty(navigator, 'languages', { get: () => ['zh-CN', 'zh', 'en']});\n" +
-            "    Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => 8 });\n" +
-            "    Object.defineProperty(navigator, 'deviceMemory', { get: () => 8 });\n" +
-            "    const getParameter = WebGLRenderingContext.prototype.getParameter;\n" +
-            "    WebGLRenderingContext.prototype.getParameter = function(param) { \n" +
-            "        if (param === 37445) return \"Google Inc.\";\n" +
-            "        if (param === 37446) return \"Google Inc.\";\n" +
-            "        return getParameter.call(this, param);\n" +
-            "    };";
 
     private static final List<BrowserConfig> BROWSER_CONFIGS = Lists.newArrayList(
 //            new BrowserConfig(Internet.UserAgent.FIREFOX)
@@ -112,6 +101,7 @@ public class PlaywrightBrowser implements AutoCloseable {
         BrowserConfig browserConfig = new BrowserConfig(Internet.UserAgent.CHROME);
         browserConfig.setPlaywright(playwright);
         BrowserType browserType = browserConfig.getBrowserType();
+        String randomUa = browserConfig.getRandomUa();
         Browser.NewContextOptions newContextOptions = new Browser.NewContextOptions()
                 .setIgnoreHTTPSErrors(true)
                 .setLocale("zh-CN")
@@ -119,11 +109,8 @@ public class PlaywrightBrowser implements AutoCloseable {
                 .setDeviceScaleFactor(1)
                 .setServiceWorkers(ServiceWorkerPolicy.BLOCK)
                 .setStorageState(storageState)
-                .setExtraHTTPHeaders(MapUtil.builder(new HashMap<String, String>())
-                        .put("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6")
-                        .build())
                 .setViewportSize(1920, 1080)
-                .setUserAgent(browserConfig.getRandomUa());
+                .setUserAgent(randomUa);
         // 启动选项（可统一配置）
         BrowserContext browserContext = browserType.launch(new BrowserType.LaunchOptions()
                 .setHeadless(headless)
@@ -132,26 +119,87 @@ public class PlaywrightBrowser implements AutoCloseable {
 //                .setExecutablePath(Paths.get("C://Program Files (x86)//Microsoft//Edge//Application//msedge.exe"))
                 .setArgs(Arrays.asList(
                         "--no-sandbox"
-//                        , "-private"
+                        , "--disable-web-security"
+//                       TODO 屏蔽webgl警告,未来需要截图的话需要开启
+                        , "--disable-gpu"
+                        , "--enable-unsafe-swiftshader"
+                        , "--use-gl=swiftshader"
                         , "--disable-setuid-sandbox"
                         , "--disable-dev-shm-usage"
                         , "--disable-blink-features=AutomationControlled"
-//                        , "--disable-gpu"
                         , "--MOZ_DISABLE_FIREFOX_SAFEBROWSING=1"
                         , "--MOZ_DISABLE_TELEMETRY=1"
                         , "--disable-component-update",
-//                        //防止浏览器基于用户与媒体的交互历史来决定是否允许自动播放
-//                        , "--disable-features=MediaEngagementBypassAutoplayPolicies"
-//                        , "--autoplay-policy=user-gesture-required"
-//                        //禁用后台媒体暂停功能
-//                        , "--disable-background-media-suspend"
-//                       //确保不阻止 WebSocket
                         "--allow-running-insecure-content",
                         "--unsafely-treat-insecure-origin-as-secure",
                         "--ignore-certificate-errors"
                 ))).newContext(newContextOptions);
-        browserContext.addInitScript(SCRIPT);
+        String fingerprintJs = loadBrowserFingerprintJs(randomUa);
+        browserContext.addInitScript(fingerprintJs);
+//        browserContext.addInitScript(loadInterceptorJs());
         return browserContext;
+    }
+
+    public static String loadBrowserFingerprintJs(String randomUa) {
+        ResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
+        Resource resource = resolver.getResource(MessageFormat.format("classpath:{0}", "BrowserFingerprint.js"));
+        try {
+            return IoUtil.readUtf8(resource.getInputStream()).replace("{REAL_USER_AGENT}", randomUa);
+        } catch (Exception e) {
+            throw new IllegalArgumentException(e.getMessage());
+        }
+    }
+
+    public static String loadInterceptorJs() {
+        ResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
+        Resource resource = resolver.getResource(MessageFormat.format("classpath:{0}", "fetchInterceptor.js"));
+        try {
+            return IoUtil.readUtf8(resource.getInputStream());
+        } catch (Exception e) {
+            throw new IllegalArgumentException(e.getMessage());
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public static List<JsonNode> requests(Collection<String> ids, Page page, String script) {
+        List<JsonNode> result = new ArrayList<>();
+        if (CollectionUtils.isEmpty(ids)) {
+            return result;
+        }
+        try {
+            List<String> list = new ArrayList<>(ids);
+            List<List<String>> partition = Lists.partition(list, 5);
+            for (List<String> partitionIds : partition) {
+                List<String> evaluate = (List<String>) page.evaluate(script, partitionIds);
+
+                if (CollectionUtils.isEmpty(evaluate)) {
+                    continue;
+                }
+                for (String json : evaluate) {
+                    if (StringUtils.isBlank(json)) {
+                        continue;
+                    }
+                    JsonNode jsonNode = JacksonUtil.toObj(json);
+                    result.add(jsonNode);
+                }
+            }
+            return result;
+        } catch (Exception e) {
+            log.error(String.join(",", ids) + "批量获取抖音作品详情失败: ", e);
+            return result;
+        }
+    }
+
+    public static JsonNode request(String id, Page page, String script) {
+        if (StringUtils.isBlank(id)) {
+            return null;
+        }
+        List<String> collect = Stream.of(id).collect(Collectors.toList());
+        List<JsonNode> jsonNodes = requests(collect, page, script);
+        if (CollectionUtils.isEmpty(jsonNodes)) {
+            return null;
+        }
+        return jsonNodes.get(0);
     }
 
     public Page newPage() {
@@ -161,7 +209,7 @@ public class PlaywrightBrowser implements AutoCloseable {
 
     @Override
     public void close() {
-        if (this.page != null) {
+        if (this.page != null && !page.isClosed()) {
             this.page.close();
         }
         if (this.browserContext != null) {
@@ -183,6 +231,5 @@ public class PlaywrightBrowser implements AutoCloseable {
         // 生成50到(maxY-50)之间的随机浮点数
         double y = RandomUtil.randomDouble(50, maxY - 50);
         page.mouse().move(x, y);
-//        ThreadUtil.safeSleep(RandomUtil.randomInt(300, 1000));
     }
 }

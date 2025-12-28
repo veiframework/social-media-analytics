@@ -1,6 +1,7 @@
 package com.chargehub.admin.datasync.domain;
 
 import com.microsoft.playwright.BrowserContext;
+import com.microsoft.playwright.Page;
 import lombok.Data;
 
 import java.net.Proxy;
@@ -27,4 +28,8 @@ public class DataSyncParamContext {
     private String mediaType;
 
     private Proxy proxy;
+
+    private String workUid;
+
+    private Page page;
 }

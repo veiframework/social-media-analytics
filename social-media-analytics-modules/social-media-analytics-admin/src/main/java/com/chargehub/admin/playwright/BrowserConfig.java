@@ -4,6 +4,7 @@ import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.RandomUtil;
 import com.chargehub.common.security.utils.DictUtils;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import com.microsoft.playwright.BrowserType;
 import com.microsoft.playwright.Playwright;
 import lombok.Data;
@@ -13,10 +14,7 @@ import org.springframework.http.HttpHeaders;
 import java.math.BigDecimal;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author Zhanghaowei
@@ -48,6 +46,14 @@ public class BrowserConfig {
             .put("Upgrade-Insecure-Requests", "1")
             .put(HttpHeaders.USER_AGENT, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0")
             .build();
+
+
+    public static final Set<String> RESOURCE_TYPES = Sets.newHashSet("fetch", "websocket", ".mp3", ".mp4", "wasm", "vnd.microsoft.icon", "xhr", "png", "media", "avif", "webp", "gif", "svg+xml", "font", "stylesheet");
+
+    public static final Integer LOAD_PAGE_RETRY = 4;
+
+    public static final Integer LOAD_PAGE_TIMEOUT = 60000;
+
 
     private BrowserType browserType;
 

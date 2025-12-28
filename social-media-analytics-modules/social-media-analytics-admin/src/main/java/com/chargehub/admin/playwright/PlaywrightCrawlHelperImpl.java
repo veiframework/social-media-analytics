@@ -1,5 +1,6 @@
 package com.chargehub.admin.playwright;
 
+import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.chargehub.admin.account.domain.SocialMediaAccount;
 import com.chargehub.admin.account.mapper.SocialMediaAccountMapper;
 import com.chargehub.common.core.properties.HubProperties;
@@ -31,7 +32,7 @@ public class PlaywrightCrawlHelperImpl implements PlaywrightCrawlHelper {
         boolean headless = hubProperties.isHeadless();
         PlaywrightBrowser.setHeadless(headless);
         //项目启动时初始化playwright组件
-        try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser("")) {
+        try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(StringPool.EMPTY)) {
             //nothing to do
         }
     }
