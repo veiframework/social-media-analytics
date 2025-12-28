@@ -59,7 +59,7 @@ async (ids) => {
 
 
     // fetch one work detail
-    const fetchOne = async (awemeId, maxRetries = 3) => {
+    const fetchOne = async (awemeId, maxRetries = 4) => {
         for (let i = 0; i <= maxRetries; i++) {
             try {
                 await maybeDelay(i);
