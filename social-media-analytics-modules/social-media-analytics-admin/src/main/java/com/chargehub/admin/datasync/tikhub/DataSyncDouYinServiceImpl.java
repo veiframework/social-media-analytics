@@ -492,7 +492,7 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
             SocialMediaWork work = workDetail.getWork();
             String workUid = work.getWorkUid();
             if ("-1".equals(workUid)) {
-                SocialMediaWork socialMediaWork = workMap.get(workUid);
+                SocialMediaWork socialMediaWork = workMap.get(work.getShareLink());
                 work.setShareLink(socialMediaWork.getShareLink());
             }
             socialMediaWorks.add(work);
@@ -551,7 +551,6 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
         }
         JsonNode node = jsonNode.get("aweme_detail");
         if (node == null || node.isEmpty()) {
-            log.error("抖音检测到对方已删除此作品! {}", shareLink);
             SocialMediaWork socialMediaWork = new SocialMediaWork();
             if (StringUtils.isNotBlank(shareLink)) {
                 socialMediaWork.setShareLink(shareLink);
@@ -559,6 +558,7 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
                 String workUid = jsonNode.get("filter_detail").get("aweme_id").asText();
                 socialMediaWork.setShareLink(workUid);
             }
+            log.error("抖音检测到对方已删除此作品! {}", socialMediaWork.getShareLink());
             socialMediaWork.setWorkUid("-1");
             return new SocialMediaWorkDetail<>(socialMediaWork, null);
         }
