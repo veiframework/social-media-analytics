@@ -444,5 +444,18 @@ public class KuaiShouSyncServiceImpl implements DataSyncService {
         }
     }
 
+    public static void main(String[] args) {
+        String commentRq= "https://www.kuaishou.com/graphql";
+        String profile = "https://www.kuaishou.com/rest/v/profile/user";
+        String profileBody = "{\"user_id\":\"3xgh2i9dfvu23i9\"}";
+        String commentBody = "{\"operationName\":\"commentListQuery\",\"variables\":{\"photoId\":\"3xm725ngdnh8hpg\",\"pcursor\":\"\"},\"query\":\"query commentListQuery($photoId: String, $pcursor: String) {\\n  visionCommentList(photoId: $photoId, pcursor: $pcursor) {\\n    commentCount\\n    commentCountV2\\n    pcursor\\n    rootCommentsV2 {\\n      commentId\\n      authorId\\n      authorName\\n      content\\n      headurl\\n      timestamp\\n      hasSubComments\\n      likedCount\\n      liked\\n      status\\n      __typename\\n    }\\n    pcursorV2\\n    rootComments {\\n      commentId\\n      authorId\\n      authorName\\n      content\\n      headurl\\n      timestamp\\n      likedCount\\n      realLikedCount\\n      liked\\n      status\\n      authorLiked\\n      subCommentCount\\n      subCommentsPcursor\\n      subComments {\\n        commentId\\n        authorId\\n        authorName\\n        content\\n        headurl\\n        timestamp\\n        likedCount\\n        realLikedCount\\n        liked\\n        status\\n        authorLiked\\n        replyToUserName\\n        replyTo\\n        __typename\\n      }\\n      __typename\\n    }\\n    __typename\\n  }\\n}\\n\"}";
+        HttpRequest httpRequest = HttpUtil.createPost(commentRq)
+                .body(commentBody)
+                .cookie("kpf=PC_WEB; clientid=3; did=web_505a3785b73d87468952f289a74cb860; kwpsecproductname=kuaishou-vision; kwpsecproductname=kuaishou-vision; kwssectoken=DwlqT+YY4EroHs0daZItyq2g0dnUazUMgRl9rIqC9+n/3Wm5KOmljKcX0uJkIHD/qkukEDo6hlX8eUxhZsXahA==; kwscode=e24d61051f3cf99e525e2dfbaf92ce4023639a2c92e21bfb1e3b2bd02442fbb5; kwfv1=PnGU+9+Y8008S+nH0U+0mjPf8fP08f+98f+nLlwnrIP9+Sw/ZFGfzY+eGlGf+f+e4SGfbYP0QfGnLFwBLU80mYG9rh80LE8eZhPeZFweGIPnH7GnLM+/cFwBpY+fPE8/chG9pYG/zD8eL7+0zY+eHAGnzSPADh80Z9GAclw/p0PAzSP/mjPAH98/LFP/HhweYfG/DhP0HF8fpY+eYj+eYSPI==; kwssectoken=bqTlH5G/S/4y60ldJKXeN8lN+86KFrYZIYmEVWnlZNDo7pDYCs8P82HLRe4Oi1UflWmveQGRq14U0HxsZTYbFg==; kwscode=221e9b74fd391ece5b7009f34d24ccb1e330605d70e7fcab17150fd8c6f4f944; ktrace-context=1|MS44Nzg0NzI0NTc4Nzk2ODY5LjU2Mjg2MTQxLjE3NjY5MjIyMjgzOTMuMjI3MzgyMA==|MS44Nzg0NzI0NTc4Nzk2ODY5Ljg1MTQyODc4LjE3NjY5MjIyMjgzOTMuMjI3MzgyMQ==|0|webservice-user-growth-node|webservice|true|src-Js; kpn=KUAISHOU_VISION")
+                .headerMap(BrowserConfig.BROWSER_HEADERS, true);
+        try (HttpResponse response = httpRequest.execute()) {
+            System.out.println(response.body());
+        }
 
+    }
 }

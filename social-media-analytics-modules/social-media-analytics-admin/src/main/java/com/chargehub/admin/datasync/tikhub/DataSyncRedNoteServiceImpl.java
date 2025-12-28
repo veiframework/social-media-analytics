@@ -5,6 +5,7 @@ import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.URLUtil;
+import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpStatus;
 import cn.hutool.http.HttpUtil;
@@ -664,5 +665,15 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
         socialMediaWorkMap.put(workUid, socialMediaWork);
     }
 
+    public static void main(String[] args) {
+        String noteRq= "https://edith.xiaohongshu.com/api/sns/web/v1/feed";
+        String noteBody = "{\"source_note_id\":\"694bc0a7000000001e02f482\",\"image_formats\":[\"jpg\",\"webp\",\"avif\"],\"extra\":{\"need_body_topic\":\"1\"},\"xsec_source\":\"pc_user\",\"xsec_token\":\"ABosVZfLyWkGd6FPxv98xnUC35EtaBrkYsIOmF-TYgaEQ=\"}";
+        String profileRq = "https://www.xiaohongshu.com/user/profile/59e0b13c20e88f68e8af29a0?xsec_token=ABGxilFWrpC8h4WucmsYFuxF_tL7gMrk_aIggJn3d85TM=&xsec_source=pc_feed";
+        HttpRequest httpRequest = HttpUtil.createGet(profileRq)
+                .headerMap(BrowserConfig.BROWSER_HEADERS, true);
+        try (HttpResponse response = httpRequest.execute()) {
+            System.out.println(response.body());
+        }
+    }
 
 }
