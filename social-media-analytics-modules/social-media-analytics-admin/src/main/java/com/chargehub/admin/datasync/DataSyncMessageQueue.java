@@ -7,10 +7,7 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.util.concurrent.Callable;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 import java.util.function.Supplier;
 
 /**
@@ -139,6 +136,43 @@ public class DataSyncMessageQueue {
         }
         log.error("任务重试失败: {}", result);
         return null;
+    }
+
+
+    public <T> T retryWithExponentialBackoff(Supplier<T> supplier, int maxRetries, String businessType) {
+        return retryWithExponentialBackoff(supplier, maxRetries, 1.5, businessType);
+    }
+
+    /**
+     * 指数退避重试工具方法
+     *
+     * @param supplier   要执行的操作（返回结果）
+     * @param maxRetries 最大重试次数（总尝试 = maxRetries + 1）
+     * @param multiplier 指数倍数，例如 2.0
+     * @param <T>        返回类型
+     * @return 成功时的结果
+     * @throws RuntimeException 如果所有重试都失败
+     */
+    public <T> T retryWithExponentialBackoff(Supplier<T> supplier, int maxRetries, double multiplier, String businessType) {
+        long delayMs = RandomUtil.randomInt(300, 1000);
+        T result = null;
+        for (int attempt = 0; attempt <= maxRetries; attempt++) {
+            try {
+                result = supplier.get();
+                break;
+            } catch (Exception e) {
+                if (attempt == maxRetries) {
+                    log.error(businessType + " attempts failed " + (maxRetries + 1), e);
+                    return null;
+                }
+                // Full Jitter: 随机 [0, delayMs]
+                long jitterDelay = ThreadLocalRandom.current().nextLong(0, delayMs + 1);
+                ThreadUtil.safeSleep(jitterDelay);
+                // 指数增长（防止溢出）限制最大延迟 30s
+                delayMs = Math.min(delayMs * (long) multiplier, 30_000);
+            }
+        }
+        return result;
     }
 
     @Data

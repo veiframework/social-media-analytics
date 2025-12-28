@@ -290,9 +290,13 @@ public class KuaiShouSyncServiceImpl implements DataSyncService {
         }
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public <T> SocialMediaWorkDetail<T> fetchWork(DataSyncParamContext dataSyncParamContext) {
+        return dataSyncMessageQueue.retryWithExponentialBackoff(() -> this.fetchWork0(dataSyncParamContext), KUAISHOU_RETRY, dataSyncParamContext.getShareLink());
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T> SocialMediaWorkDetail<T> fetchWork0(DataSyncParamContext dataSyncParamContext) {
         boolean isScheduler = dataSyncParamContext.isScheduler();
         String shareLink = dataSyncParamContext.getShareLink();
         HttpRequest httpRequest = HttpUtil.createGet(shareLink)
@@ -445,7 +449,7 @@ public class KuaiShouSyncServiceImpl implements DataSyncService {
     }
 
     public static void main(String[] args) {
-        String commentRq= "https://www.kuaishou.com/graphql";
+        String commentRq = "https://www.kuaishou.com/graphql";
         String profile = "https://www.kuaishou.com/rest/v/profile/user";
         String profileBody = "{\"user_id\":\"3xgh2i9dfvu23i9\"}";
         String commentBody = "{\"operationName\":\"commentListQuery\",\"variables\":{\"photoId\":\"3xm725ngdnh8hpg\",\"pcursor\":\"\"},\"query\":\"query commentListQuery($photoId: String, $pcursor: String) {\\n  visionCommentList(photoId: $photoId, pcursor: $pcursor) {\\n    commentCount\\n    commentCountV2\\n    pcursor\\n    rootCommentsV2 {\\n      commentId\\n      authorId\\n      authorName\\n      content\\n      headurl\\n      timestamp\\n      hasSubComments\\n      likedCount\\n      liked\\n      status\\n      __typename\\n    }\\n    pcursorV2\\n    rootComments {\\n      commentId\\n      authorId\\n      authorName\\n      content\\n      headurl\\n      timestamp\\n      likedCount\\n      realLikedCount\\n      liked\\n      status\\n      authorLiked\\n      subCommentCount\\n      subCommentsPcursor\\n      subComments {\\n        commentId\\n        authorId\\n        authorName\\n        content\\n        headurl\\n        timestamp\\n        likedCount\\n        realLikedCount\\n        liked\\n        status\\n        authorLiked\\n        replyToUserName\\n        replyTo\\n        __typename\\n      }\\n      __typename\\n    }\\n    __typename\\n  }\\n}\\n\"}";

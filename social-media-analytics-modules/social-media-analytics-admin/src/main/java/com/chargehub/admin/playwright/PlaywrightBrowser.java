@@ -168,7 +168,7 @@ public class PlaywrightBrowser implements AutoCloseable {
         }
         try {
             List<String> list = new ArrayList<>(ids);
-            List<List<String>> partition = Lists.partition(list, 5);
+            List<List<String>> partition = Lists.partition(list, 2);
             for (List<String> partitionIds : partition) {
                 List<String> evaluate = (List<String>) page.evaluate(script, partitionIds);
 

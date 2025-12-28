@@ -79,13 +79,13 @@ public abstract class AbstractWorkScheduler {
         this.fixedThreadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool(threads);
     }
 
-    public void execute() {
+    public void execute(Integer limit) {
         boolean hasTask = socialMediaWorkCreateService.hasTask();
         if (hasTask) {
             log.error("正在创建作品, {}作品同步不执行", taskName);
             return;
         }
-        List<SocialMediaAccountTask> socialMediaAccounts = socialMediaAccountTaskService.getAllByPlatformId(taskName, true);
+        List<SocialMediaAccountTask> socialMediaAccounts = socialMediaAccountTaskService.getAllByPlatformId(taskName, true, limit);
         if (CollectionUtils.isEmpty(socialMediaAccounts)) {
             return;
         }

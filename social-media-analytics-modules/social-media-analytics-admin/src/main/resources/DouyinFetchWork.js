@@ -7,10 +7,11 @@ async (ids) => {
         ]);
     };
 
-    const sleep = (minMs, maxMs) =>
-        new Promise(resolve =>
-            setTimeout(resolve, Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs)
-        );
+    const sleep = (delayMs) => {
+        // [0, delayMs]
+        const jitter = Math.floor(Math.random() * (delayMs + 1));
+        return new Promise(resolve => setTimeout(resolve, jitter));
+    }
 
     const buildUrl = (awemeId) => {
         const p = new URLSearchParams({
@@ -31,9 +32,9 @@ async (ids) => {
         if (attempt === 0) {
             return;
         }
-        const base = Math.pow(2, attempt) * 1000;
-        await sleep(base, base + 1000);
-        console.log(`[Retry ${attempt}]`);
+        const baseDelay = Math.min(Math.pow(2, attempt) * 1000, 30000);
+        await sleep(baseDelay);
+        console.log(`[Retry ${attempt}, base=${baseDelay}ms]`);
     };
 
     const doFetch = async (awemeId) => {
@@ -60,17 +61,21 @@ async (ids) => {
 
     // fetch one work detail
     const fetchOne = async (awemeId, maxRetries = 4) => {
-        for (let i = 0; i <= maxRetries; i++) {
+        let delayMs = Math.floor(Math.random() * (1000 - 300 + 1)) + 300;
+        const multiplier = 1.5;
+        const maxDelayMs = 30000;
+        for (let attempt = 0; attempt <= maxRetries; attempt++) {
             try {
-                await maybeDelay(i);
+                await maybeDelay(delayMs);
                 const text = await doFetch(awemeId);
                 validateText(text);
                 return text;
             } catch (err) {
-                if (i === maxRetries) {
-                    console.error(`[douyin] fetch work failed for ${awemeId}:`, err.message);
+                if (attempt === maxRetries) {
+                    console.error(`[douyin] fetch failed for ${awemeId}:`, err.message);
                     return '';
                 }
+                delayMs = Math.min(delayMs * multiplier, maxDelayMs);
             }
         }
     };

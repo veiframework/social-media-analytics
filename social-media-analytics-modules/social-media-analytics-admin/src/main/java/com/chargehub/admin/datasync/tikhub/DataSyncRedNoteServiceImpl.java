@@ -10,6 +10,7 @@ import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpStatus;
 import cn.hutool.http.HttpUtil;
 import com.chargehub.admin.account.vo.SocialMediaAccountVo;
+import com.chargehub.admin.datasync.DataSyncMessageQueue;
 import com.chargehub.admin.datasync.DataSyncService;
 import com.chargehub.admin.datasync.domain.*;
 import com.chargehub.admin.enums.MediaTypeEnum;
@@ -95,6 +96,9 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
             "/api/v1/xiaohongshu/web/get_user_notes",
             "/api/v1/xiaohongshu/web/get_user_notes_v2"
     ).collect(Collectors.toList());
+
+    @Autowired
+    private DataSyncMessageQueue dataSyncMessageQueue;
 
     @Override
     public SocialMediaPlatformEnum platform() {
@@ -267,9 +271,13 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
         return (SocialMediaWorkDetail<T>) new SocialMediaWorkDetail<>(socialMediaWork, socialMediaUserInfo);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public <T> SocialMediaWorkDetail<T> fetchWork(DataSyncParamContext dataSyncParamContext) {
+        return dataSyncMessageQueue.retryWithExponentialBackoff(() -> this.fetchWork0(dataSyncParamContext), 4, dataSyncParamContext.getShareLink());
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T> SocialMediaWorkDetail<T> fetchWork0(DataSyncParamContext dataSyncParamContext) {
         String shareLink = dataSyncParamContext.getShareLink();
         try (HttpResponse response = HttpUtil.createGet(shareLink)
                 .setFollowRedirects(true)
@@ -666,7 +674,7 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
     }
 
     public static void main(String[] args) {
-        String noteRq= "https://edith.xiaohongshu.com/api/sns/web/v1/feed";
+        String noteRq = "https://edith.xiaohongshu.com/api/sns/web/v1/feed";
         String noteBody = "{\"source_note_id\":\"694bc0a7000000001e02f482\",\"image_formats\":[\"jpg\",\"webp\",\"avif\"],\"extra\":{\"need_body_topic\":\"1\"},\"xsec_source\":\"pc_user\",\"xsec_token\":\"ABosVZfLyWkGd6FPxv98xnUC35EtaBrkYsIOmF-TYgaEQ=\"}";
         String profileRq = "https://www.xiaohongshu.com/user/profile/59e0b13c20e88f68e8af29a0?xsec_token=ABGxilFWrpC8h4WucmsYFuxF_tL7gMrk_aIggJn3d85TM=&xsec_source=pc_feed";
         HttpRequest httpRequest = HttpUtil.createGet(profileRq)
