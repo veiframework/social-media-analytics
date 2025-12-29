@@ -819,9 +819,7 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
         });
         try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(context)) {
             Page page = playwrightBrowser.getPage();
-
             page.navigate("https://www.douyin.com/user/self", new Page.NavigateOptions().setWaitUntil(WaitUntilState.DOMCONTENTLOADED).setTimeout(120_000));
-            page.waitForFunction("() => typeof window.byted_acrawler !== 'undefined' && typeof window.byted_acrawler.frontierSign === 'function'");
             JsonNode request = PlaywrightBrowser.request("7581819255117647144", page, DOUYIN_FETCH_WORK_JS);
             System.out.println(request);
         }

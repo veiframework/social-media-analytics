@@ -146,7 +146,6 @@ public class DouYinWorkScheduler extends AbstractWorkScheduler {
         for (int i = 0; i <= BrowserConfig.LOAD_PAGE_RETRY; i++) {
             try {
                 page.navigate(DouYinWorkScheduler.DOUYIN_USER_PAGE, new Page.NavigateOptions().setWaitUntil(WaitUntilState.DOMCONTENTLOADED).setTimeout(BrowserConfig.LOAD_PAGE_TIMEOUT));
-                page.waitForFunction("() => typeof window.byted_acrawler !== 'undefined' && typeof window.byted_acrawler.frontierSign === 'function'");
                 break;
             } catch (Exception e) {
                 log.error(flag + "作品同步任务重试进入页面轮次" + i);

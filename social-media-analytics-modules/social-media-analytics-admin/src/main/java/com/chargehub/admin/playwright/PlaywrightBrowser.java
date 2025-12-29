@@ -1,16 +1,16 @@
 package com.chargehub.admin.playwright;
 
+import cn.hutool.core.date.StopWatch;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.RandomUtil;
+import com.chargehub.admin.scheduler.DouYinWorkScheduler;
 import com.chargehub.common.security.utils.DictUtils;
 import com.chargehub.common.security.utils.JacksonUtil;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Lists;
 import com.microsoft.playwright.*;
-import com.microsoft.playwright.options.Proxy;
-import com.microsoft.playwright.options.ServiceWorkerPolicy;
-import com.microsoft.playwright.options.ViewportSize;
+import com.microsoft.playwright.options.*;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import net.datafaker.providers.base.Internet;
@@ -21,7 +21,9 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
 
 import java.text.MessageFormat;
+import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -151,41 +153,6 @@ public class PlaywrightBrowser implements AutoCloseable {
     }
 
 
-    @SuppressWarnings("unchecked")
-    public static List<JsonNode> requests(Collection<String> ids, Page page, String script) {
-        List<JsonNode> result = new ArrayList<>();
-        if (CollectionUtils.isEmpty(ids)) {
-            return result;
-        }
-        try {
-            boolean hasMore = ids.size() > 1;
-            for (String id : ids) {
-                if (hasMore) {
-                    HumanMouseSimulator.randomMove(page);
-                }
-                List<String> evaluate = (List<String>) page.evaluate(script, Lists.newArrayList(id));
-                if (CollectionUtils.isEmpty(evaluate)) {
-                    continue;
-                }
-                for (String json : evaluate) {
-                    if (StringUtils.isBlank(json)) {
-                        continue;
-                    }
-                    try {
-                        JsonNode jsonNode = JacksonUtil.toObj(json);
-                        result.add(jsonNode);
-                    } catch (Exception e) {
-                        log.error("json解析异常: {}", json);
-                    }
-                }
-            }
-            return result;
-        } catch (Exception e) {
-            log.error(String.join(",", ids) + "批量获取抖音作品详情失败: ", e);
-            return result;
-        }
-    }
-
     public static JsonNode request(String id, Page page, String script) {
         if (StringUtils.isBlank(id)) {
             return null;
@@ -196,6 +163,88 @@ public class PlaywrightBrowser implements AutoCloseable {
             return null;
         }
         return jsonNodes.get(0);
+    }
+
+    public static List<JsonNode> requests(Collection<String> ids, Page page, String script) {
+        List<JsonNode> result = new ArrayList<>();
+        if (CollectionUtils.isEmpty(ids)) {
+            return result;
+        }
+        try {
+
+            final double TIMEOUT_SEC = 12.0;
+            boolean onlyOne = ids.size() == 1;
+            if (onlyOne) {
+                for (String id : ids) {
+                    doRequest(script, page, id, result);
+                }
+                return result;
+            }
+            for (String id : ids) {
+                HumanMouseSimulator.randomMove(page);
+                StopWatch stopWatch = new StopWatch();
+                stopWatch.start();
+                doRequest(script, page, id, result);
+                stopWatch.stop();
+                double elapsedSeconds = stopWatch.getTotalTimeSeconds();
+                if (elapsedSeconds <= TIMEOUT_SEC) {
+                    continue;
+                }
+                log.error("Script execution took {} seconds (>{}s) for id: {}, cleaning and reloading page...", elapsedSeconds, TIMEOUT_SEC, id);
+                page = cleanupAndReload(page);
+            }
+            return result;
+        } catch (Exception e) {
+            log.error(String.join(",", ids) + "批量获取抖音作品详情失败: ", e);
+            return result;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void doRequest(String script, Page page, String workId, List<JsonNode> result) {
+        try {
+            List<String> evaluate = (List<String>) page.evaluate(script, Lists.newArrayList(workId));
+            if (CollectionUtils.isEmpty(evaluate)) {
+                return;
+            }
+            for (String json : evaluate) {
+                if (StringUtils.isBlank(json)) {
+                    continue;
+                }
+                JsonNode jsonNode = JacksonUtil.toObj(json);
+                result.add(jsonNode);
+            }
+        } catch (Exception e) {
+            log.error(workId + "获取抖音作品详情失败: ", e);
+        }
+    }
+
+
+    public static Page cleanupAndReload(Page page) {
+        if (page == null || page.isClosed()) {
+            throw new IllegalArgumentException("Page is null or already closed");
+        }
+        Page newPage = null;
+        for (int attempt = 0; attempt <= BrowserConfig.LOAD_PAGE_RETRY; attempt++) {
+            try {
+                BrowserContext context = page.context();
+                context.clearCookies();
+                context.clearPermissions();
+                context.addInitScript("localStorage.clear(); sessionStorage.clear();");
+                newPage = context.newPage();
+                newPage.navigate(DouYinWorkScheduler.DOUYIN_USER_PAGE, new Page.NavigateOptions().setWaitUntil(WaitUntilState.DOMCONTENTLOADED).setTimeout(BrowserConfig.LOAD_PAGE_TIMEOUT));
+                page.close();
+                return newPage;
+            } catch (Exception e) {
+                if (attempt == BrowserConfig.LOAD_PAGE_RETRY) {
+                    if (newPage != null && !newPage.isClosed()) {
+                        newPage.close();
+                    }
+                    return page;
+                }
+            }
+        }
+        return page;
     }
 
     public Page newPage() {

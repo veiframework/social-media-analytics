@@ -56,11 +56,12 @@ async (ids) => {
         if (isAntiCrawler(text)) {
             throw new Error('Anti-crawler page detected');
         }
+        JSON.parse(text);
     };
 
 
     // fetch one work detail
-    const fetchOne = async (awemeId, maxRetries = 4) => {
+    const fetchOne = async (awemeId, maxRetries = 6) => {
         let delayMs = 0;
         const multiplier = 1.5;
         const maxDelayMs = 30000;
