@@ -35,7 +35,7 @@ public class BrowserConfig {
             .put(HttpHeaders.ACCEPT_ENCODING, "gzip, deflate, br, zstd")
             .put(HttpHeaders.ACCEPT_LANGUAGE, "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6")
             .put(HttpHeaders.CACHE_CONTROL, "max-age=0")
-            .put(HttpHeaders.CONNECTION, "keep-alive")
+            .put(HttpHeaders.CONNECTION, "close")
             .put("Sec-Ch-Ua", "\"Microsoft Edge\";v=\"143\", \"Chromium\";v=\"143\", \"Not A(Brand\";v=\"24\"")
             .put("Sec-Ch-Ua-Mobile", "?0")
             .put("Sec-Ch-Ua-Platform", "\"Windows\"")

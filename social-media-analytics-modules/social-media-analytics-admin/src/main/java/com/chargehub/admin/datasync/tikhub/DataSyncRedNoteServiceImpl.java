@@ -281,6 +281,7 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
         String shareLink = dataSyncParamContext.getShareLink();
         try (HttpResponse response = HttpUtil.createGet(shareLink)
                 .setFollowRedirects(true)
+                .timeout(60000)
                 .setProxy(dataSyncParamContext.getProxy())
                 .headerMap(BrowserConfig.BROWSER_HEADERS, true)
                 .execute()) {

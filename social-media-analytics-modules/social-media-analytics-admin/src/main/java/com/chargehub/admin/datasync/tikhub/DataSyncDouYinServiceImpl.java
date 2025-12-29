@@ -17,16 +17,13 @@ import com.chargehub.admin.enums.SocialMediaPlatformEnum;
 import com.chargehub.admin.enums.WorkTypeEnum;
 import com.chargehub.admin.playwright.BrowserConfig;
 import com.chargehub.admin.playwright.PlaywrightBrowser;
-import com.chargehub.admin.scheduler.DouYinWorkScheduler;
 import com.chargehub.admin.work.domain.SocialMediaWork;
 import com.chargehub.common.core.properties.HubProperties;
 import com.chargehub.common.core.utils.JsoupUtil;
 import com.chargehub.common.core.utils.MessageFormatUtils;
 import com.chargehub.common.security.utils.DictUtils;
 import com.chargehub.common.security.utils.JacksonUtil;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.google.common.collect.Lists;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.WaitUntilState;
 import lombok.extern.slf4j.Slf4j;
@@ -49,7 +46,6 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * @author : zhanghaowei
@@ -520,6 +516,9 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
             return null;
         }
         SocialMediaWork socialMediaWork = workDetail.getWork();
+        if ("-1".equals(socialMediaWork.getWorkUid())) {
+            return (SocialMediaWorkDetail<T>) workDetail;
+        }
         log.debug("抖音开始获取播放量");
         HubProperties.SocialMediaDataApi socialMediaDataApi = hubProperties.getSocialMediaDataApi().get("tikhub");
         String token = socialMediaDataApi.getToken();
@@ -800,25 +799,26 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
     }
 
     public static void main(String[] args) {
-        PlaywrightBrowser.setHeadless(true);
+        PlaywrightBrowser.setHeadless(false);
         Playwright playwright = Playwright.create();
         BrowserContext context = PlaywrightBrowser.buildBrowserContext(null, playwright);
+
+        context.route("**/*", route -> {
+            Request request = route.request();
+            String resourceType = request.resourceType();
+            String url = request.url();
+            if (url.contains("/web/aweme/detail/")) {
+                route.resume();
+                return;
+            }
+            if (BrowserConfig.RESOURCE_TYPES.contains(resourceType) || BrowserConfig.RESOURCE_TYPES.stream().anyMatch(url::endsWith)) {
+                route.abort();
+                return;
+            }
+            route.resume();
+        });
         try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(context)) {
             Page page = playwrightBrowser.getPage();
-            page.route("**/*", route -> {
-                Request request = route.request();
-                String resourceType = request.resourceType();
-                String url = request.url();
-                if (url.contains("/web/aweme/detail/")) {
-                    route.resume();
-                    return;
-                }
-                if (BrowserConfig.RESOURCE_TYPES.contains(resourceType) || BrowserConfig.RESOURCE_TYPES.stream().anyMatch(url::endsWith)) {
-                    route.abort();
-                    return;
-                }
-                route.resume();
-            });
 
             page.navigate("https://www.douyin.com/user/self", new Page.NavigateOptions().setWaitUntil(WaitUntilState.DOMCONTENTLOADED).setTimeout(120_000));
             page.waitForFunction("() => typeof window.byted_acrawler !== 'undefined' && typeof window.byted_acrawler.frontierSign === 'function'");

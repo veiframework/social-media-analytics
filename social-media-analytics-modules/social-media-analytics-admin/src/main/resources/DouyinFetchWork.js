@@ -61,7 +61,7 @@ async (ids) => {
 
     // fetch one work detail
     const fetchOne = async (awemeId, maxRetries = 4) => {
-        let delayMs = Math.floor(Math.random() * (1000 - 300 + 1)) + 300;
+        let delayMs = 0;
         const multiplier = 1.5;
         const maxDelayMs = 30000;
         for (let attempt = 0; attempt <= maxRetries; attempt++) {

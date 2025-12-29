@@ -1,7 +1,6 @@
 package com.chargehub.admin.datasync.tikhub;
 
 import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.RandomUtil;
@@ -301,6 +300,7 @@ public class KuaiShouSyncServiceImpl implements DataSyncService {
         String shareLink = dataSyncParamContext.getShareLink();
         HttpRequest httpRequest = HttpUtil.createGet(shareLink)
                 .setFollowRedirects(true)
+                .timeout(60000)
                 .setProxy(dataSyncParamContext.getProxy())
                 .headerMap(BrowserConfig.BROWSER_HEADERS, true);
         try (HttpResponse response = httpRequest.execute()) {

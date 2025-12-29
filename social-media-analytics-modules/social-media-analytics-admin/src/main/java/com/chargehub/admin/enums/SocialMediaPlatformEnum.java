@@ -46,7 +46,7 @@ public enum SocialMediaPlatformEnum {
     public static PlatformExtra getPlatformByWorkUrl(String workUrl) {
         HttpRequest httpRequest = HttpUtil.createGet(workUrl);
         Proxy proxy = BrowserConfig.getProxy();
-        try (HttpResponse execute = httpRequest.setFollowRedirects(true).setProxy(proxy).execute()) {
+        try (HttpResponse execute = httpRequest.headerMap(BrowserConfig.BROWSER_HEADERS, true).setFollowRedirects(true).setProxy(proxy).execute()) {
             String location = httpRequest.getUrl();
             URI uri = URLUtil.toURI(location);
             String host = uri.getHost();

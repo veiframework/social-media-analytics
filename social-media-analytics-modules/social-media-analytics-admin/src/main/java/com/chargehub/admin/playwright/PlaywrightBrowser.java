@@ -110,6 +110,7 @@ public class PlaywrightBrowser implements AutoCloseable {
                 .setServiceWorkers(ServiceWorkerPolicy.BLOCK)
                 .setStorageState(storageState)
                 .setViewportSize(1920, 1080)
+                .setBypassCSP(true)
                 .setUserAgent(randomUa);
         // 启动选项（可统一配置）
         BrowserContext browserContext = browserType.launch(new BrowserType.LaunchOptions()
@@ -136,7 +137,6 @@ public class PlaywrightBrowser implements AutoCloseable {
                 ))).newContext(newContextOptions);
         String fingerprintJs = loadBrowserFingerprintJs(randomUa);
         browserContext.addInitScript(fingerprintJs);
-//        browserContext.addInitScript(loadInterceptorJs());
         return browserContext;
     }
 
@@ -150,15 +150,6 @@ public class PlaywrightBrowser implements AutoCloseable {
         }
     }
 
-    public static String loadInterceptorJs() {
-        ResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
-        Resource resource = resolver.getResource(MessageFormat.format("classpath:{0}", "fetchInterceptor.js"));
-        try {
-            return IoUtil.readUtf8(resource.getInputStream());
-        } catch (Exception e) {
-            throw new IllegalArgumentException(e.getMessage());
-        }
-    }
 
     @SuppressWarnings("unchecked")
     public static List<JsonNode> requests(Collection<String> ids, Page page, String script) {
@@ -167,11 +158,12 @@ public class PlaywrightBrowser implements AutoCloseable {
             return result;
         }
         try {
-            List<String> list = new ArrayList<>(ids);
-            List<List<String>> partition = Lists.partition(list, 2);
-            for (List<String> partitionIds : partition) {
-                List<String> evaluate = (List<String>) page.evaluate(script, partitionIds);
-
+            boolean hasMore = ids.size() > 1;
+            for (String id : ids) {
+                if (hasMore) {
+                    HumanMouseSimulator.randomMove(page);
+                }
+                List<String> evaluate = (List<String>) page.evaluate(script, Lists.newArrayList(id));
                 if (CollectionUtils.isEmpty(evaluate)) {
                     continue;
                 }
