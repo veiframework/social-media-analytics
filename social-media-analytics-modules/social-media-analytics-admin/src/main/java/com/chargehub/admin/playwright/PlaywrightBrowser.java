@@ -153,19 +153,19 @@ public class PlaywrightBrowser implements AutoCloseable {
     }
 
 
-    public static JsonNode request(String id, Page page, String script) {
+    public static JsonNode request(String id, Page page, String script, String envUrl) {
         if (StringUtils.isBlank(id)) {
             return null;
         }
         List<String> collect = Stream.of(id).collect(Collectors.toList());
-        List<JsonNode> jsonNodes = requests(collect, page, script);
+        List<JsonNode> jsonNodes = requests(collect, page, script, envUrl);
         if (CollectionUtils.isEmpty(jsonNodes)) {
             return null;
         }
         return jsonNodes.get(0);
     }
 
-    public static List<JsonNode> requests(Collection<String> ids, Page page, String script) {
+    public static List<JsonNode> requests(Collection<String> ids, Page page, String script, String envUrl) {
         List<JsonNode> result = new ArrayList<>();
         if (CollectionUtils.isEmpty(ids)) {
             return result;
@@ -191,7 +191,7 @@ public class PlaywrightBrowser implements AutoCloseable {
                     continue;
                 }
                 log.error("Script execution took {} seconds (>{}s) for id: {}, cleaning and reloading page...", elapsedSeconds, TIMEOUT_SEC, id);
-                page = cleanupAndReload(page);
+                page = cleanupAndReload(page, envUrl);
             }
             return result;
         } catch (Exception e) {
@@ -220,7 +220,7 @@ public class PlaywrightBrowser implements AutoCloseable {
     }
 
 
-    public static Page cleanupAndReload(Page page) {
+    public static Page cleanupAndReload(Page page, String envUrl) {
         if (page == null || page.isClosed()) {
             throw new IllegalArgumentException("Page is null or already closed");
         }
@@ -230,9 +230,8 @@ public class PlaywrightBrowser implements AutoCloseable {
                 BrowserContext context = page.context();
                 context.clearCookies();
                 context.clearPermissions();
-                context.addInitScript("localStorage.clear(); sessionStorage.clear();");
                 newPage = context.newPage();
-                newPage.navigate(DouYinWorkScheduler.DOUYIN_USER_PAGE, new Page.NavigateOptions().setWaitUntil(WaitUntilState.DOMCONTENTLOADED).setTimeout(BrowserConfig.LOAD_PAGE_TIMEOUT));
+                newPage.navigate(envUrl, new Page.NavigateOptions().setWaitUntil(WaitUntilState.DOMCONTENTLOADED).setTimeout(BrowserConfig.LOAD_PAGE_TIMEOUT));
                 page.close();
                 return newPage;
             } catch (Exception e) {

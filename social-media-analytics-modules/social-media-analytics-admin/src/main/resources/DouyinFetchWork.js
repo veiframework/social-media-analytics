@@ -8,10 +8,13 @@ async (ids) => {
     };
 
     const sleep = (delayMs) => {
-        // [0, delayMs]
-        const jitter = Math.floor(Math.random() * (delayMs + 1));
-        return new Promise(resolve => setTimeout(resolve, jitter));
-    }
+        if (delayMs > 0) {
+            const minDelay = Math.floor(delayMs * 0.5);
+            const jitter = minDelay + Math.floor(Math.random() * (delayMs - minDelay + 1));
+            return new Promise(resolve => setTimeout(resolve, jitter));
+        }
+        return Promise.resolve();
+    };
 
     const buildUrl = (awemeId) => {
         const p = new URLSearchParams({
@@ -49,6 +52,7 @@ async (ids) => {
         throw new Error(`HTTP ${res.status}`);
     };
 
+    //TODO 改为isCrawler,后端判断直接刷新页面
     const validateText = (text) => {
         if (!text?.trim()) {
             throw new Error('Empty response');
@@ -61,13 +65,10 @@ async (ids) => {
 
 
     // fetch one work detail
-    const fetchOne = async (awemeId, maxRetries = 6) => {
-        let delayMs = 0;
-        const multiplier = 1.5;
-        const maxDelayMs = 30000;
+    const fetchOne = async (awemeId, maxRetries = 4) => {
         for (let attempt = 0; attempt <= maxRetries; attempt++) {
             try {
-                await maybeDelay(delayMs);
+                await maybeDelay(attempt);
                 const text = await doFetch(awemeId);
                 validateText(text);
                 return text;
@@ -76,7 +77,6 @@ async (ids) => {
                     console.error(`[douyin] fetch failed for ${awemeId}:`, err.message);
                     return '';
                 }
-                delayMs = Math.min(delayMs * multiplier, maxDelayMs);
             }
         }
     };

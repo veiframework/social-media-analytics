@@ -104,6 +104,7 @@ public class DouYinWorkScheduler extends AbstractWorkScheduler {
 
     public static Page navigateToDouYinUserPage(PlaywrightBrowser playwrightBrowser, String flag) {
         BrowserContext browserContext = playwrightBrowser.getBrowserContext();
+        browserContext.addInitScript("localStorage.clear(); sessionStorage.clear();");
         browserContext.onConsoleMessage(msg -> {
             String text = msg.text();
             if (text.contains("[douyin]")) {
@@ -153,6 +154,8 @@ public class DouYinWorkScheduler extends AbstractWorkScheduler {
                     page.close();
                     throw e;
                 }
+                browserContext.clearCookies();
+                browserContext.clearPermissions();
                 page.close();
                 page = playwrightBrowser.newPage();
             }

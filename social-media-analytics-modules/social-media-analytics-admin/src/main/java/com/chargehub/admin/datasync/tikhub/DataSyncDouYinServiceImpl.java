@@ -17,6 +17,7 @@ import com.chargehub.admin.enums.SocialMediaPlatformEnum;
 import com.chargehub.admin.enums.WorkTypeEnum;
 import com.chargehub.admin.playwright.BrowserConfig;
 import com.chargehub.admin.playwright.PlaywrightBrowser;
+import com.chargehub.admin.scheduler.DouYinWorkScheduler;
 import com.chargehub.admin.work.domain.SocialMediaWork;
 import com.chargehub.common.core.properties.HubProperties;
 import com.chargehub.common.core.utils.JsoupUtil;
@@ -478,7 +479,7 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
         SocialMediaWorkResult<SocialMediaWork> socialMediaWorkResult = new SocialMediaWorkResult<>();
         Set<String> ids = workMap.keySet();
         Page page = dataSyncWorksParams.getPage();
-        List<JsonNode> jsonNodes = PlaywrightBrowser.requests(ids, page, DOUYIN_FETCH_WORK_JS);
+        List<JsonNode> jsonNodes = PlaywrightBrowser.requests(ids, page, DOUYIN_FETCH_WORK_JS, DouYinWorkScheduler.DOUYIN_USER_PAGE);
         List<SocialMediaWork> socialMediaWorks = new ArrayList<>();
         for (JsonNode jsonNode : jsonNodes) {
             SocialMediaWorkDetail<SocialMediaWork> workDetail = this.buildWorkDetail(jsonNode, null);
@@ -510,7 +511,7 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
             UrlPath urlPath = urlBuilder.getPath();
             workUid = urlPath.getSegment(1);
         }
-        JsonNode jsonNode = PlaywrightBrowser.request(workUid, page, DOUYIN_FETCH_WORK_JS);
+        JsonNode jsonNode = PlaywrightBrowser.request(workUid, page, DOUYIN_FETCH_WORK_JS, DouYinWorkScheduler.DOUYIN_USER_PAGE);
         SocialMediaWorkDetail<SocialMediaWork> workDetail = this.buildWorkDetail(jsonNode, dataSyncParamContext.getShareLink());
         if (workDetail == null) {
             return null;
@@ -820,7 +821,7 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
         try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(context)) {
             Page page = playwrightBrowser.getPage();
             page.navigate("https://www.douyin.com/user/self", new Page.NavigateOptions().setWaitUntil(WaitUntilState.DOMCONTENTLOADED).setTimeout(120_000));
-            JsonNode request = PlaywrightBrowser.request("7581819255117647144", page, DOUYIN_FETCH_WORK_JS);
+            JsonNode request = PlaywrightBrowser.request("7581819255117647144", page, DOUYIN_FETCH_WORK_JS, DouYinWorkScheduler.DOUYIN_USER_PAGE);
             System.out.println(request);
         }
     }
