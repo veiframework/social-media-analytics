@@ -171,8 +171,12 @@ public class PlaywrightBrowser implements AutoCloseable {
                     if (StringUtils.isBlank(json)) {
                         continue;
                     }
-                    JsonNode jsonNode = JacksonUtil.toObj(json);
-                    result.add(jsonNode);
+                    try {
+                        JsonNode jsonNode = JacksonUtil.toObj(json);
+                        result.add(jsonNode);
+                    } catch (Exception e) {
+                        log.error("json解析异常: {}", json);
+                    }
                 }
             }
             return result;
