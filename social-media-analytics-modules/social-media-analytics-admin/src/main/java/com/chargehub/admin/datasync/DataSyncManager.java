@@ -2,21 +2,16 @@ package com.chargehub.admin.datasync;
 
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.RandomUtil;
+import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.chargehub.admin.account.vo.SocialMediaAccountVo;
 import com.chargehub.admin.datasync.domain.*;
-import com.chargehub.admin.enums.MediaTypeEnum;
 import com.chargehub.admin.enums.SocialMediaPlatformEnum;
 import com.chargehub.admin.playwright.BrowserConfig;
 import com.chargehub.admin.playwright.PlaywrightBrowser;
-import com.chargehub.admin.playwright.PlaywrightCrawlHelper;
 import com.chargehub.admin.scheduler.DouYinWorkScheduler;
-import com.chargehub.admin.work.domain.SocialMediaWork;
-import com.chargehub.common.core.properties.HubProperties;
 import com.microsoft.playwright.BrowserContext;
-import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -76,17 +71,23 @@ public class DataSyncManager {
         }
     }
 
-    public <T> SocialMediaWorkDetail<T> fetchWork(Page page, String shareLink, SocialMediaPlatformEnum.PlatformExtra platformExtra) {
+    public <T> SocialMediaWorkDetail<T> fetchWork(String shareLink, SocialMediaPlatformEnum.PlatformExtra platformExtra) {
         DataSyncParamContext dataSyncParamContext = new DataSyncParamContext();
         SocialMediaPlatformEnum platform = platformExtra.getPlatformEnum();
         DataSyncService dataSyncService = SERVICES.get(platform);
         Assert.notNull(dataSyncService, "不支持的数据同步平台");
         String location = platformExtra.getLocation();
         dataSyncParamContext.setRedirectUrl(location);
-        dataSyncParamContext.setPage(page);
         dataSyncParamContext.setShareLink(shareLink);
         dataSyncParamContext.setProxy(BrowserConfig.getProxy());
-        return dataSyncService.fetchWork(dataSyncParamContext);
+        if (platform != SocialMediaPlatformEnum.DOU_YIN) {
+            return dataSyncService.fetchWork(dataSyncParamContext);
+        }
+        try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(StringPool.EMPTY)) {
+            DouYinWorkScheduler.navigateToDouYinUserPage(playwrightBrowser, shareLink);
+            dataSyncParamContext.setPage(playwrightBrowser.getPage());
+            return dataSyncService.fetchWork(dataSyncParamContext);
+        }
     }
 
     public <T> SocialMediaWorkResult<T> fetchWorks(String platformId, DataSyncWorksParams dataSyncWorksParams) {

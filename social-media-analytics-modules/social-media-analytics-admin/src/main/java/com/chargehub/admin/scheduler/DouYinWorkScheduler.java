@@ -2,6 +2,7 @@ package com.chargehub.admin.scheduler;
 
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpUtil;
+import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.chargehub.admin.account.domain.SocialMediaAccount;
 import com.chargehub.admin.account.service.SocialMediaAccountService;
 import com.chargehub.admin.account.service.SocialMediaAccountTaskService;
@@ -63,8 +64,8 @@ public class DouYinWorkScheduler extends AbstractWorkScheduler {
             return;
         }
         DataSyncWorksParams dataSyncWorksParams = new DataSyncWorksParams();
-        try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser("")) {
-            Page page0 = navigateToDouYinUserPage(playwrightBrowser);
+        try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(StringPool.EMPTY)) {
+            Page page0 = navigateToDouYinUserPage(playwrightBrowser, accountId);
             this.socialMediaAccountService.updateSyncWorkStatus(accountId, SyncWorkStatusEnum.SYNCING);
             Map<String, SocialMediaWork> workMap = new HashMap<>();
             for (SocialMediaWork socialMediaWork : latestWork) {
@@ -101,7 +102,7 @@ public class DouYinWorkScheduler extends AbstractWorkScheduler {
         }
     }
 
-    public static Page navigateToDouYinUserPage(PlaywrightBrowser playwrightBrowser) {
+    public static Page navigateToDouYinUserPage(PlaywrightBrowser playwrightBrowser, String flag) {
         BrowserContext browserContext = playwrightBrowser.getBrowserContext();
         browserContext.onConsoleMessage(msg -> {
             String text = msg.text();
@@ -148,7 +149,7 @@ public class DouYinWorkScheduler extends AbstractWorkScheduler {
                 page.waitForFunction("() => typeof window.byted_acrawler !== 'undefined' && typeof window.byted_acrawler.frontierSign === 'function'");
                 break;
             } catch (Exception e) {
-                log.error("重试进入页面轮次" + i);
+                log.error(flag + "作品同步任务重试进入页面轮次" + i);
                 if (i == BrowserConfig.LOAD_PAGE_RETRY) {
                     page.close();
                     throw e;

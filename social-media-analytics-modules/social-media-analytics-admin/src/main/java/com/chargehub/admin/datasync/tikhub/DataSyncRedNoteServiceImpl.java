@@ -287,9 +287,7 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
                 .execute()) {
             InputStream inputStream = response.bodyStream();
             String globalJson = JsoupUtil.findContentInScript(inputStream, "window.__INITIAL_STATE__=", shareLink);
-            if (StringUtils.isBlank(globalJson)) {
-                return null;
-            }
+            Assert.hasText(globalJson, "触发小红书限流了,开始重试");
             globalJson = globalJson.replace("undefined", "null");
             JsonNode jsonNode = JacksonUtil.toObj(globalJson).at("/note/noteDetailMap");
             if (jsonNode.isEmpty()) {

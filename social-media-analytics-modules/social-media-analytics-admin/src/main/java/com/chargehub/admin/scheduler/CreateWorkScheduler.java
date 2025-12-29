@@ -1,7 +1,6 @@
 package com.chargehub.admin.scheduler;
 
 import cn.hutool.core.bean.BeanUtil;
-import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.chargehub.admin.account.domain.SocialMediaAccount;
 import com.chargehub.admin.account.service.SocialMediaAccountService;
 import com.chargehub.admin.api.domain.SysUser;
@@ -10,8 +9,6 @@ import com.chargehub.admin.datasync.domain.SocialMediaUserInfo;
 import com.chargehub.admin.datasync.domain.SocialMediaWorkDetail;
 import com.chargehub.admin.enums.SocialMediaPlatformEnum;
 import com.chargehub.admin.enums.WorkCreateStatusEnum;
-import com.chargehub.admin.playwright.BrowserConfig;
-import com.chargehub.admin.playwright.PlaywrightBrowser;
 import com.chargehub.admin.work.domain.SocialMediaWork;
 import com.chargehub.admin.work.dto.SocialMediaWorkCreateQueryDto;
 import com.chargehub.admin.work.dto.SocialMediaWorkDto;
@@ -21,7 +18,6 @@ import com.chargehub.admin.work.vo.SocialMediaWorkCreateVo;
 import com.chargehub.biz.admin.service.ISysUserService;
 import com.chargehub.common.core.utils.ExceptionUtil;
 import com.chargehub.common.redis.service.RedisService;
-import com.microsoft.playwright.Page;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -66,30 +62,16 @@ public class CreateWorkScheduler {
         SocialMediaWorkCreateQueryDto queryDto = new SocialMediaWorkCreateQueryDto();
         queryDto.setRetryCount(0);
         List<SocialMediaWorkCreateVo> all = (List<SocialMediaWorkCreateVo>) socialMediaWorkCreateService.getAll(queryDto);
-        boolean hasDouYin = all.stream().anyMatch(i -> i.getShareLink().contains(SocialMediaPlatformEnum.DOU_YIN.getDomain()));
-        PlaywrightBrowser playwrightBrowser = null;
-        Page page = null;
-        try {
-            if (hasDouYin) {
-                playwrightBrowser = new PlaywrightBrowser(StringPool.EMPTY);
-                page = DouYinWorkScheduler.navigateToDouYinUserPage(playwrightBrowser);
-                log.info("创建作品任务-正在加载抖音网页端环境");
-            }
-            for (SocialMediaWorkCreateVo socialMediaWorkCreateVo : all) {
-                this.create(socialMediaWorkCreateVo, page);
-            }
-        } finally {
-            if (playwrightBrowser != null) {
-                playwrightBrowser.close();
-            }
+        for (SocialMediaWorkCreateVo socialMediaWorkCreateVo : all) {
+            this.create(socialMediaWorkCreateVo);
         }
     }
 
-    private void create(SocialMediaWorkCreateVo socialMediaWorkCreateVo, Page page) {
+    private void create(SocialMediaWorkCreateVo socialMediaWorkCreateVo) {
         String id = socialMediaWorkCreateVo.getId();
         try {
             this.socialMediaWorkCreateService.updateCreateStatus(id, WorkCreateStatusEnum.PROCESSING, null, null, false);
-            this.createWorkByShareUrl(socialMediaWorkCreateVo, page);
+            this.createWorkByShareUrl(socialMediaWorkCreateVo);
         } catch (Exception e) {
             String errorMsg = e.getMessage();
             if (StringUtils.isNotBlank(errorMsg) && (errorMsg.contains("重复") || errorMsg.contains("下架"))) {
@@ -101,7 +83,7 @@ public class CreateWorkScheduler {
         }
     }
 
-    public void createWorkByShareUrl(SocialMediaWorkCreateVo dto, Page page) {
+    public void createWorkByShareUrl(SocialMediaWorkCreateVo dto) {
         String id = dto.getId();
         String shareLink = dto.getShareLink();
         String userId = dto.getCreator();
@@ -113,7 +95,7 @@ public class CreateWorkScheduler {
         String tenantId = sysUser.getShopId() + "";
         String accountType = dto.getAccountType();
         SocialMediaPlatformEnum.PlatformExtra platformEnum = SocialMediaPlatformEnum.getPlatformByWorkUrl(shareLink);
-        SocialMediaWorkDetail<SocialMediaWork> socialMediaWorkDetail = this.dataSyncManager.fetchWork(page, shareLink, platformEnum);
+        SocialMediaWorkDetail<SocialMediaWork> socialMediaWorkDetail = this.dataSyncManager.fetchWork(shareLink, platformEnum);
         Assert.notNull(socialMediaWorkDetail, "获取作品失败,请重试");
         SocialMediaWork socialMediaWork = socialMediaWorkDetail.getWork();
         Assert.isTrue(!"-1".equals(socialMediaWork.getWorkUid()), "作品已经下架,无法添加");
