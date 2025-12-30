@@ -1,16 +1,17 @@
 package com.chargehub.admin.playwright;
 
-import cn.hutool.core.date.StopWatch;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.RandomUtil;
-import com.chargehub.admin.scheduler.DouYinWorkScheduler;
 import com.chargehub.common.security.utils.DictUtils;
 import com.chargehub.common.security.utils.JacksonUtil;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Lists;
 import com.microsoft.playwright.*;
-import com.microsoft.playwright.options.*;
+import com.microsoft.playwright.options.Proxy;
+import com.microsoft.playwright.options.ServiceWorkerPolicy;
+import com.microsoft.playwright.options.ViewportSize;
+import com.microsoft.playwright.options.WaitUntilState;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import net.datafaker.providers.base.Internet;
@@ -21,9 +22,7 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
 
 import java.text.MessageFormat;
-import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -171,27 +170,23 @@ public class PlaywrightBrowser implements AutoCloseable {
             return result;
         }
         try {
-
-            final double TIMEOUT_SEC = 12.0;
-            boolean onlyOne = ids.size() == 1;
-            if (onlyOne) {
-                for (String id : ids) {
-                    doRequest(script, page, id, result);
-                }
-                return result;
-            }
             for (String id : ids) {
-                HumanMouseSimulator.randomMove(page);
-                StopWatch stopWatch = new StopWatch();
-                stopWatch.start();
-                doRequest(script, page, id, result);
-                stopWatch.stop();
-                double elapsedSeconds = stopWatch.getTotalTimeSeconds();
-                if (elapsedSeconds <= TIMEOUT_SEC) {
-                    continue;
+                boolean success = false;
+                String json = null;
+                for (int attempt = 0; attempt <= BrowserConfig.LOAD_PAGE_RETRY; attempt++) {
+                    json = doRequest(script, page, id);
+                    if (StringUtils.isNotBlank(json) && !"reload".equals(json)) {
+                        success = true;
+                        break;
+                    }
+                    page = cleanupAndReload(page, envUrl);
                 }
-                log.error("Script execution took {} seconds (>{}s) for id: {}, cleaning and reloading page...", elapsedSeconds, TIMEOUT_SEC, id);
-                page = cleanupAndReload(page, envUrl);
+                if (success) {
+                    JsonNode jsonNode = JacksonUtil.toObj(json);
+                    result.add(jsonNode);
+                } else {
+                    log.error("获取作品ID为{}的详情失败", id);
+                }
             }
             return result;
         } catch (Exception e) {
@@ -200,22 +195,15 @@ public class PlaywrightBrowser implements AutoCloseable {
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private static void doRequest(String script, Page page, String workId, List<JsonNode> result) {
+    private static String doRequest(String script, Page page, String workId) {
         try {
-            List<String> evaluate = (List<String>) page.evaluate(script, Lists.newArrayList(workId));
-            if (CollectionUtils.isEmpty(evaluate)) {
-                return;
+            if (page.isClosed()) {
+                return null;
             }
-            for (String json : evaluate) {
-                if (StringUtils.isBlank(json)) {
-                    continue;
-                }
-                JsonNode jsonNode = JacksonUtil.toObj(json);
-                result.add(jsonNode);
-            }
+            return (String) page.evaluate(script, workId);
         } catch (Exception e) {
-            log.error(workId + "获取抖音作品详情失败: ", e);
+            log.error(workId + "获取抖音作品详情失败: ", e.getMessage());
+            return null;
         }
     }
 
@@ -232,7 +220,10 @@ public class PlaywrightBrowser implements AutoCloseable {
                 context.clearPermissions();
                 newPage = context.newPage();
                 newPage.navigate(envUrl, new Page.NavigateOptions().setWaitUntil(WaitUntilState.DOMCONTENTLOADED).setTimeout(BrowserConfig.LOAD_PAGE_TIMEOUT));
-                page.close();
+                newPage.waitForTimeout(RandomUtil.randomInt(1000, 5000));
+                if (!page.isClosed()) {
+                    page.close();
+                }
                 return newPage;
             } catch (Exception e) {
                 if (attempt == BrowserConfig.LOAD_PAGE_RETRY) {
@@ -257,10 +248,18 @@ public class PlaywrightBrowser implements AutoCloseable {
             this.page.close();
         }
         if (this.browserContext != null) {
-            this.browserContext.close();
+            try {
+                this.browserContext.close();
+            } catch (Exception e) {
+                log.error("browserContext close failed" + e.getMessage());
+            }
         }
         if (this.playwright != null) {
-            this.playwright.close();
+            try {
+                this.playwright.close();
+            } catch (Exception e) {
+                log.error("playwright close failed" + e.getMessage());
+            }
         }
     }
 

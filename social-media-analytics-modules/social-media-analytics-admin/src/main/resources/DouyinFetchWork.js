@@ -1,4 +1,4 @@
-async (ids) => {
+async (id) => {
 
     let fetchWithTimeout = (url, options, timeout = 30000) => {
         return Promise.race([
@@ -52,15 +52,19 @@ async (ids) => {
         throw new Error(`HTTP ${res.status}`);
     };
 
-    //TODO 改为isCrawler,后端判断直接刷新页面
     const validateText = (text) => {
         if (!text?.trim()) {
-            throw new Error('Empty response');
+            return false
         }
         if (isAntiCrawler(text)) {
-            throw new Error('Anti-crawler page detected');
+            return false
         }
-        JSON.parse(text);
+        try {
+            JSON.parse(text);
+            return true;
+        } catch (e) {
+            return false;
+        }
     };
 
 
@@ -70,8 +74,10 @@ async (ids) => {
             try {
                 await maybeDelay(attempt);
                 const text = await doFetch(awemeId);
-                validateText(text);
-                return text;
+                if (validateText(text)) {
+                    return text;
+                }
+                return 'reload';
             } catch (err) {
                 if (attempt === maxRetries) {
                     console.error(`[douyin] fetch failed for ${awemeId}:`, err.message);
@@ -80,7 +86,6 @@ async (ids) => {
             }
         }
     };
-    let promises = ids.map(id => fetchOne(id));
-    return await Promise.all(promises);
+    return await fetchOne(id);
 }
 

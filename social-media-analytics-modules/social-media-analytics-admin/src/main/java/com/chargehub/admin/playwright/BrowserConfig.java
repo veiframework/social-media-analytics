@@ -50,7 +50,7 @@ public class BrowserConfig {
 
     public static final Set<String> RESOURCE_TYPES = Sets.newHashSet("fetch", "websocket", ".mp3", ".mp4", "wasm", "vnd.microsoft.icon", "xhr", "png", "media", "avif", "webp", "gif", "svg+xml", "font", "stylesheet");
 
-    public static final Integer LOAD_PAGE_RETRY = 4;
+    public static final Integer LOAD_PAGE_RETRY = 10;
 
     public static final Integer LOAD_PAGE_TIMEOUT = 60000;
 

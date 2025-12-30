@@ -29,5 +29,5 @@ public class SocialMediaWorkCreateDto implements Z9CrudDto<SocialMediaWorkCreate
     private String accountType;
 
     @ApiModelProperty("重试次数")
-    private Integer retryCount = 4;
+    private Integer retryCount;
 }

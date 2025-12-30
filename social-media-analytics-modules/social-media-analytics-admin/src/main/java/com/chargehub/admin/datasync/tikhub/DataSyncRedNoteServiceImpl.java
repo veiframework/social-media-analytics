@@ -44,6 +44,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import java.io.InputStream;
+import java.net.Proxy;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -71,6 +72,9 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
 
     private static final boolean TEST_DETAIL = true;
 
+    private static final Integer RED_NOTE_RETRY = 4;
+
+    private static final String RED_NOTE_UID_URL = "https://www.xiaohongshu.com/user/profile/";
 
     private static final String WORK_SHARE_URL = "/api/v1/xiaohongshu/web_v2/fetch_feed_notes_v2";
 
@@ -273,16 +277,17 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
 
     @Override
     public <T> SocialMediaWorkDetail<T> fetchWork(DataSyncParamContext dataSyncParamContext) {
-        return dataSyncMessageQueue.retryWithExponentialBackoff(() -> this.fetchWork0(dataSyncParamContext), 4, dataSyncParamContext.getShareLink());
+        return dataSyncMessageQueue.retryWithExponentialBackoff(() -> this.fetchWork0(dataSyncParamContext), RED_NOTE_RETRY, dataSyncParamContext.getShareLink());
     }
 
     @SuppressWarnings("unchecked")
     public <T> SocialMediaWorkDetail<T> fetchWork0(DataSyncParamContext dataSyncParamContext) {
         String shareLink = dataSyncParamContext.getShareLink();
+        Proxy proxy = dataSyncParamContext.getProxy();
         try (HttpResponse response = HttpUtil.createGet(shareLink)
                 .setFollowRedirects(true)
                 .timeout(60000)
-                .setProxy(dataSyncParamContext.getProxy())
+                .setProxy(proxy)
                 .headerMap(BrowserConfig.BROWSER_HEADERS, true)
                 .execute()) {
             InputStream inputStream = response.bodyStream();
@@ -335,13 +340,14 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
             int playNum = (thumbNum + collectNum + shareNum + commentNum) * 10;
             String uid = "";
             if (!dataSyncParamContext.isScheduler()) {
-                HubProperties.SocialMediaDataApi socialMediaDataApi = hubProperties.getSocialMediaDataApi().get("tikhub");
-                String token = socialMediaDataApi.getToken();
-                String host = socialMediaDataApi.getHost();
-                JsonNode profileNode = this.request(host, PROFILE_INFO_URI, token, MapUtil.of("user_id", secUid));
-                int code = profileNode.path("code").asInt(500);
-                Assert.isTrue(code == HttpStatus.HTTP_OK, "小红书获取用户UID失败");
-                uid = profileNode.at("/data/red_id").asText();
+                String uidUrl = RED_NOTE_UID_URL + secUid;
+                uid = dataSyncMessageQueue.retryWithExponentialBackoff(() -> {
+                    try (HttpResponse httpResponse = HttpUtil.createGet(uidUrl).timeout(60000).setProxy(proxy).headerMap(BrowserConfig.BROWSER_HEADERS, true).execute()) {
+                        InputStream uidStream = httpResponse.bodyStream();
+                        return JsoupUtil.findContent(uidStream, "小红书号：");
+                    }
+                }, RED_NOTE_RETRY, uidUrl);
+                Assert.hasText(uid, "小红书号获取失败");
             }
             SocialMediaWork socialMediaWork = new SocialMediaWork();
             socialMediaWork.setUrl(shareUrl);
@@ -675,11 +681,13 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
     public static void main(String[] args) {
         String noteRq = "https://edith.xiaohongshu.com/api/sns/web/v1/feed";
         String noteBody = "{\"source_note_id\":\"694bc0a7000000001e02f482\",\"image_formats\":[\"jpg\",\"webp\",\"avif\"],\"extra\":{\"need_body_topic\":\"1\"},\"xsec_source\":\"pc_user\",\"xsec_token\":\"ABosVZfLyWkGd6FPxv98xnUC35EtaBrkYsIOmF-TYgaEQ=\"}";
-        String profileRq = "https://www.xiaohongshu.com/user/profile/59e0b13c20e88f68e8af29a0?xsec_token=ABGxilFWrpC8h4WucmsYFuxF_tL7gMrk_aIggJn3d85TM=&xsec_source=pc_feed";
+        String profileRq = "https://www.xiaohongshu.com/user/profile/59e0b13c20e88f68e8af29a0";
         HttpRequest httpRequest = HttpUtil.createGet(profileRq)
                 .headerMap(BrowserConfig.BROWSER_HEADERS, true);
         try (HttpResponse response = httpRequest.execute()) {
-            System.out.println(response.body());
+            InputStream uidStream = response.bodyStream();
+            String content = JsoupUtil.findContent(uidStream, "小红书号：");
+            System.out.println(content);
         }
     }
 

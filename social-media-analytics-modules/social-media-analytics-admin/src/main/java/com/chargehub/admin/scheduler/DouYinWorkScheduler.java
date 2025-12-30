@@ -49,7 +49,7 @@ public class DouYinWorkScheduler extends AbstractWorkScheduler {
     public static final String DOUYIN_USER_PAGE = "https://www.douyin.com/user/self";
 
     protected DouYinWorkScheduler(SocialMediaAccountTaskService socialMediaAccountTaskService, RedisService redisService, DataSyncManager dataSyncManager, SocialMediaAccountService socialMediaAccountService, SocialMediaWorkService socialMediaWorkService, SocialMediaWorkCreateService socialMediaWorkCreateService, HubProperties hubProperties) {
-        super(socialMediaAccountTaskService, redisService, dataSyncManager, socialMediaAccountService, socialMediaWorkService, socialMediaWorkCreateService, hubProperties, 4);
+        super(socialMediaAccountTaskService, redisService, dataSyncManager, socialMediaAccountService, socialMediaWorkService, socialMediaWorkCreateService, hubProperties, 5);
         this.setTaskName(SocialMediaPlatformEnum.DOU_YIN.getDomain());
 
     }
@@ -149,7 +149,6 @@ public class DouYinWorkScheduler extends AbstractWorkScheduler {
                 page.navigate(DouYinWorkScheduler.DOUYIN_USER_PAGE, new Page.NavigateOptions().setWaitUntil(WaitUntilState.DOMCONTENTLOADED).setTimeout(BrowserConfig.LOAD_PAGE_TIMEOUT));
                 break;
             } catch (Exception e) {
-                log.error(flag + "作品同步任务重试进入页面轮次" + i);
                 if (i == BrowserConfig.LOAD_PAGE_RETRY) {
                     page.close();
                     throw e;
