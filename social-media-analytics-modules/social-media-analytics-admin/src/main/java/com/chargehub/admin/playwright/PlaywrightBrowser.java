@@ -103,6 +103,7 @@ public class PlaywrightBrowser implements AutoCloseable {
         browserConfig.setPlaywright(playwright);
         BrowserType browserType = browserConfig.getBrowserType();
         String randomUa = browserConfig.getRandomUa();
+        String version = BrowserConfig.extractChromeMajorVersion(randomUa);
         Browser.NewContextOptions newContextOptions = new Browser.NewContextOptions()
                 .setIgnoreHTTPSErrors(true)
                 .setLocale("zh-CN")
@@ -112,6 +113,7 @@ public class PlaywrightBrowser implements AutoCloseable {
                 .setStorageState(storageState)
                 .setViewportSize(1920, 1080)
                 .setBypassCSP(true)
+                .setExtraHTTPHeaders(MapUtil.of("Sec-Ch-Ua", "\"Google Chrome\";v=\"" + version + "\", \"Chromium\";v=\"" + version + "\", \"Not A(Brand\";v=\"24\""))
                 .setUserAgent(randomUa);
         // 启动选项（可统一配置）
         BrowserContext browserContext = browserType.launch(new BrowserType.LaunchOptions()
@@ -251,14 +253,14 @@ public class PlaywrightBrowser implements AutoCloseable {
             try {
                 this.browserContext.close();
             } catch (Exception e) {
-                log.error("browserContext close failed" + e.getMessage());
+                log.warn("browserContext close failed");
             }
         }
         if (this.playwright != null) {
             try {
                 this.playwright.close();
             } catch (Exception e) {
-                log.error("playwright close failed" + e.getMessage());
+                log.warn("playwright close failed");
             }
         }
     }

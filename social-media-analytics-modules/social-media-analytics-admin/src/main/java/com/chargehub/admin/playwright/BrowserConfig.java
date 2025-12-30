@@ -14,7 +14,12 @@ import org.springframework.http.HttpHeaders;
 import java.math.BigDecimal;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author Zhanghaowei
@@ -25,9 +30,13 @@ public class BrowserConfig {
 
 
     private static final List<String> UA = Lists.newArrayList(
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.149 Safari/537.36",
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36",
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36"
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36"
     );
 
     public static final Map<String, String> BROWSER_HEADERS = MapUtil.builder(new LinkedHashMap<String, String>())
@@ -48,7 +57,7 @@ public class BrowserConfig {
             .build();
 
 
-    public static final Set<String> RESOURCE_TYPES = Sets.newHashSet("fetch", "websocket", ".mp3", ".mp4", "wasm", "vnd.microsoft.icon", "xhr", "png", "media", "avif", "webp", "gif", "svg+xml", "font", "stylesheet");
+    public static final Set<String> RESOURCE_TYPES = Sets.newHashSet("fetch", "websocket",".svg", ".mp3", ".mp4", "wasm", "vnd.microsoft.icon", "xhr", "png", "media", "avif", "webp", "gif", "svg+xml", "font", "stylesheet");
 
     public static final Integer LOAD_PAGE_RETRY = 10;
 
@@ -91,6 +100,16 @@ public class BrowserConfig {
             return null;
         }
     }
+
+    public static String extractChromeMajorVersion(String userAgent) {
+        Pattern pattern = Pattern.compile("Chrome/(\\d+)");
+        Matcher matcher = pattern.matcher(userAgent);
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        return null;
+    }
+
 
     public static Integer clearWord(String text) {
         if (text.contains("万")) {

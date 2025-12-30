@@ -49,7 +49,7 @@ public class DouYinWorkScheduler extends AbstractWorkScheduler {
     public static final String DOUYIN_USER_PAGE = "https://www.douyin.com/user/self";
 
     protected DouYinWorkScheduler(SocialMediaAccountTaskService socialMediaAccountTaskService, RedisService redisService, DataSyncManager dataSyncManager, SocialMediaAccountService socialMediaAccountService, SocialMediaWorkService socialMediaWorkService, SocialMediaWorkCreateService socialMediaWorkCreateService, HubProperties hubProperties) {
-        super(socialMediaAccountTaskService, redisService, dataSyncManager, socialMediaAccountService, socialMediaWorkService, socialMediaWorkCreateService, hubProperties, 5);
+        super(socialMediaAccountTaskService, redisService, dataSyncManager, socialMediaAccountService, socialMediaWorkService, socialMediaWorkCreateService, hubProperties, 6);
         this.setTaskName(SocialMediaPlatformEnum.DOU_YIN.getDomain());
 
     }
@@ -65,7 +65,7 @@ public class DouYinWorkScheduler extends AbstractWorkScheduler {
         }
         DataSyncWorksParams dataSyncWorksParams = new DataSyncWorksParams();
         try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(StringPool.EMPTY)) {
-            Page page0 = navigateToDouYinUserPage(playwrightBrowser, accountId);
+            Page page0 = navigateToDouYinUserPage(playwrightBrowser);
             this.socialMediaAccountService.updateSyncWorkStatus(accountId, SyncWorkStatusEnum.SYNCING);
             Map<String, SocialMediaWork> workMap = new HashMap<>();
             for (SocialMediaWork socialMediaWork : latestWork) {
@@ -102,7 +102,43 @@ public class DouYinWorkScheduler extends AbstractWorkScheduler {
         }
     }
 
-    public static Page navigateToDouYinUserPage(PlaywrightBrowser playwrightBrowser, String flag) {
+//          browserContext.route("**/*", route -> {
+//        Request request = route.request();
+//        String resourceType = request.resourceType();
+//        String url = request.url();
+//        if (url.contains("player-") || url.contains("ndex.umd.production") || url.contains("island_") || url.startsWith("blob:") || url.contains("common-monitors") || url.contains("blank-screen") || url.contains("SiderBar") || url.contains("feelgood")) {
+//            route.abort();
+//            return;
+//        }
+//        if ("document".equals(resourceType) || "script".equals(resourceType)) {
+//            route.resume();
+//            return;
+//        }
+//        if (url.contains("/web/aweme/detail/")) {
+//            Request realRequest = route.request();
+//            Map<String, String> headerMap = realRequest.allHeaders();
+//            headerMap.put("connection", "close");
+//            try (HttpResponse execute = HttpUtil.createGet(realRequest.url())
+//                    .setProxy(BrowserConfig.getProxy())
+//                    .timeout(60000)
+//                    .headerMap(headerMap, true).execute()) {
+//                byte[] bodyBytes = execute.bodyBytes();
+//                int status = execute.getStatus();
+//                route.fulfill(new Route.FulfillOptions()
+//                        .setStatus(status)
+//                        .setContentType(MediaType.APPLICATION_JSON_VALUE)
+//                        .setBodyBytes(bodyBytes));
+//            } catch (Exception e) {
+//                route.fulfill(new Route.FulfillOptions()
+//                        .setStatus(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR.value())
+//                        .setContentType(MediaType.APPLICATION_JSON_VALUE)
+//                        .setBody(""));
+//            }
+//            return;
+//        }
+//        route.abort();
+//    });
+    public static Page navigateToDouYinUserPage(PlaywrightBrowser playwrightBrowser) {
         BrowserContext browserContext = playwrightBrowser.getBrowserContext();
         browserContext.addInitScript("localStorage.clear(); sessionStorage.clear();");
         browserContext.onConsoleMessage(msg -> {

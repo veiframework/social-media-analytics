@@ -34,7 +34,7 @@ public class PlainClass {
         get.setFollowRedirects(true);
         HttpResponse execute = get.execute();
         InputStream inputStream = execute.bodyStream();
-        String globalJson = JsoupUtil.findContentInScript(inputStream, "window.__INITIAL_STATE__=", "").replace("undefined", "null");
+        String globalJson = JsoupUtil.findContentInScript(inputStream, "window.__INITIAL_STATE__=").replace("undefined", "null");
         System.out.println(globalJson);
         Assert.hasText(globalJson, "can not be null");
         JsonNode node = JacksonUtil.toObj(globalJson).at("/note/noteDetailMap");

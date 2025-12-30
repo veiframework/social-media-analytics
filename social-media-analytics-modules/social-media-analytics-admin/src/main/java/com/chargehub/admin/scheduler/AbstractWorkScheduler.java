@@ -85,7 +85,7 @@ public abstract class AbstractWorkScheduler {
             log.error("正在创建作品, {}作品同步不执行", taskName);
             return;
         }
-        List<SocialMediaAccountTask> socialMediaAccounts = socialMediaAccountTaskService.getAllByPlatformId(taskName, true, limit);
+        List<SocialMediaAccountTask> socialMediaAccounts = socialMediaAccountTaskService.getAllByPlatformId(taskName, limit);
         if (CollectionUtils.isEmpty(socialMediaAccounts)) {
             return;
         }

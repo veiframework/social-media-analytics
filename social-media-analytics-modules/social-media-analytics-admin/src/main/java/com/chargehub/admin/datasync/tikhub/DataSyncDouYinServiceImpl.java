@@ -4,10 +4,12 @@ import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.net.url.UrlBuilder;
 import cn.hutool.core.net.url.UrlPath;
+import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpStatus;
 import cn.hutool.http.HttpUtil;
+import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.chargehub.admin.account.vo.SocialMediaAccountVo;
 import com.chargehub.admin.datasync.DataSyncMessageQueue;
 import com.chargehub.admin.datasync.DataSyncService;
@@ -800,29 +802,27 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
     }
 
     public static void main(String[] args) {
-        PlaywrightBrowser.setHeadless(false);
-        Playwright playwright = Playwright.create();
-        BrowserContext context = PlaywrightBrowser.buildBrowserContext(null, playwright);
-
-        context.route("**/*", route -> {
-            Request request = route.request();
-            String resourceType = request.resourceType();
-            String url = request.url();
-            if (url.contains("/web/aweme/detail/")) {
-                route.resume();
-                return;
-            }
-            if (BrowserConfig.RESOURCE_TYPES.contains(resourceType) || BrowserConfig.RESOURCE_TYPES.stream().anyMatch(url::endsWith)) {
+        try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(StringPool.EMPTY)) {
+            BrowserContext browserContext = playwrightBrowser.getBrowserContext();
+            browserContext.route("**/*", route -> {
+                Request request = route.request();
+                String resourceType = request.resourceType();
+                String url = request.url();
+                if (url.contains("player-")||url.contains("ndex.umd.production") || url.contains("island_") || url.startsWith("blob:") || url.contains("common-monitors") || url.contains("blank-screen") || url.contains("SiderBar") || url.contains("feelgood")) {
+                    route.abort();
+                    return;
+                }
+                if (resourceType.equals("document") || "script".equals(resourceType) || url.contains("/web/aweme/detail/")) {
+                    route.resume();
+                    return;
+                }
                 route.abort();
-                return;
-            }
-            route.resume();
-        });
-        try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(context)) {
-            Page page = playwrightBrowser.getPage();
+            });
+            Page page = playwrightBrowser.newPage();
             page.navigate("https://www.douyin.com/user/self", new Page.NavigateOptions().setWaitUntil(WaitUntilState.DOMCONTENTLOADED).setTimeout(120_000));
-            JsonNode request = PlaywrightBrowser.request("7581819255117647144", page, DOUYIN_FETCH_WORK_JS, DouYinWorkScheduler.DOUYIN_USER_PAGE);
-            System.out.println(request);
+            Object object = page.evaluate(DOUYIN_FETCH_WORK_JS, "7581819255117647144");
+            System.out.println(object);
+            ThreadUtil.safeSleep(600_00000);
         }
     }
 

@@ -47,9 +47,9 @@ public class SocialMediaAccountTaskService {
         }, 60);
     }
 
-    public List<SocialMediaAccountTask> getAllByPlatformId(String platformId, boolean noLoginState, Integer limit) {
+    public List<SocialMediaAccountTask> getAllByPlatformId(String platformId, Integer limit) {
         return socialMediaAccountTaskMapper.lambdaQuery().eq(SocialMediaAccountTask::getPlatformId, platformId)
-                .inSql(SocialMediaAccountTask::getAccountId, "select id from social_media_account where storage_state is " + (noLoginState ? "null" : "not null"))
+                .orderByAsc(SocialMediaAccountTask::getCreateTime)
                 .last(limit != null, "LIMIT " + limit)
                 .list();
     }

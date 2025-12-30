@@ -84,7 +84,7 @@ public class DataSyncManager {
             return dataSyncService.fetchWork(dataSyncParamContext);
         }
         try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(StringPool.EMPTY)) {
-            DouYinWorkScheduler.navigateToDouYinUserPage(playwrightBrowser, shareLink);
+            DouYinWorkScheduler.navigateToDouYinUserPage(playwrightBrowser);
             dataSyncParamContext.setPage(playwrightBrowser.getPage());
             return dataSyncService.fetchWork(dataSyncParamContext);
         }

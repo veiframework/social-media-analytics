@@ -41,19 +41,18 @@ public class JsoupUtil {
                 .map(script -> script.html().replace(keyword, "")).collect(Collectors.toList());
     }
 
-    public static String findContentInScript(Document document, String keyword, String url) {
+    public static String findContentInScript(Document document, String keyword) {
         Element script = document.select(SCRIPT).stream().filter(i -> i.html(new StringBuilder()).toString().contains(keyword))
                 .findFirst().orElse(null);
         if (script == null) {
-            log.error("html查找关键字没有找到" + url);
             return null;
         }
         return script.html().replace(keyword, "");
     }
 
-    public static String findContentInScript(InputStream inputStream, String keyword, String url) {
+    public static String findContentInScript(InputStream inputStream, String keyword) {
         Document document = parse(inputStream);
-        return findContentInScript(document, keyword, url);
+        return findContentInScript(document, keyword);
     }
 
     public static String findContent(InputStream inputStream, String pattern) {

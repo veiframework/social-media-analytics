@@ -334,7 +334,8 @@ public class KuaiShouSyncServiceImpl implements DataSyncService {
                     socialMediaWork.setWorkUid("-1");
                     return (SocialMediaWorkDetail<T>) new SocialMediaWorkDetail<>(socialMediaWork, null);
                 }
-                String json = JsoupUtil.findContentInScript(document, "window.__APOLLO_STATE__=", shareLink);
+                String json = JsoupUtil.findContentInScript(document, "window.__APOLLO_STATE__=");
+                Assert.hasText(json, "触发快手限流了,开始重试");
                 JsonNode jsonNode = JacksonUtil.toObj(json);
                 JsonNode defaultClient = jsonNode.get("defaultClient");
                 Iterator<Map.Entry<String, JsonNode>> fields = defaultClient.fields();
@@ -376,7 +377,7 @@ public class KuaiShouSyncServiceImpl implements DataSyncService {
                     }
                 }
             } else {
-                String json = JsoupUtil.findContentInScript(inputStream, "window.INIT_STATE = ", shareLink);
+                String json = JsoupUtil.findContentInScript(inputStream, "window.INIT_STATE = ");
                 JsonNode obj = JacksonUtil.toObj(json);
                 JsonNode jsonNode = null;
                 for (JsonNode node : obj) {
