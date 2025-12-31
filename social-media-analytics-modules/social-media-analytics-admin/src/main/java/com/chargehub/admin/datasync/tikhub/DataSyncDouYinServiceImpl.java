@@ -806,8 +806,9 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
     }
 
     public static void main(String[] args) {
-        try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(StringPool.EMPTY)) {
-            Page page = DouYinWorkScheduler.navigateToDouYinUserPage(playwrightBrowser);
+        try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(PlaywrightBrowser.buildProxy())) {
+            Proxy proxy = BrowserConfig.getProxy();
+            Page page = DouYinWorkScheduler.navigateToDouYinUserPage(playwrightBrowser, proxy);
             page.navigate(DouYinWorkScheduler.DOUYIN_USER_PAGE, new Page.NavigateOptions().setWaitUntil(WaitUntilState.DOMCONTENTLOADED).setTimeout(120_000));
             Object object = page.evaluate(DOUYIN_FETCH_WORK_JS, "7581819255117647144");
             System.out.println(object);

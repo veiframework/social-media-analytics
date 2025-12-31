@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
+import java.net.Proxy;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
@@ -77,14 +78,16 @@ public class DataSyncManager {
         DataSyncService dataSyncService = SERVICES.get(platform);
         Assert.notNull(dataSyncService, "不支持的数据同步平台");
         String location = platformExtra.getLocation();
+        Proxy proxy = BrowserConfig.getProxy();
         dataSyncParamContext.setRedirectUrl(location);
         dataSyncParamContext.setShareLink(shareLink);
-        dataSyncParamContext.setProxy(BrowserConfig.getProxy());
+        dataSyncParamContext.setProxy(proxy);
         if (platform != SocialMediaPlatformEnum.DOU_YIN) {
             return dataSyncService.fetchWork(dataSyncParamContext);
         }
-        try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(StringPool.EMPTY)) {
-            DouYinWorkScheduler.navigateToDouYinUserPage(playwrightBrowser);
+        com.microsoft.playwright.options.Proxy browserProxy = PlaywrightBrowser.buildProxy();
+        try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(browserProxy)) {
+            DouYinWorkScheduler.navigateToDouYinUserPage(playwrightBrowser, proxy);
             dataSyncParamContext.setPage(playwrightBrowser.getPage());
             return dataSyncService.fetchWork(dataSyncParamContext);
         }

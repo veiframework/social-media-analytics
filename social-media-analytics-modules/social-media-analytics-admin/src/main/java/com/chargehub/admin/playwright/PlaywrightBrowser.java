@@ -59,6 +59,11 @@ public class PlaywrightBrowser implements AutoCloseable {
         this.password = password;
     }
 
+    public PlaywrightBrowser(Proxy proxy) {
+        this.playwright = Playwright.create();
+        this.browserContext = PlaywrightBrowser.buildBrowserContext(null, this.playwright, proxy);
+    }
+
     public PlaywrightBrowser(String storageState) {
         String loginState = null;
         if (StringUtils.isNotBlank(storageState)) {

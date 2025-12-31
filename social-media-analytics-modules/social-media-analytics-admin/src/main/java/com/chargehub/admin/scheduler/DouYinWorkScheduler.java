@@ -1,5 +1,7 @@
 package com.chargehub.admin.scheduler;
 
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.io.IoUtil;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpUtil;
 import com.alibaba.fastjson.support.spring.FastJsonHttpMessageConverter;
@@ -30,11 +32,17 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.net.Proxy;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author zhanghaowei
@@ -49,14 +57,22 @@ public class DouYinWorkScheduler extends AbstractWorkScheduler {
 
     public static final String DOUYIN_USER_PAGE = "https://www.douyin.com/user/self";
 
+    private static final Map<String, byte[]> LOCAL_CACHE = new ConcurrentHashMap<>();
+
     protected DouYinWorkScheduler(SocialMediaAccountTaskService socialMediaAccountTaskService, RedisService redisService, DataSyncManager dataSyncManager, SocialMediaAccountService socialMediaAccountService, SocialMediaWorkService socialMediaWorkService, SocialMediaWorkCreateService socialMediaWorkCreateService, HubProperties hubProperties) {
         super(socialMediaAccountTaskService, redisService, dataSyncManager, socialMediaAccountService, socialMediaWorkService, socialMediaWorkCreateService, hubProperties, 10);
         this.setTaskName(SocialMediaPlatformEnum.DOU_YIN.getDomain());
-
+        List<File> files = FileUtil.loopFiles(new File(DOUYIN_WEB_RESOURCE_PATH));
+        for (File file : files) {
+            String name = file.getName();
+            byte[] bytes = FileUtil.readBytes(file);
+            LOCAL_CACHE.put(name, bytes);
+        }
+        log.info("douyin crawler web resource load complete length: " + LOCAL_CACHE.size());
     }
 
     @Override
-    public void fetchWorks(SocialMediaAccount socialMediaAccountVo, Proxy proxy) {
+    public void fetchWorks(SocialMediaAccount socialMediaAccountVo, Proxy proxy, com.microsoft.playwright.options.Proxy browserProxy) {
         String accountId = socialMediaAccountVo.getId();
         String platformId = socialMediaAccountVo.getPlatformId();
         String secUid = socialMediaAccountVo.getSecUid();
@@ -65,8 +81,8 @@ public class DouYinWorkScheduler extends AbstractWorkScheduler {
             return;
         }
         DataSyncWorksParams dataSyncWorksParams = new DataSyncWorksParams();
-        try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(StringPool.EMPTY)) {
-            Page page0 = navigateToDouYinUserPage(playwrightBrowser);
+        try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(browserProxy)) {
+            Page page0 = navigateToDouYinUserPage(playwrightBrowser, proxy);
             this.socialMediaAccountService.updateSyncWorkStatus(accountId, SyncWorkStatusEnum.SYNCING);
             Map<String, SocialMediaWork> workMap = new HashMap<>();
             for (SocialMediaWork socialMediaWork : latestWork) {
@@ -104,7 +120,7 @@ public class DouYinWorkScheduler extends AbstractWorkScheduler {
     }
 
 
-    public static Page navigateToDouYinUserPage(PlaywrightBrowser playwrightBrowser) {
+    public static Page navigateToDouYinUserPage(PlaywrightBrowser playwrightBrowser, Proxy proxy) {
         BrowserContext browserContext = playwrightBrowser.getBrowserContext();
         browserContext.addInitScript("localStorage.clear(); sessionStorage.clear();");
         browserContext.onConsoleMessage(msg -> {
@@ -124,8 +140,9 @@ public class DouYinWorkScheduler extends AbstractWorkScheduler {
             }
             boolean isScript = "script".equals(resourceType);
             if (isScript) {
-                byte[] cachedWebResource = FileUtils.getCachedWebResource(DOUYIN_WEB_RESOURCE_PATH, url);
-                if (cachedWebResource.length > 0) {
+                String fileName = FileUtils.sanitizeUrlFileName(url);
+                byte[] cachedWebResource = LOCAL_CACHE.get(fileName);
+                if (cachedWebResource != null) {
                     route.fulfill(new Route.FulfillOptions()
                             .setStatus(HttpStatus.OK.value())
                             .setContentType(FastJsonHttpMessageConverter.APPLICATION_JAVASCRIPT.toString())
@@ -134,7 +151,9 @@ public class DouYinWorkScheduler extends AbstractWorkScheduler {
                 }
                 APIResponse response = route.fetch(new Route.FetchOptions().setTimeout(60_000));
                 if (response.ok()) {
-                    FileUtils.cacheWebResource(url, response.body(), DOUYIN_WEB_RESOURCE_PATH);
+                    byte[] body = response.body();
+                    LOCAL_CACHE.put(fileName, body);
+                    FileUtils.cacheWebResource(url, body, DOUYIN_WEB_RESOURCE_PATH);
                 }
                 route.fulfill(new Route.FulfillOptions().setResponse(response));
                 return;
@@ -144,7 +163,7 @@ public class DouYinWorkScheduler extends AbstractWorkScheduler {
                 Map<String, String> headerMap = realRequest.allHeaders();
                 headerMap.put("connection", "close");
                 try (HttpResponse execute = HttpUtil.createGet(realRequest.url())
-                        .setProxy(BrowserConfig.getProxy())
+                        .setProxy(proxy)
                         .timeout(30000)
                         .headerMap(headerMap, true).execute()) {
                     byte[] bodyBytes = execute.bodyBytes();

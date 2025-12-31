@@ -35,7 +35,7 @@ public class WechatVideoWorkScheduler extends AbstractWorkScheduler {
 
 
     @Override
-    public void fetchWorks(SocialMediaAccount socialMediaAccountVo, Proxy proxy) {
+    public void fetchWorks(SocialMediaAccount socialMediaAccountVo, Proxy proxy, com.microsoft.playwright.options.Proxy browserProxy) {
         String accountId = socialMediaAccountVo.getId();
         String platformId = socialMediaAccountVo.getPlatformId();
         String secUid = socialMediaAccountVo.getSecUid();

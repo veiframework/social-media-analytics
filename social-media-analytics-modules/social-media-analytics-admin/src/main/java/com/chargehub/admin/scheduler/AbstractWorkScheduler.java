@@ -14,6 +14,7 @@ import com.chargehub.admin.datasync.domain.SocialMediaWorkResult;
 import com.chargehub.admin.enums.SyncWorkStatusEnum;
 import com.chargehub.admin.enums.WorkStateEnum;
 import com.chargehub.admin.playwright.BrowserConfig;
+import com.chargehub.admin.playwright.PlaywrightBrowser;
 import com.chargehub.admin.work.domain.SocialMediaWork;
 import com.chargehub.admin.work.service.SocialMediaWorkCreateService;
 import com.chargehub.admin.work.service.SocialMediaWorkService;
@@ -94,9 +95,10 @@ public abstract class AbstractWorkScheduler {
         List<String> completeAccountIds = new CopyOnWriteArrayList<>();
         List<CompletableFuture<Void>> allFutures = new ArrayList<>();
         Proxy proxy = BrowserConfig.getProxy();
+        com.microsoft.playwright.options.Proxy browserProxy = PlaywrightBrowser.buildProxy();
         for (SocialMediaAccountTask socialMediaAccount : socialMediaAccounts) {
             String accountId = socialMediaAccount.getAccountId();
-            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> this.fetchWorks(now, accountId, completeAccountIds, proxy), fixedThreadPool);
+            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> this.fetchWorks(now, accountId, completeAccountIds, proxy, browserProxy), fixedThreadPool);
             allFutures.add(future);
         }
         StopWatch stopWatch = new StopWatch(taskName);
@@ -126,7 +128,7 @@ public abstract class AbstractWorkScheduler {
         }
     }
 
-    public void fetchWorks(Date now, String accountId, List<String> completeAccountIds, Proxy proxy) {
+    public void fetchWorks(Date now, String accountId, List<String> completeAccountIds, Proxy proxy, com.microsoft.playwright.options.Proxy browserProxy) {
         SocialMediaAccount socialMediaAccountVo = this.socialMediaAccountService.getById(accountId);
         if (socialMediaAccountVo == null) {
             log.error(accountId + "账号已被删除");
@@ -140,7 +142,7 @@ public abstract class AbstractWorkScheduler {
             return;
         }
         try {
-            this.fetchWorks(socialMediaAccountVo, proxy);
+            this.fetchWorks(socialMediaAccountVo, proxy, browserProxy);
             this.socialMediaAccountTaskService.deleteTaskById(accountId);
             completeAccountIds.add(accountId);
         } catch (Exception e) {
@@ -148,7 +150,7 @@ public abstract class AbstractWorkScheduler {
         }
     }
 
-    public void fetchWorks(SocialMediaAccount socialMediaAccountVo, Proxy proxy) {
+    public void fetchWorks(SocialMediaAccount socialMediaAccountVo, Proxy proxy, com.microsoft.playwright.options.Proxy browserProxy) {
         String accountId = socialMediaAccountVo.getId();
         String platformId = socialMediaAccountVo.getPlatformId();
         String secUid = socialMediaAccountVo.getSecUid();
