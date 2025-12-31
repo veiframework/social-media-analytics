@@ -557,7 +557,11 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
             if (StringUtils.isNotBlank(shareLink)) {
                 socialMediaWork.setShareLink(shareLink);
             } else {
-                String workUid = jsonNode.get("filter_detail").get("aweme_id").asText();
+                JsonNode filterDetail = jsonNode.get("filter_detail");
+                if (filterDetail == null || filterDetail.isEmpty()) {
+                    return null;
+                }
+                String workUid = filterDetail.get("aweme_id").asText();
                 socialMediaWork.setShareLink(workUid);
             }
             log.error("抖音检测到对方已删除此作品! {}", socialMediaWork.getShareLink());

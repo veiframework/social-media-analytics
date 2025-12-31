@@ -50,7 +50,7 @@ public class DouYinWorkScheduler extends AbstractWorkScheduler {
     public static final String DOUYIN_USER_PAGE = "https://www.douyin.com/user/self";
 
     protected DouYinWorkScheduler(SocialMediaAccountTaskService socialMediaAccountTaskService, RedisService redisService, DataSyncManager dataSyncManager, SocialMediaAccountService socialMediaAccountService, SocialMediaWorkService socialMediaWorkService, SocialMediaWorkCreateService socialMediaWorkCreateService, HubProperties hubProperties) {
-        super(socialMediaAccountTaskService, redisService, dataSyncManager, socialMediaAccountService, socialMediaWorkService, socialMediaWorkCreateService, hubProperties, 7);
+        super(socialMediaAccountTaskService, redisService, dataSyncManager, socialMediaAccountService, socialMediaWorkService, socialMediaWorkCreateService, hubProperties, 10);
         this.setTaskName(SocialMediaPlatformEnum.DOU_YIN.getDomain());
 
     }
