@@ -85,7 +85,7 @@ public class SocialMediaAccountController extends AbstractZ9Controller<SocialMed
         if (socialMediaAccount == null) {
             return;
         }
-        this.socialMediaAccountTaskService.batchAddTask(Sets.newHashSet(socialMediaAccount));
+        this.socialMediaAccountTaskService.batchAddTask(Sets.newHashSet(socialMediaAccount), false);
     }
 
     @RequiresPermissions("sync:all:work")
@@ -95,7 +95,7 @@ public class SocialMediaAccountController extends AbstractZ9Controller<SocialMed
         Set<String> userIds = groupUserService.checkPurview();
         String tenantId = this.groupUserService.tenantPurview();
         List<SocialMediaAccount> accounts = this.getCrudService().getAccountIdsByUserIds(userIds, tenantId);
-        this.socialMediaAccountTaskService.batchAddTask(accounts);
+        this.socialMediaAccountTaskService.batchAddTask(accounts, false);
     }
 
     @Debounce

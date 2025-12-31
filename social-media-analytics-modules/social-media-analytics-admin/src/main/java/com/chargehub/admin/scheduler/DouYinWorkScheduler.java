@@ -2,6 +2,7 @@ package com.chargehub.admin.scheduler;
 
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpUtil;
+import com.alibaba.fastjson.support.spring.FastJsonHttpMessageConverter;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.chargehub.admin.account.domain.SocialMediaAccount;
 import com.chargehub.admin.account.service.SocialMediaAccountService;
@@ -18,15 +19,14 @@ import com.chargehub.admin.work.domain.SocialMediaWork;
 import com.chargehub.admin.work.service.SocialMediaWorkCreateService;
 import com.chargehub.admin.work.service.SocialMediaWorkService;
 import com.chargehub.common.core.properties.HubProperties;
+import com.chargehub.common.core.utils.file.FileUtils;
 import com.chargehub.common.redis.service.RedisService;
-import com.microsoft.playwright.BrowserContext;
-import com.microsoft.playwright.Page;
-import com.microsoft.playwright.Request;
-import com.microsoft.playwright.Route;
+import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.WaitUntilState;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 
@@ -45,17 +45,18 @@ import java.util.Map;
 @Component
 public class DouYinWorkScheduler extends AbstractWorkScheduler {
 
+    public static final String DOUYIN_WEB_RESOURCE_PATH = WEB_RESOURCE_PATH + "/web-douyin";
 
     public static final String DOUYIN_USER_PAGE = "https://www.douyin.com/user/self";
 
     protected DouYinWorkScheduler(SocialMediaAccountTaskService socialMediaAccountTaskService, RedisService redisService, DataSyncManager dataSyncManager, SocialMediaAccountService socialMediaAccountService, SocialMediaWorkService socialMediaWorkService, SocialMediaWorkCreateService socialMediaWorkCreateService, HubProperties hubProperties) {
-        super(socialMediaAccountTaskService, redisService, dataSyncManager, socialMediaAccountService, socialMediaWorkService, socialMediaWorkCreateService, hubProperties, 6);
+        super(socialMediaAccountTaskService, redisService, dataSyncManager, socialMediaAccountService, socialMediaWorkService, socialMediaWorkCreateService, hubProperties, 7);
         this.setTaskName(SocialMediaPlatformEnum.DOU_YIN.getDomain());
 
     }
 
     @Override
-    public void fetchWorks(SocialMediaAccount socialMediaAccountVo, Proxy proxy, Page page) {
+    public void fetchWorks(SocialMediaAccount socialMediaAccountVo, Proxy proxy) {
         String accountId = socialMediaAccountVo.getId();
         String platformId = socialMediaAccountVo.getPlatformId();
         String secUid = socialMediaAccountVo.getSecUid();
@@ -102,42 +103,7 @@ public class DouYinWorkScheduler extends AbstractWorkScheduler {
         }
     }
 
-//          browserContext.route("**/*", route -> {
-//        Request request = route.request();
-//        String resourceType = request.resourceType();
-//        String url = request.url();
-//        if (url.contains("player-") || url.contains("ndex.umd.production") || url.contains("island_") || url.startsWith("blob:") || url.contains("common-monitors") || url.contains("blank-screen") || url.contains("SiderBar") || url.contains("feelgood")) {
-//            route.abort();
-//            return;
-//        }
-//        if ("document".equals(resourceType) || "script".equals(resourceType)) {
-//            route.resume();
-//            return;
-//        }
-//        if (url.contains("/web/aweme/detail/")) {
-//            Request realRequest = route.request();
-//            Map<String, String> headerMap = realRequest.allHeaders();
-//            headerMap.put("connection", "close");
-//            try (HttpResponse execute = HttpUtil.createGet(realRequest.url())
-//                    .setProxy(BrowserConfig.getProxy())
-//                    .timeout(60000)
-//                    .headerMap(headerMap, true).execute()) {
-//                byte[] bodyBytes = execute.bodyBytes();
-//                int status = execute.getStatus();
-//                route.fulfill(new Route.FulfillOptions()
-//                        .setStatus(status)
-//                        .setContentType(MediaType.APPLICATION_JSON_VALUE)
-//                        .setBodyBytes(bodyBytes));
-//            } catch (Exception e) {
-//                route.fulfill(new Route.FulfillOptions()
-//                        .setStatus(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR.value())
-//                        .setContentType(MediaType.APPLICATION_JSON_VALUE)
-//                        .setBody(""));
-//            }
-//            return;
-//        }
-//        route.abort();
-//    });
+
     public static Page navigateToDouYinUserPage(PlaywrightBrowser playwrightBrowser) {
         BrowserContext browserContext = playwrightBrowser.getBrowserContext();
         browserContext.addInitScript("localStorage.clear(); sessionStorage.clear();");
@@ -151,6 +117,28 @@ public class DouYinWorkScheduler extends AbstractWorkScheduler {
             Request request = route.request();
             String resourceType = request.resourceType();
             String url = request.url();
+            boolean isDocument = "document".equals(resourceType);
+            if (isDocument) {
+                route.resume();
+                return;
+            }
+            boolean isScript = "script".equals(resourceType);
+            if (isScript) {
+                byte[] cachedWebResource = FileUtils.getCachedWebResource(DOUYIN_WEB_RESOURCE_PATH, url);
+                if (cachedWebResource.length > 0) {
+                    route.fulfill(new Route.FulfillOptions()
+                            .setStatus(HttpStatus.OK.value())
+                            .setContentType(FastJsonHttpMessageConverter.APPLICATION_JAVASCRIPT.toString())
+                            .setBodyBytes(cachedWebResource));
+                    return;
+                }
+                APIResponse response = route.fetch(new Route.FetchOptions().setTimeout(60_000));
+                if (response.ok()) {
+                    FileUtils.cacheWebResource(url, response.body(), DOUYIN_WEB_RESOURCE_PATH);
+                }
+                route.fulfill(new Route.FulfillOptions().setResponse(response));
+                return;
+            }
             if (url.contains("/web/aweme/detail/")) {
                 Request realRequest = route.request();
                 Map<String, String> headerMap = realRequest.allHeaders();
@@ -173,11 +161,7 @@ public class DouYinWorkScheduler extends AbstractWorkScheduler {
                 }
                 return;
             }
-            if (BrowserConfig.RESOURCE_TYPES.contains(resourceType) || BrowserConfig.RESOURCE_TYPES.stream().anyMatch(url::endsWith)) {
-                route.abort();
-                return;
-            }
-            route.resume();
+            route.abort();
         });
         Page page = playwrightBrowser.newPage();
         for (int i = 0; i <= BrowserConfig.LOAD_PAGE_RETRY; i++) {

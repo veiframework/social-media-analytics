@@ -19,7 +19,6 @@ import com.chargehub.admin.work.service.SocialMediaWorkCreateService;
 import com.chargehub.admin.work.service.SocialMediaWorkService;
 import com.chargehub.common.core.properties.HubProperties;
 import com.chargehub.common.redis.service.RedisService;
-import com.microsoft.playwright.Page;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
@@ -35,6 +34,8 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 public abstract class AbstractWorkScheduler {
+
+    public static final String WEB_RESOURCE_PATH = "/opt/resources/crawler";
 
     public static final String SYNCING_WORK_LOCK = "SYNCING_WORK_LOCK";
 
@@ -95,7 +96,7 @@ public abstract class AbstractWorkScheduler {
         Proxy proxy = BrowserConfig.getProxy();
         for (SocialMediaAccountTask socialMediaAccount : socialMediaAccounts) {
             String accountId = socialMediaAccount.getAccountId();
-            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> this.fetchWorks(now, accountId, completeAccountIds, proxy, null), fixedThreadPool);
+            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> this.fetchWorks(now, accountId, completeAccountIds, proxy), fixedThreadPool);
             allFutures.add(future);
         }
         StopWatch stopWatch = new StopWatch(taskName);
@@ -119,13 +120,13 @@ public abstract class AbstractWorkScheduler {
             log.error("{}同步作品异常 {}", taskName, e.getMessage());
             Thread.currentThread().interrupt();
         } finally {
+            redisService.deleteCacheMapValue(SYNCING_WORK_LOCK, taskName);
             stopWatch.stop();
             log.info("{}同步作品结束 {}秒", taskName, stopWatch.getTotalTimeSeconds());
-            redisService.deleteCacheMapValue(SYNCING_WORK_LOCK, taskName);
         }
     }
 
-    public void fetchWorks(Date now, String accountId, List<String> completeAccountIds, Proxy proxy, Page page) {
+    public void fetchWorks(Date now, String accountId, List<String> completeAccountIds, Proxy proxy) {
         SocialMediaAccount socialMediaAccountVo = this.socialMediaAccountService.getById(accountId);
         if (socialMediaAccountVo == null) {
             log.error(accountId + "账号已被删除");
@@ -139,7 +140,7 @@ public abstract class AbstractWorkScheduler {
             return;
         }
         try {
-            this.fetchWorks(socialMediaAccountVo, proxy, page);
+            this.fetchWorks(socialMediaAccountVo, proxy);
             this.socialMediaAccountTaskService.deleteTaskById(accountId);
             completeAccountIds.add(accountId);
         } catch (Exception e) {
@@ -147,7 +148,7 @@ public abstract class AbstractWorkScheduler {
         }
     }
 
-    public void fetchWorks(SocialMediaAccount socialMediaAccountVo, Proxy proxy, Page page) {
+    public void fetchWorks(SocialMediaAccount socialMediaAccountVo, Proxy proxy) {
         String accountId = socialMediaAccountVo.getId();
         String platformId = socialMediaAccountVo.getPlatformId();
         String secUid = socialMediaAccountVo.getSecUid();
@@ -164,7 +165,6 @@ public abstract class AbstractWorkScheduler {
         dataSyncWorksParams.setSecUid(secUid);
         dataSyncWorksParams.setWorkMap(workMap);
         dataSyncWorksParams.setProxy(proxy);
-        dataSyncWorksParams.setPage(page);
         SocialMediaWorkResult<SocialMediaWork> result = this.dataSyncManager.fetchWorks(platformId, dataSyncWorksParams);
         List<SocialMediaWork> newWorks = result.getWorks();
         if (CollectionUtils.isEmpty(newWorks)) {

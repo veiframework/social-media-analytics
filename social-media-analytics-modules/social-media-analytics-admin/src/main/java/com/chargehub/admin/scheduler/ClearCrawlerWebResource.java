@@ -1,0 +1,19 @@
+package com.chargehub.admin.scheduler;
+
+import cn.hutool.core.io.FileUtil;
+import org.springframework.stereotype.Component;
+
+import java.io.File;
+
+/**
+ * @author zhanghaowei
+ * @since 1.0
+ */
+@Component
+public class ClearCrawlerWebResource {
+
+    public void execute() {
+        FileUtil.del(new File(AbstractWorkScheduler.WEB_RESOURCE_PATH));
+    }
+
+}

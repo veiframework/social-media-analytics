@@ -173,7 +173,7 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
                 .in(CollectionUtils.isNotEmpty(platformId), SocialMediaAccount::getPlatformId, platformId)
                 .inSql(SocialMediaAccount::getId, "SELECT account_id FROM social_media_work WHERE state != 'deleted' AND TIMESTAMPDIFF(DAY, create_time, NOW()) <= " + recentDays)
                 .eq(crawler != null, SocialMediaAccount::getCrawler, crawler)
-                .orderByAsc(SocialMediaAccount::getSyncWorkDate)
+                .orderByDesc(SocialMediaAccount::getCreateTime)
                 .list();
     }
 

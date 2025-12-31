@@ -28,13 +28,13 @@ public class DataSyncWorkSchedulerV4 {
     private HubProperties hubProperties;
 
     public void execute() {
-        List<SocialMediaAccount> accounts = socialMediaAccountService.getAccountIdsByUserIds(null,null);
+        List<SocialMediaAccount> accounts = socialMediaAccountService.getAccountIdsByUserIds(null, null);
         if (CollectionUtils.isNotEmpty(accounts)) {
             Date now = new Date();
             Integer updateMinutes = hubProperties.getUpdateMinutes();
             accounts.removeIf(i -> !i.computeSyncDuration(now, updateMinutes));
         }
-        socialMediaAccountTaskService.batchAddTask(accounts);
+        socialMediaAccountTaskService.batchAddTask(accounts, true);
     }
 
 

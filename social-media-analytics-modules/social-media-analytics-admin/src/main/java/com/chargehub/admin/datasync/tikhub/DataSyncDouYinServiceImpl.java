@@ -803,23 +803,8 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
 
     public static void main(String[] args) {
         try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(StringPool.EMPTY)) {
-            BrowserContext browserContext = playwrightBrowser.getBrowserContext();
-            browserContext.route("**/*", route -> {
-                Request request = route.request();
-                String resourceType = request.resourceType();
-                String url = request.url();
-                if (url.contains("player-")||url.contains("ndex.umd.production") || url.contains("island_") || url.startsWith("blob:") || url.contains("common-monitors") || url.contains("blank-screen") || url.contains("SiderBar") || url.contains("feelgood")) {
-                    route.abort();
-                    return;
-                }
-                if (resourceType.equals("document") || "script".equals(resourceType) || url.contains("/web/aweme/detail/")) {
-                    route.resume();
-                    return;
-                }
-                route.abort();
-            });
-            Page page = playwrightBrowser.newPage();
-            page.navigate("https://www.douyin.com/user/self", new Page.NavigateOptions().setWaitUntil(WaitUntilState.DOMCONTENTLOADED).setTimeout(120_000));
+            Page page = DouYinWorkScheduler.navigateToDouYinUserPage(playwrightBrowser);
+            page.navigate(DouYinWorkScheduler.DOUYIN_USER_PAGE, new Page.NavigateOptions().setWaitUntil(WaitUntilState.DOMCONTENTLOADED).setTimeout(120_000));
             Object object = page.evaluate(DOUYIN_FETCH_WORK_JS, "7581819255117647144");
             System.out.println(object);
             ThreadUtil.safeSleep(600_00000);

@@ -1,6 +1,7 @@
 package com.chargehub.admin.account.service;
 
 import com.baomidou.mybatisplus.core.toolkit.Assert;
+import com.baomidou.mybatisplus.extension.toolkit.Db;
 import com.chargehub.admin.account.domain.SocialMediaAccount;
 import com.chargehub.admin.account.domain.SocialMediaAccountTask;
 import com.chargehub.admin.account.mapper.SocialMediaAccountTaskMapper;
@@ -30,7 +31,7 @@ public class SocialMediaAccountTaskService {
     @Autowired
     private RedisService redisService;
 
-    public synchronized void batchAddTask(Collection<SocialMediaAccount> accounts) {
+    public synchronized void batchAddTask(Collection<SocialMediaAccount> accounts, boolean scheduler) {
         if (CollectionUtils.isEmpty(accounts)) {
             return;
         }
@@ -42,14 +43,19 @@ public class SocialMediaAccountTaskService {
                 task.setPlatformId(i.getPlatformId());
                 return task;
             }).collect(Collectors.toList());
-            MybatisDbUtils.saveOrIgnoreBatch(tasks, 1000);
+            if (scheduler) {
+                MybatisDbUtils.saveOrIgnoreBatch(tasks, 1000);
+            } else {
+                Db.saveOrUpdateBatch(tasks);
+            }
             return null;
         }, 60);
     }
 
+    @SuppressWarnings("unchecked")
     public List<SocialMediaAccountTask> getAllByPlatformId(String platformId, Integer limit) {
         return socialMediaAccountTaskMapper.lambdaQuery().eq(SocialMediaAccountTask::getPlatformId, platformId)
-                .orderByAsc(SocialMediaAccountTask::getCreateTime)
+                .orderByDesc(SocialMediaAccountTask::getCreator, SocialMediaAccountTask::getCreateTime)
                 .last(limit != null, "LIMIT " + limit)
                 .list();
     }

@@ -13,7 +13,6 @@ import com.chargehub.admin.work.service.SocialMediaWorkCreateService;
 import com.chargehub.admin.work.service.SocialMediaWorkService;
 import com.chargehub.common.core.properties.HubProperties;
 import com.chargehub.common.redis.service.RedisService;
-import com.microsoft.playwright.Page;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.stereotype.Component;
@@ -36,7 +35,7 @@ public class WechatVideoWorkScheduler extends AbstractWorkScheduler {
 
 
     @Override
-    public void fetchWorks(SocialMediaAccount socialMediaAccountVo, Proxy proxy, Page page) {
+    public void fetchWorks(SocialMediaAccount socialMediaAccountVo, Proxy proxy) {
         String accountId = socialMediaAccountVo.getId();
         String platformId = socialMediaAccountVo.getPlatformId();
         String secUid = socialMediaAccountVo.getSecUid();
