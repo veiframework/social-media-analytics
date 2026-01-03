@@ -9,6 +9,7 @@ import com.chargehub.admin.account.dto.SocialMediaTransferAccountDto;
 import com.chargehub.admin.account.mapper.SocialMediaAccountMapper;
 import com.chargehub.admin.account.service.SocialMediaAccountService;
 import com.chargehub.admin.account.service.SocialMediaAccountTaskService;
+import com.chargehub.admin.account.vo.SocialMediaAccountSelectorVo;
 import com.chargehub.admin.account.vo.SocialMediaAccountVo;
 import com.chargehub.admin.api.model.LoginUser;
 import com.chargehub.admin.groupuser.service.GroupUserService;
@@ -63,6 +64,17 @@ public class SocialMediaAccountController extends AbstractZ9Controller<SocialMed
         return (IPage<SocialMediaAccountVo>) this.getCrudService().getPage(queryDto);
     }
 
+    @RequiresLogin
+    @GetMapping("/selector")
+    public List<SocialMediaAccountSelectorVo> getAccountSelector(SocialMediaAccountQueryDto queryDto) {
+        doCheckPermissions(Z9CrudApiCodeEnum.PAGE);
+        if (CollectionUtils.isEmpty(queryDto.getUserId())) {
+            Set<String> userIds = this.groupUserService.checkPurview();
+            queryDto.setUserId(userIds);
+        }
+        queryDto.setTenantId(this.groupUserService.tenantPurview());
+        return this.getCrudService().getAccountSelector(queryDto);
+    }
 
     @RequiresLogin
     @Debounce

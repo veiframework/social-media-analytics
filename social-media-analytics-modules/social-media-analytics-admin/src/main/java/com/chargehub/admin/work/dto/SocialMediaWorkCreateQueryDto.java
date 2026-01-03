@@ -40,6 +40,10 @@ public class SocialMediaWorkCreateQueryDto extends Pagination implements Z9CrudQ
     @CrudQueryField
     private String accountType;
 
+    @CrudQueryField
+    @ApiModelProperty("业务类型")
+    private String customType;
+
     @Override
     public Page<SocialMediaWorkCreate> buildPageObj() {
         return page();

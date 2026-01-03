@@ -19,12 +19,17 @@ public class SocialMediaWorkCreateVo implements Serializable, Z9CrudVo {
 
     private String id;
 
+    @ApiModelProperty("作品ID")
+    private String workId;
 
     @ApiModelProperty("分享链接")
     private String shareLink;
 
     @ApiModelProperty("账号类型")
     private String accountType;
+
+    @ApiModelProperty("业务类型")
+    private String customType;
 
     @ApiModelProperty("错误堆栈")
     private String errorStack;

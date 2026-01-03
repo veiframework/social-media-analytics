@@ -28,6 +28,10 @@ public class SocialMediaWorkCreateDto implements Z9CrudDto<SocialMediaWorkCreate
     @ApiModelProperty("账号类型")
     private String accountType;
 
+    @NotBlank
+    @ApiModelProperty("业务类型")
+    private String customType;
+
     @ApiModelProperty("重试次数")
     private Integer retryCount;
 }

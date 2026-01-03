@@ -315,15 +315,6 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
             String desc = noteNode.get("desc").asText("");
             String title = noteNode.get("title").asText();
             String topics = MessageFormatUtils.extractHashtagsStr(desc);
-            String customType = "";
-            Map<String, String> socialMediaCustomType = DictUtils.getDictLabelMap("social_media_custom_type");
-            for (Map.Entry<String, String> entry : socialMediaCustomType.entrySet()) {
-                String k = entry.getKey();
-                String v = entry.getValue();
-                if (desc.contains(k)) {
-                    customType = v;
-                }
-            }
             Date postTime = DateUtil.date(noteNode.get("time").asLong(0));
             //内容类型 （normal=图文笔记，video=视频笔记）
             String workType = "normal".equals(noteNode.get("type").asText()) ? WorkTypeEnum.RICH_TEXT.getType() : WorkTypeEnum.NORMAL_VIDEO.getType();
@@ -365,7 +356,6 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
             socialMediaWork.setCommentNum(commentNum);
             socialMediaWork.setLikeNum(thumbNum);
             socialMediaWork.setPlayNum(playNum);
-            socialMediaWork.setCustomType(customType);
             socialMediaWork.setStatisticMd5(socialMediaWork.generateStatisticMd5());
             SocialMediaUserInfo socialMediaUserInfo = new SocialMediaUserInfo();
             socialMediaUserInfo.setSecUid(secUid);

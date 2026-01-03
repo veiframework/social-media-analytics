@@ -137,11 +137,11 @@ public class SocialMediaWorkController {
     @ApiOperation("通过分享链接获取详情")
     @Operation(summary = "通过分享链接获取详情")
     @GetMapping("/social-media/work/share-link/detail")
-    public SocialMediaWorkVo getWorkDetailByLink(String shareLink) {
+    public SocialMediaWorkVo getWorkDetailByLink(String id) {
         LoginUser loginUser = SecurityUtils.getLoginUser();
         Set<String> roles = loginUser.getRoles();
         String userId = loginUser.getUserid() + "";
-        return this.socialMediaWorkService.getWorkDetail(shareLink, roles, userId);
+        return this.socialMediaWorkService.getWorkDetail(id, roles, userId);
     }
 
 }

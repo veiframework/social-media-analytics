@@ -41,7 +41,7 @@ import search from "@/components/CustomTable/components/search";
 import {getLeaderList, getWorkListApi} from "@/api/statistic.js";
 import CustomTable from "@/components/CustomTable"
 import {getDicts} from "@/api/system/dict/data.js";
-import {listSocialMediaAccount} from "@/api/social-media-account.js";
+import {socialMediaAccountSelector} from "@/api/social-media-account.js";
 import {groupUserApi} from "@/api/group-user.js";
 import ECharts from '@/components/Echarts'
 import CustomInfo from "@/components/CustomInfo/index.vue";
@@ -85,8 +85,8 @@ const getUserList = async () => {
 }
 
 const getAccountList = async () => {
-  const res = await listSocialMediaAccount({pageNum: 1, pageSize: 9999999, searchCount: false})
-  accountListDict.value = res.data.records.map(i => ({
+  const res = await socialMediaAccountSelector()
+  accountListDict.value = res.data.map(i => ({
     label: i.nickname,
     value: i.id,
   }))

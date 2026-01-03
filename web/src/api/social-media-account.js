@@ -3,6 +3,14 @@ import request from '@/utils/request'
 // 社交媒体账号API
 const prefix = '/admin-api/social-media/account'
 
+export function socialMediaAccountSelector(query) {
+    return request({
+        url: `${prefix}/selector`,
+        method: 'get',
+        params: query
+    })
+}
+
 export function listSocialMediaAccount(query) {
     return request({
         url: `${prefix}`,

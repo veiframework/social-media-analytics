@@ -3,11 +3,14 @@ package com.chargehub.admin.account.service;
 import cn.afterturn.easypoi.handler.inter.IExcelDictHandler;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.bean.copier.CopyOptions;
+import cn.hutool.core.date.DatePattern;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.chargehub.admin.account.domain.SocialMediaAccount;
 import com.chargehub.admin.account.dto.*;
 import com.chargehub.admin.account.mapper.SocialMediaAccountMapper;
+import com.chargehub.admin.account.vo.SocialMediaAccountSelectorVo;
 import com.chargehub.admin.account.vo.SocialMediaAccountStatisticVo;
 import com.chargehub.admin.account.vo.SocialMediaAccountVo;
 import com.chargehub.admin.datasync.DataSyncManager;
@@ -18,6 +21,7 @@ import com.chargehub.admin.enums.SocialMediaPlatformEnum;
 import com.chargehub.admin.enums.SyncWorkStatusEnum;
 import com.chargehub.admin.scheduler.AbstractWorkScheduler;
 import com.chargehub.admin.work.domain.SocialMediaWork;
+import com.chargehub.admin.work.dto.SocialMediaWorkQueryDto;
 import com.chargehub.admin.work.service.SocialMediaWorkService;
 import com.chargehub.common.core.properties.HubProperties;
 import com.chargehub.common.redis.service.RedisService;
@@ -35,6 +39,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -164,14 +170,17 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
         Set<String> platformId = dto.getPlatformId();
         String autoSync = dto.getAutoSync();
         Set<String> userId = dto.getUserId();
-        long recentDays = hubProperties.getRecentDays();
+        LocalDateTime now = LocalDateTime.now();
+        LocalDate[] period = SocialMediaWorkService.getValidDatePeriod(now);
+        String start = period[0].toString();
+        String end = period[1].toString();
         return this.baseMapper.lambdaQuery().select(SocialMediaAccount::getId, SocialMediaAccount::getPlatformId, SocialMediaAccount::getSyncWorkDate)
                 .eq(StringUtils.isNotBlank(autoSync), SocialMediaAccount::getAutoSync, autoSync)
                 .in(CollectionUtils.isNotEmpty(ids), SocialMediaAccount::getId, ids)
                 .in(CollectionUtils.isNotEmpty(userId), SocialMediaAccount::getUserId, userId)
                 .in(CollectionUtils.isNotEmpty(syncWorkStatus), SocialMediaAccount::getSyncWorkStatus, syncWorkStatus)
                 .in(CollectionUtils.isNotEmpty(platformId), SocialMediaAccount::getPlatformId, platformId)
-                .inSql(SocialMediaAccount::getId, "SELECT account_id FROM social_media_work WHERE state != 'deleted' AND TIMESTAMPDIFF(DAY, create_time, NOW()) <= " + recentDays)
+                .inSql(SocialMediaAccount::getId, "SELECT account_id FROM social_media_work WHERE state != 'deleted' AND create_time >= '" + start + "' AND create_time < '" + end + "'")
                 .eq(crawler != null, SocialMediaAccount::getCrawler, crawler)
                 .orderByDesc(SocialMediaAccount::getCreateTime)
                 .list();
@@ -277,6 +286,13 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
         this.socialMediaWorkService.transferAccount(transferAccountDto);
     }
 
+
+    public List<SocialMediaAccountSelectorVo> getAccountSelector(SocialMediaAccountQueryDto queryDto) {
+        LambdaQueryWrapper<SocialMediaAccount> qw = this.baseMapper.getQw(queryDto);
+        qw.select(SocialMediaAccount::getNickname, SocialMediaAccount::getId);
+        List<SocialMediaAccount> socialMediaAccounts = this.baseMapper.selectList(qw);
+        return BeanUtil.copyToList(socialMediaAccounts, SocialMediaAccountSelectorVo.class);
+    }
 
     @Override
     public IExcelDictHandler getDictHandler() {

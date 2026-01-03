@@ -24,6 +24,8 @@ public class SocialMediaWorkCreate implements Serializable, Z9CrudEntity {
     @TableId(type = IdType.ASSIGN_ID)
     private String id;
 
+    @ApiModelProperty("作品ID")
+    private String workId;
 
     @CrudSubUniqueId
     @ApiModelProperty("分享链接")
@@ -31,6 +33,9 @@ public class SocialMediaWorkCreate implements Serializable, Z9CrudEntity {
 
     @ApiModelProperty("账号类型")
     private String accountType;
+
+    @ApiModelProperty("业务类型")
+    private String customType;
 
     @ApiModelProperty("错误堆栈")
     private String errorStack;

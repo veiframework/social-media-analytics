@@ -27,7 +27,7 @@ export default defineConfig(({ mode, command }) => {
 			open: true,
 			proxy: {
 				'/dev-api': {
-					target: 'http://127.0.0.1:9201',
+					target: 'https://www.lumengshop.com',
 					changeOrigin: true,
 					rewrite: (p) => p.replace(/^\/dev-api/, '')
 				}

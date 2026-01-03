@@ -582,15 +582,7 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
         String workType = node.get("aweme_type").asInt() == 0 ? WorkTypeEnum.NORMAL_VIDEO.getType() : WorkTypeEnum.RICH_TEXT.getType();
         //媒体类型 (2=图片, 4=视频)
         String mediaType = node.get("media_type").asInt() == 4 ? MediaTypeEnum.VIDEO.getType() : MediaTypeEnum.PICTURE.getType();
-        String customType = "";
-        Map<String, String> socialMediaCustomType = DictUtils.getDictLabelMap("social_media_custom_type");
-        for (Map.Entry<String, String> entry : socialMediaCustomType.entrySet()) {
-            String k = entry.getKey();
-            String v = entry.getValue();
-            if (desc.contains(k)) {
-                customType = v;
-            }
-        }
+
         int thumbNum = node.at("/statistics/digg_count").asInt(0);
         int collectNum = node.at("/statistics/collect_count").asInt(0);
         int shareNum = node.at("/statistics/share_count").asInt(0);
@@ -610,7 +602,6 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
         socialMediaWork.setLikeNum(0);
         socialMediaWork.setTitle(title);
         socialMediaWork.setTopics(topics);
-        socialMediaWork.setCustomType(customType);
 
         socialMediaWork.setStatisticMd5(socialMediaWork.generateStatisticMd5());
         SocialMediaUserInfo socialMediaUserInfo = new SocialMediaUserInfo();

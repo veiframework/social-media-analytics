@@ -1,6 +1,5 @@
 package com.chargehub.admin.scheduler;
 
-import cn.hutool.core.bean.BeanUtil;
 import com.chargehub.admin.account.domain.SocialMediaAccount;
 import com.chargehub.admin.account.service.SocialMediaAccountService;
 import com.chargehub.admin.api.domain.SysUser;
@@ -11,7 +10,6 @@ import com.chargehub.admin.enums.SocialMediaPlatformEnum;
 import com.chargehub.admin.enums.WorkCreateStatusEnum;
 import com.chargehub.admin.work.domain.SocialMediaWork;
 import com.chargehub.admin.work.dto.SocialMediaWorkCreateQueryDto;
-import com.chargehub.admin.work.dto.SocialMediaWorkDto;
 import com.chargehub.admin.work.service.SocialMediaWorkCreateService;
 import com.chargehub.admin.work.service.SocialMediaWorkService;
 import com.chargehub.admin.work.vo.SocialMediaWorkCreateVo;
@@ -75,7 +73,7 @@ public class CreateWorkScheduler {
         } catch (Exception e) {
             String errorMsg = e.getMessage();
             if (StringUtils.isNotBlank(errorMsg) && (errorMsg.contains("重复") || errorMsg.contains("下架"))) {
-                this.socialMediaWorkCreateService.updateStatusNoRetry(id, WorkCreateStatusEnum.FAIL, errorMsg);
+                this.socialMediaWorkCreateService.updateStatusNoRetry(id, WorkCreateStatusEnum.FAIL, errorMsg, null);
                 return;
             }
             String errorStack = com.chargehub.common.core.utils.StringUtils.substring(ExceptionUtil.getExceptionMessage(e), 0, 2000);
@@ -94,6 +92,7 @@ public class CreateWorkScheduler {
         }
         String tenantId = sysUser.getShopId() + "";
         String accountType = dto.getAccountType();
+        String customType = dto.getCustomType();
         SocialMediaPlatformEnum.PlatformExtra platformEnum = SocialMediaPlatformEnum.getPlatformByWorkUrl(shareLink);
         SocialMediaWorkDetail<SocialMediaWork> socialMediaWorkDetail = this.dataSyncManager.fetchWork(shareLink, platformEnum);
         Assert.notNull(socialMediaWorkDetail, "获取作品失败,请重试");
@@ -107,12 +106,12 @@ public class CreateWorkScheduler {
         socialMediaWork.setAccountType(socialMediaAccount.getType());
         socialMediaWork.setShareLink(shareLink);
         socialMediaWork.setTenantId(tenantId);
-        SocialMediaWorkDto socialMediaWorkDto = BeanUtil.copyProperties(socialMediaWork, SocialMediaWorkDto.class);
-        socialMediaWorkService.create(socialMediaWorkDto);
+        socialMediaWork.setCustomType(customType);
+        String workId = socialMediaWorkService.getAndSave(socialMediaWork);
         String dbUserId = socialMediaAccount.getUserId();
         boolean equals = dbUserId.equals(userId);
         String errorMsg = equals ? null : "注意!该作品归属于员工" + dbUserId + ",如您不是组长无权限查看作品";
-        this.socialMediaWorkCreateService.updateStatusNoRetry(id, WorkCreateStatusEnum.SUCCESS, errorMsg);
+        this.socialMediaWorkCreateService.updateStatusNoRetry(id, WorkCreateStatusEnum.SUCCESS, errorMsg, workId);
     }
 
 

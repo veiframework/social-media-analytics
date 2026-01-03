@@ -413,15 +413,6 @@ public class KuaiShouSyncServiceImpl implements DataSyncService {
             }
             title = MessageFormatUtils.cleanDescription(desc);
             topics = MessageFormatUtils.extractHashtagsStr(desc);
-            customType = "";
-            Map<String, String> socialMediaCustomType = DictUtils.getDictLabelMap("social_media_custom_type");
-            for (Map.Entry<String, String> entry : socialMediaCustomType.entrySet()) {
-                String k = entry.getKey();
-                String v = entry.getValue();
-                if (desc.contains(k)) {
-                    customType = v;
-                }
-            }
             SocialMediaWork socialMediaWork = new SocialMediaWork();
             socialMediaWork.setUrl(currentUrl);
             socialMediaWork.setShareLink(shareLink);
@@ -439,7 +430,6 @@ public class KuaiShouSyncServiceImpl implements DataSyncService {
             socialMediaWork.setPlayNum(playNum);
             socialMediaWork.setTitle(title);
             socialMediaWork.setTopics(topics);
-            socialMediaWork.setCustomType(customType);
             socialMediaWork.setStatisticMd5(socialMediaWork.generateStatisticMd5());
             SocialMediaUserInfo socialMediaUserInfo = new SocialMediaUserInfo();
             socialMediaUserInfo.setSecUid(secUid);

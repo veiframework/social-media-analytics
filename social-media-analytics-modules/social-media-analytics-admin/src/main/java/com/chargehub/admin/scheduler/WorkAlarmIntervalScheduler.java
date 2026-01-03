@@ -1,6 +1,7 @@
 package com.chargehub.admin.scheduler;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.ReflectUtil;
@@ -32,6 +33,7 @@ import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -80,6 +82,9 @@ public class WorkAlarmIntervalScheduler {
         if (socialMediaWorkAlarm == null) {
             return;
         }
+        LocalDate localDate = LocalDate.now();
+        String now = localDate.format(DatePattern.NORM_DATE_FORMATTER);
+        String tomorrow = localDate.plusDays(1).format(DatePattern.NORM_DATE_FORMATTER);
         String workAlarmLastExecuteTimeKey = WORK_ALARM_LAST_EXECUTE_TIME_KEY + taskId;
         String keyword = socialMediaWorkAlarm.getKeyword();
         String keywordValue = socialMediaWorkAlarm.getKeywordValue();
@@ -91,6 +96,8 @@ public class WorkAlarmIntervalScheduler {
             socialMediaAccountQueryDto.setNumber(pageNum);
             socialMediaAccountQueryDto.setSize(50L);
             socialMediaAccountQueryDto.setUpdateTime(lastDatetime);
+            socialMediaAccountQueryDto.setStartCreateTime(now);
+            socialMediaAccountQueryDto.setEndCreateTime(tomorrow);
             socialMediaAccountQueryDto.setState(Sets.newHashSet(WorkStateEnum.OPEN.getDesc(), WorkStateEnum.PRIVATE.getDesc()));
             socialMediaAccountQueryDto.setSearchCount(false);
             if (StringUtils.isNotBlank(keyword)) {

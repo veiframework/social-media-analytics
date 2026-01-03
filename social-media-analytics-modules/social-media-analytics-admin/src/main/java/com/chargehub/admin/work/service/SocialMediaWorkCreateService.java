@@ -40,7 +40,7 @@ public class SocialMediaWorkCreateService extends AbstractZ9CrudServiceImpl<Soci
     public void create(Z9CrudDto<SocialMediaWorkCreate> dto) {
         SocialMediaWorkCreateDto socialMediaWorkCreateDto = (SocialMediaWorkCreateDto) dto;
         redisService.lock(LOCK_CREATE_SHARE_LINK + socialMediaWorkCreateDto.getShareLink(), locked -> {
-            Assert.isTrue(locked, "该作品链接已被其他人添加,无需重复添加");
+            Assert.isTrue(locked, "请求过多,请稍后再试");
             super.create(dto);
             return null;
         });
@@ -54,10 +54,11 @@ public class SocialMediaWorkCreateService extends AbstractZ9CrudServiceImpl<Soci
                 .update();
     }
 
-    public void updateStatusNoRetry(String id, WorkCreateStatusEnum status, String errorMsg) {
+    public void updateStatusNoRetry(String id, WorkCreateStatusEnum status, String errorMsg, String workId) {
         this.baseMapper.lambdaUpdate()
                 .set(SocialMediaWorkCreate::getCreateStatus, status.getDesc())
                 .set(SocialMediaWorkCreate::getErrorMsg, errorMsg)
+                .set(StringUtils.isNotBlank(workId), SocialMediaWorkCreate::getWorkId, workId)
                 .set(errorMsg == null, SocialMediaWorkCreate::getErrorStack, null)
                 .set(SocialMediaWorkCreate::getRetryCount, 0)
                 .eq(SocialMediaWorkCreate::getId, id)

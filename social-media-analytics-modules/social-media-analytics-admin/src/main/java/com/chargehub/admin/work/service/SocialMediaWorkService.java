@@ -21,6 +21,7 @@ import com.chargehub.common.redis.service.RedisService;
 import com.chargehub.common.security.service.ChargeExcelDictHandler;
 import com.chargehub.common.security.template.dto.Z9CrudQueryDto;
 import com.chargehub.common.security.template.event.Z9BeforeCreateEvent;
+import com.chargehub.common.security.template.event.Z9CreateEvent;
 import com.chargehub.common.security.template.service.AbstractZ9CrudServiceImpl;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -30,6 +31,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -96,9 +99,9 @@ public class SocialMediaWorkService extends AbstractZ9CrudServiceImpl<SocialMedi
         return this.baseMapper.groupByAccountId(page, userIds, ascFields, descFields, tenantId);
     }
 
-    public SocialMediaWorkVo getWorkDetail(String shareLink, Set<String> roles, String userId) {
-        SocialMediaWork work = this.baseMapper.lambdaQuery().like(SocialMediaWork::getShareLink, shareLink).one();
-        Assert.notNull(work, "作品不存在了: " + shareLink);
+    public SocialMediaWorkVo getWorkDetail(String id, Set<String> roles, String userId) {
+        SocialMediaWork work = this.baseMapper.lambdaQuery().eq(SocialMediaWork::getId, id).one();
+        Assert.notNull(work, "作品不存在了: " + id);
         String targetUserId = work.getUserId();
         if (roles.contains("员工") && !targetUserId.equals(userId)) {
             throw new IllegalArgumentException("该作品账号归属于其他员工，请联系组长或主管");
@@ -117,25 +120,38 @@ public class SocialMediaWorkService extends AbstractZ9CrudServiceImpl<SocialMedi
     }
 
 
-    @SuppressWarnings("all")
     public List<SocialMediaWork> getLatestWork(String accountId) {
-        long recentDays = hubProperties.getRecentDays();
+        LocalDate[] period = SocialMediaWorkService.getValidDatePeriod(LocalDateTime.now());
         return this.baseMapper.lambdaQuery().eq(SocialMediaWork::getAccountId, accountId)
                 .ne(SocialMediaWork::getState, WorkStateEnum.DELETED.getDesc())
-                .apply("TIMESTAMPDIFF(DAY, create_time, NOW()) <= " + recentDays)
+                .ge(SocialMediaWork::getCreateTime, period[0])
+                .lt(SocialMediaWork::getCreateTime, period[1])
                 .list();
     }
 
     @SuppressWarnings("unchecked")
     public List<SocialMediaWork> getDouYinLatestWork() {
-        long recentDays = hubProperties.getRecentDays();
+        LocalDate[] period = SocialMediaWorkService.getValidDatePeriod(LocalDateTime.now());
         return this.baseMapper.lambdaQuery()
                 .select(SocialMediaWork::getId, SocialMediaWork::getPlayFixed, SocialMediaWork::getPlayNum, SocialMediaWork::getPlayNumChange, SocialMediaWork::getPlayNumUp, SocialMediaWork::getWorkUid)
                 .eq(SocialMediaWork::getPlatformId, SocialMediaPlatformEnum.DOU_YIN.getDomain())
                 .inSql(SocialMediaWork::getAccountId, "SELECT id FROM social_media_account WHERE auto_sync = 'enable'")
                 .ne(SocialMediaWork::getState, WorkStateEnum.DELETED.getDesc())
-                .apply("TIMESTAMPDIFF(DAY, create_time, NOW()) <= " + recentDays)
+                .ge(SocialMediaWork::getCreateTime, period[0])
+                .lt(SocialMediaWork::getCreateTime, period[1])
                 .list();
+    }
+
+    public static LocalDate[] getValidDatePeriod(LocalDateTime now) {
+        LocalDate today = now.toLocalDate();
+        boolean isMidnight = now.getHour() == 0;
+        if (isMidnight) {
+            LocalDate endOfPreviousMonth = today.minusDays(1);
+            LocalDate start = endOfPreviousMonth.withDayOfMonth(1);
+            return new LocalDate[]{start, today};
+        }
+        LocalDate end = today.plusDays(1);
+        return new LocalDate[]{today, end};
     }
 
     public void transferAccount(SocialMediaTransferAccountDto dto) {
@@ -169,6 +185,20 @@ public class SocialMediaWorkService extends AbstractZ9CrudServiceImpl<SocialMedi
 
     public Long getWorkNumByAccountId(String accountId) {
         return this.baseMapper.lambdaQuery().eq(SocialMediaWork::getAccountId, accountId).count();
+    }
+
+    public String getAndSave(SocialMediaWork socialMediaWork) {
+        String workId;
+        SocialMediaWork exist = this.baseMapper.lambdaQuery().eq(SocialMediaWork::getWorkUid, socialMediaWork.getWorkUid()).one();
+        if (exist == null) {
+            this.baseMapper.insert(socialMediaWork);
+            workId = socialMediaWork.getId();
+            SocialMediaWorkDto socialMediaWorkDto = BeanUtil.copyProperties(socialMediaWork, SocialMediaWorkDto.class);
+            this.publishEvent(new Z9CreateEvent<>(socialMediaWork, socialMediaWorkDto, SocialMediaWork.class));
+        } else {
+            workId = exist.getId();
+        }
+        return workId;
     }
 
     @EventListener

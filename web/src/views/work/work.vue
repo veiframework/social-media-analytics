@@ -165,7 +165,7 @@ import {getDicts} from '@/api/system/dict/data'
 import CustomTable from "@/components/CustomTable"
 import CustomInfo from "@/components/CustomInfo"
 import settings from "@/settings.js";
-import {listSocialMediaAccount, syncAllWork} from "@/api/social-media-account.js";
+import {syncAllWork, socialMediaAccountSelector} from "@/api/social-media-account.js";
 import {groupUserApi} from '@/api/group-user'
 import Template from "@/views/base/template.vue";
 import CustomDialog from "@/components/CustomDialog/index.vue";
@@ -367,8 +367,8 @@ const handleWechatVideoForm = async (val) => {
 }
 
 const showDetailByLink = async (row) => {
-  let shareLink = row.shareLink
-  const response = await getWorkByShareLinkApi({shareLink: shareLink})
+  let workId = row.workId
+  const response = await getWorkByShareLinkApi({id: workId})
   rowData.value = response.data
   infoVisible.value = true
 }
@@ -430,8 +430,8 @@ const getDict = async () => {
 }
 
 const getAccountList = async () => {
-  const res = await listSocialMediaAccount({pageNum: 1, pageSize: 9999999, searchCount: false})
-  accountListDict.value = res.data.records.map(i => ({
+  const res = await socialMediaAccountSelector()
+  accountListDict.value = res.data.map(i => ({
     label: i.nickname,
     value: i.id,
   }))
@@ -449,8 +449,8 @@ const getUserList = async () => {
 const getData = async () => {
   loading.value = true
   try {
-      getUserList()
-      getAccountList()
+    getUserList()
+    getAccountList()
     const params = {
       pageNum: pageNum.value,
       pageSize: pageSize.value,
@@ -746,7 +746,15 @@ const option = reactive({
   /** 表格顶部左侧 button 配置项 */
   headerBtn: [
     {key: "export", text: "导出", icon: "Download", isShow: true, type: "primary", disabled: false},
-    {key: "syncWork", text: "同步作品", icon: "Refresh", isShow: true, type: "primary", disabled: false,hasPermi: ['sync:all:work']},
+    {
+      key: "syncWork",
+      text: "同步作品",
+      icon: "Refresh",
+      isShow: true,
+      type: "primary",
+      disabled: false,
+      hasPermi: ['sync:all:work']
+    },
     {key: "shareLink", text: "通过作品分享链接添加", icon: "Link", isShow: true, type: "primary", disabled: false},
     // {
     //   key: "wechatVideo",
@@ -1185,17 +1193,28 @@ const optionShareLink = reactive({
       prop: "shareLink",
       category: "textarea",
       placeholder: "请输入分享链接",
-    }, {
+      span: 2
+    },
+    {
       type: "select",
       label: "账号类型",
       prop: "accountType",
       placeholder: "请选择账号类型",
-      dicData: socialMediaAccountTypeDict
-    }
+      dicData: socialMediaAccountTypeDict,
+    },
+    {
+      type: "select",
+      label: "业务类型",
+      prop: "customType",
+      category: "select",
+      placeholder: "请选择业务类型",
+      dicData: socialMediaCustomTypeDict,
+    },
   ],
   rules: {
     shareLink: [{required: true, message: '请输入分享链接', trigger: 'blur'}],
-    accountType: [{required: true, message: '请选择账号类型', trigger: 'blur'}]
+    accountType: [{required: true, message: '请选择账号类型', trigger: 'blur'}],
+    customType: [{required: true, message: '请选择业务类型', trigger: 'blur'}]
   }
 })
 
@@ -1288,6 +1307,15 @@ const shareLinkTableOption = ref({
       sortable: false,
       isShow: true,
       noFilter: true
+    }, {
+      type: 'tag',
+      label: '业务类型',
+      prop: 'customType',
+      width: 80,
+      fixed: false,
+      sortable: false,
+      isShow: true,
+      dicData: socialMediaCustomTypeDict
     }, {
       type: 'tag',
       label: '账号类型',
