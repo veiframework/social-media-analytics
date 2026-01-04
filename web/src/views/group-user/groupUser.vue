@@ -173,9 +173,9 @@ const webhookOption = reactive({
     },
     {
       type: "input",
-      label: "关键字",
+      label: "加签密钥",
       prop: "token",
-      placeholder: "请输入钉钉群机器人关键字",
+      placeholder: "请输入钉钉群机器人加签密钥",
       default: null
     },
     {

@@ -59,7 +59,7 @@ public class SocialMediaWorkCreateService extends AbstractZ9CrudServiceImpl<Soci
                 .set(SocialMediaWorkCreate::getCreateStatus, status.getDesc())
                 .set(SocialMediaWorkCreate::getErrorMsg, errorMsg)
                 .set(StringUtils.isNotBlank(workId), SocialMediaWorkCreate::getWorkId, workId)
-                .set(errorMsg == null, SocialMediaWorkCreate::getErrorStack, null)
+                .set(status == WorkCreateStatusEnum.SUCCESS, SocialMediaWorkCreate::getErrorStack, null)
                 .set(SocialMediaWorkCreate::getRetryCount, 0)
                 .eq(SocialMediaWorkCreate::getId, id)
                 .update();
