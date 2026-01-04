@@ -240,6 +240,6 @@ public class SocialMediaWorkService extends AbstractZ9CrudServiceImpl<SocialMedi
 
     @Override
     public String excelName() {
-        return "作品列表";
+        return "作品列表(仅供分析不得传播©lumengshop.com)";
     }
 }
