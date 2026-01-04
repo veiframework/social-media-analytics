@@ -123,7 +123,7 @@ public class SocialMediaWorkQueryDto extends Pagination implements Serializable,
             condition.setQueryType(Z9QueryTypeEnum.GE);
             condition.setValue(startCreateTime);
             Z9CrudQueryCondition<SocialMediaWork> condition2 = new Z9CrudQueryCondition<>();
-            condition2.setField(SocialMediaWork::getPostTime);
+            condition2.setField(SocialMediaWork::getCreateTime);
             condition2.setQueryType(Z9QueryTypeEnum.LT);
             condition2.setValue(endCreateTime);
             z9CrudQueryConditions.add(condition);

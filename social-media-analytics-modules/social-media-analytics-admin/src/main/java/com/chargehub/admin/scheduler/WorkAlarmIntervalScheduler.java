@@ -37,6 +37,7 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -127,7 +128,7 @@ public class WorkAlarmIntervalScheduler {
         WorkAlarmRecordValue lastRecordValue = redisService.getCacheObject(workAlarmRecordKey);
         Integer startInterval = socialMediaWorkAlarm.getStartInterval();
         if (lastRecordValue == null) {
-            redisService.setCacheObject(workAlarmRecordKey, new WorkAlarmRecordValue(currentFieldValue, 0));
+            redisService.setCacheObject(workAlarmRecordKey, new WorkAlarmRecordValue(currentFieldValue, 0), 31L, TimeUnit.DAYS);
             return;
         }
         int count = lastRecordValue.getCount() + 1;
@@ -164,7 +165,7 @@ public class WorkAlarmIntervalScheduler {
                 alarmNotificationConfig.setMsgTemplate(msgTemplate);
             }
             alarmNotificationManager.send(leadershipWebhook);
-            redisService.setCacheObject(workAlarmRecordKey, new WorkAlarmRecordValue(currentFieldValue, count));
+            redisService.setCacheObject(workAlarmRecordKey, new WorkAlarmRecordValue(currentFieldValue, count), 31L, TimeUnit.DAYS);
         }
     }
 

@@ -74,6 +74,7 @@ public class SocialMediaWorkController {
             Set<String> userIds = this.groupUserService.checkPurview();
             queryDto.setUserId(userIds);
         }
+        queryDto.setTenantId(this.groupUserService.tenantPurview());
         return this.socialMediaWorkService.exportExcel(queryDto);
     }
 

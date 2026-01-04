@@ -23,6 +23,7 @@ import com.chargehub.common.security.template.dto.Z9CrudQueryDto;
 import com.chargehub.common.security.template.event.Z9BeforeCreateEvent;
 import com.chargehub.common.security.template.event.Z9CreateEvent;
 import com.chargehub.common.security.template.service.AbstractZ9CrudServiceImpl;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,6 +42,7 @@ import java.util.stream.Collectors;
  * @author : zhanghaowei
  * @since : 1.0
  */
+@Slf4j
 @Service
 @Transactional(rollbackFor = Exception.class)
 public class SocialMediaWorkService extends AbstractZ9CrudServiceImpl<SocialMediaWorkMapper, SocialMediaWork> {
@@ -49,13 +51,15 @@ public class SocialMediaWorkService extends AbstractZ9CrudServiceImpl<SocialMedi
     private ChargeExcelDictHandler chargeExcelDictHandler;
 
     @Autowired
-    private HubProperties hubProperties;
-
-    @Autowired
     private RedisService redisService;
 
-    protected SocialMediaWorkService(SocialMediaWorkMapper baseMapper) {
+    private static long recentDays;
+
+    protected SocialMediaWorkService(SocialMediaWorkMapper baseMapper,
+                                     HubProperties hubProperties) {
         super(baseMapper);
+        recentDays = hubProperties.getRecentDays();
+        log.info("采集数据间隔天数: " + recentDays);
     }
 
 
@@ -146,8 +150,7 @@ public class SocialMediaWorkService extends AbstractZ9CrudServiceImpl<SocialMedi
         LocalDate today = now.toLocalDate();
         boolean isMidnight = now.getHour() == 0;
         if (isMidnight) {
-            LocalDate endOfPreviousMonth = today.minusDays(1);
-            LocalDate start = endOfPreviousMonth.withDayOfMonth(1);
+            LocalDate start = today.minusDays(recentDays);
             return new LocalDate[]{start, today};
         }
         LocalDate end = today.plusDays(1);
