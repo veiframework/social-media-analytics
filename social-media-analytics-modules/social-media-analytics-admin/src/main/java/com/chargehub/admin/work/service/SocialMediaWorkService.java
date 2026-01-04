@@ -148,7 +148,7 @@ public class SocialMediaWorkService extends AbstractZ9CrudServiceImpl<SocialMedi
 
     public static LocalDate[] getValidDatePeriod(LocalDateTime now) {
         LocalDate today = now.toLocalDate();
-        boolean isMidnight = now.getHour() == 0;
+        boolean isMidnight = now.getHour() == 5;
         if (isMidnight) {
             LocalDate start = today.minusDays(recentDays);
             return new LocalDate[]{start, today};
