@@ -1,12 +1,10 @@
 package com.chargehub.admin.datasync.tikhub;
 
 import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
-import cn.hutool.http.HttpStatus;
 import cn.hutool.http.HttpUtil;
 import com.chargehub.admin.account.vo.SocialMediaAccountVo;
 import com.chargehub.admin.datasync.DataSyncMessageQueue;
@@ -27,6 +25,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.ElementHandle;
 import com.microsoft.playwright.Page;
+import com.microsoft.playwright.Response;
 import com.microsoft.playwright.options.BoundingBox;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -42,6 +41,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author zhanghaowei
@@ -298,6 +298,13 @@ public class KuaiShouSyncServiceImpl implements DataSyncService {
     public <T> SocialMediaWorkDetail<T> fetchWork0(DataSyncParamContext dataSyncParamContext) {
         boolean isScheduler = dataSyncParamContext.isScheduler();
         String shareLink = dataSyncParamContext.getShareLink();
+        String redirectUrl = dataSyncParamContext.getRedirectUrl();
+        boolean isVideo;
+        if (StringUtils.isBlank(redirectUrl)) {
+            isVideo = dataSyncParamContext.getMediaType().equals(MediaTypeEnum.VIDEO.getType());
+        } else {
+            isVideo = redirectUrl.contains("short-video");
+        }
         HttpRequest httpRequest = HttpUtil.createGet(shareLink)
                 .setFollowRedirects(true)
                 .timeout(60000)
@@ -322,58 +329,69 @@ public class KuaiShouSyncServiceImpl implements DataSyncService {
             String mediaType = "";
             String workType = "";
             String secUid = "";
-            if (currentUrl.contains("short-video")) {
-                HubProperties.SocialMediaDataApi socialMediaDataApi = hubProperties.getSocialMediaDataApi().get("tikhub");
-                String token = socialMediaDataApi.getToken();
-                String host = socialMediaDataApi.getHost();
-                Document document = JsoupUtil.parse(inputStream);
-                if (document.text().contains("作品已失效")) {
-                    log.error("快手检测到对方已删除此作品! {}", dataSyncParamContext.getShareLink());
-                    SocialMediaWork socialMediaWork = new SocialMediaWork();
-                    socialMediaWork.setShareLink(dataSyncParamContext.getShareLink());
-                    socialMediaWork.setWorkUid("-1");
-                    return (SocialMediaWorkDetail<T>) new SocialMediaWorkDetail<>(socialMediaWork, null);
-                }
-                String json = JsoupUtil.findContentInScript(document, "window.__APOLLO_STATE__=");
-                Assert.hasText(json, "触发快手限流了,开始重试");
-                JsonNode jsonNode = JacksonUtil.toObj(json);
-                JsonNode defaultClient = jsonNode.get("defaultClient");
-                Iterator<Map.Entry<String, JsonNode>> fields = defaultClient.fields();
-                while (fields.hasNext()) {
-                    Map.Entry<String, JsonNode> entry = fields.next();
-                    String key = entry.getKey();
-                    JsonNode value = entry.getValue();
-                    if (key.startsWith("VisionVideoDetailPhoto")) {
-                        workUid = value.get("id").asText();
-                        thumbNum = value.get("realLikeCount").asInt();
-                        playNum = BrowserConfig.clearWord(value.get("viewCount").asText());
-                        shareNum = 0;
-                        collectNum = 0;
-                        desc = value.get("caption").asText();
-                        postTime = DateUtil.date(value.get("timestamp").asLong(0));
-                        mediaType = MediaTypeEnum.VIDEO.getType();
-                        workType = WorkTypeEnum.NORMAL_VIDEO.getType();
-                    }
-                    if (key.contains("VisionVideoDetailAuthor")) {
-                        nickname = value.get("name").asText();
-                        secUid = value.get("id").asText();
-                        if (isScheduler) {
-                            continue;
+            if (isVideo) {
+                try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(PlaywrightBrowser.buildProxy())) {
+                    Page page = playwrightBrowser.newPage();
+                    AtomicReference<String> navigateContent = new AtomicReference<>();
+                    Response commentRes = page.waitForResponse(res -> {
+                        boolean graphql = res.url().contains("graphql");
+                        if (graphql) {
+                            String postData = res.request().postData();
+                            return postData.contains("commentListQuery");
                         }
-                        String finalSecUid = secUid;
-                        uid = dataSyncMessageQueue.retryExecute(() -> {
-                            try (HttpResponse profileResponse = HttpUtil.createGet(host + PROFILE_INFO).bearerAuth(token).formStr(MapUtil.of("user_id", finalSecUid)).execute()) {
-                                String profileJson = profileResponse.body();
-                                JsonNode profileJsonNode = JacksonUtil.toObj(profileJson);
-                                int code = profileJsonNode.path("code").asInt(500);
-                                Assert.isTrue(code == HttpStatus.HTTP_OK, "获取快手用户UID失败" + profileJson);
-                                String kwaiId = profileJsonNode.at("/data/userProfile/profile/kwaiId").asText();
-                                if (StringUtils.isBlank(kwaiId)) {
-                                    kwaiId = profileJsonNode.at("/data/userProfile/profile/user_id").asText();
-                                }
-                                return new DataSyncMessageQueue.AsyncResult(true, kwaiId);
+                        return false;
+                    }, () -> {
+                        Response navigate = page.navigate(shareLink, new Page.NavigateOptions().setTimeout(BrowserConfig.LOAD_PAGE_TIMEOUT));
+                        navigateContent.set(new String(navigate.body()));
+                    });
+                    Integer commentCountV2 = JacksonUtil.readField(commentRes.body(), "commentCountV2", Integer.class);
+                    commentNum = commentCountV2 == null ? 0 : commentCountV2;
+                    String content = navigateContent.get();
+                    Document document = JsoupUtil.parse(content);
+                    if (document.text().contains("作品已失效")) {
+                        log.error("快手检测到对方已删除此作品! {}", dataSyncParamContext.getShareLink());
+                        SocialMediaWork socialMediaWork = new SocialMediaWork();
+                        socialMediaWork.setShareLink(dataSyncParamContext.getShareLink());
+                        socialMediaWork.setWorkUid("-1");
+                        return (SocialMediaWorkDetail<T>) new SocialMediaWorkDetail<>(socialMediaWork, null);
+                    }
+                    String json = JsoupUtil.findContentInScript(document, "window.__APOLLO_STATE__=");
+                    Assert.hasText(json, "触发快手限流了,开始重试");
+                    JsonNode jsonNode = JacksonUtil.toObj(json);
+                    JsonNode defaultClient = jsonNode.get("defaultClient");
+                    Iterator<Map.Entry<String, JsonNode>> fields = defaultClient.fields();
+                    while (fields.hasNext()) {
+                        Map.Entry<String, JsonNode> entry = fields.next();
+                        String key = entry.getKey();
+                        JsonNode value = entry.getValue();
+                        if (key.startsWith("VisionVideoDetailPhoto")) {
+                            workUid = value.get("id").asText();
+                            thumbNum = value.get("realLikeCount").asInt();
+                            playNum = BrowserConfig.clearWord(value.get("viewCount").asText());
+                            shareNum = 0;
+                            collectNum = 0;
+                            desc = value.get("caption").asText();
+                            postTime = DateUtil.date(value.get("timestamp").asLong(0));
+                            mediaType = MediaTypeEnum.VIDEO.getType();
+                            workType = WorkTypeEnum.NORMAL_VIDEO.getType();
+                        }
+                        if (key.contains("VisionVideoDetailAuthor")) {
+                            nickname = value.get("name").asText();
+                            secUid = value.get("id").asText();
+                            if (isScheduler) {
+                                continue;
                             }
-                        }, KUAISHOU_RETRY);
+                            Page popupPage = page.waitForPopup(() -> {
+                                ElementHandle element = page.querySelector("span[class*='profile-user-name-title']");
+                                BoundingBox box = element.boundingBox();
+                                double x = box.x + box.width / 2;
+                                double y = box.y + box.height / 2;
+                                page.mouse().move(x, y);
+                                page.mouse().click(x, y);
+                            });
+                            String fullText = popupPage.textContent(":text-matches(' 快手号：.*')");
+                            uid = fullText.replace(" 快手号：", "");
+                        }
                     }
                 }
             } else {
