@@ -1,5 +1,7 @@
 <template>
   <div>
+    <Watermark  text="未经许可不得传播" />
+
     <!-- 社交媒体账号管理表格 -->
     <CustomTable
         :data="tableData"
@@ -81,6 +83,7 @@ import CustomDialog from "@/components/CustomDialog"
 import {getDicts} from "@/api/system/dict/data.js";
 import {groupUserApi} from "@/api/group-user.js";
 import Template from "@/views/base/template.vue";
+import Watermark from "@/components/Watermark/index.vue";
 
 // 页面数据
 const tableData = ref([])

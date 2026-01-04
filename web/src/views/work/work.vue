@@ -1,5 +1,7 @@
 <template>
   <div>
+    <Watermark  text="未经许可不得传播" />
+
     <!-- 作品管理表格 -->
     <CustomTable
         :data="tableData"
@@ -164,6 +166,7 @@ import {
 import {getDicts} from '@/api/system/dict/data'
 import CustomTable from "@/components/CustomTable"
 import CustomInfo from "@/components/CustomInfo"
+import Watermark from "@/components/Watermark"
 import settings from "@/settings.js";
 import {syncAllWork, socialMediaAccountSelector} from "@/api/social-media-account.js";
 import {groupUserApi} from '@/api/group-user'
@@ -1408,6 +1411,18 @@ init()
 
 .m5 {
   position: relative;
+}
+
+.watermark-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" opacity="0.15" rotate="-15"><text x="50%" y="50%" font-family="Arial" font-size="14" fill="black" text-anchor="middle" transform="rotate(-15, 100, 100)">作品管理</text></svg>');
+  background-size: 200px 200px;
 }
 </style>
 

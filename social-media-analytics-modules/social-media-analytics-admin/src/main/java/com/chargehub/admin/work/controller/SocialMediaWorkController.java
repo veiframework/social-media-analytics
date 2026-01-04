@@ -11,6 +11,8 @@ import com.chargehub.admin.work.service.SocialMediaWorkCreateService;
 import com.chargehub.admin.work.service.SocialMediaWorkService;
 import com.chargehub.admin.work.vo.SocialMediaWorkCreateVo;
 import com.chargehub.admin.work.vo.SocialMediaWorkVo;
+import com.chargehub.common.log.annotation.Log;
+import com.chargehub.common.log.enums.BusinessType;
 import com.chargehub.common.security.annotation.Debounce;
 import com.chargehub.common.security.annotation.RequiresLogin;
 import com.chargehub.common.security.annotation.RequiresPermissions;
@@ -65,6 +67,7 @@ public class SocialMediaWorkController {
         return (SocialMediaWorkVo) this.socialMediaWorkService.getDetailById(id);
     }
 
+    @Log(title = "作品管理", businessType = BusinessType.EXPORT)
     @RequiresLogin
     @ApiOperation("导出excel")
     @Operation(summary = "导出excel")

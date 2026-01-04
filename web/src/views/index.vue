@@ -1,6 +1,7 @@
 <template>
   <div class="dashboard-container">
 
+    <Watermark  text="未经许可不得传播" />
 
     <!-- 社交媒体账号统计表格 -->
     <CustomTable
@@ -86,6 +87,7 @@ import {getAccountStatistic, getPlatformStatistic} from '@/api/dashboard'
 import {getDicts} from '@/api/system/dict/data'
 import CustomTable from "@/components/CustomTable"
 import {groupUserApi} from "@/api/group-user.js";
+import Watermark from "@/components/Watermark/index.vue";
 
 // 表格数据
 const tableData = ref([])

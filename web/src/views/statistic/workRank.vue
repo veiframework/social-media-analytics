@@ -16,6 +16,8 @@
       <ECharts :height="500" :option="kuaishouChart" @handleClick="handleClick" :hideSearch="true"/>
     </el-card>
     <!-- 详情弹窗 -->
+    <Watermark  text="未经许可不得传播" />
+
     <CustomInfo
         :option="optionInfo"
         :visible="infoVisible"
@@ -48,6 +50,7 @@ import CustomInfo from "@/components/CustomInfo/index.vue";
 import {getWorkApi} from "@/api/work.js";
 import {ElMessage} from "element-plus";
 import Template from "@/views/base/template.vue";
+import Watermark from "@/components/Watermark/index.vue";
 
 const leaders = ref([])
 
