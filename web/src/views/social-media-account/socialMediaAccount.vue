@@ -1,6 +1,6 @@
 <template>
   <div>
-    <Watermark  text="未经许可不得传播" />
+    <Watermark  text="仅供分析不得传播©lumengshop.com" />
 
     <!-- 社交媒体账号管理表格 -->
     <CustomTable

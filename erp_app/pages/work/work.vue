@@ -102,6 +102,7 @@
     </scroll-view>
 
     <!-- 添加作品弹窗 -->
+    <Watermark :visible="showAddWorkModal" text="添加作品" />
     <ModalMask :visible="showAddWorkModal" :title="'添加作品'" @close="handleCloseAddWorkModal">
       <AddWorkForm @close="handleCloseAddWorkModal" @success="handleAddWorkSuccess"/>
     </ModalMask>
@@ -116,6 +117,7 @@ import {ref, onMounted} from 'vue'
 import {getWorkListApi} from '../../api/work.js'
 import ModalMask from '../../components/ModalMask.vue'
 import AddWorkForm from '../../components/AddWorkForm.vue'
+import Watermark from '../../components/Watermark.vue'
 import {extractUrlFromText} from '../../utils/common.js'
 import BottomBar from "../../components/BottomBar.vue";
 
@@ -124,6 +126,7 @@ export default {
     BottomBar,
     ModalMask,
     AddWorkForm,
+    Watermark,
   },
   setup() {
     // 作品列表数据

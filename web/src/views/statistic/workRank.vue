@@ -1,5 +1,7 @@
 <template>
   <div class="work_rank_box">
+    <Watermark  text="仅供分析不得传播©lumengshop.com" />
+
     <search :showSearch="option.showSearch" :searchLabelWidth="option.searchLabelWidth"
             :searchItem="option.searchItem" @search="handleSearch" :option="option">
     </search>
@@ -16,7 +18,6 @@
       <ECharts :height="500" :option="kuaishouChart" @handleClick="handleClick" :hideSearch="true"/>
     </el-card>
     <!-- 详情弹窗 -->
-    <Watermark  text="未经许可不得传播" />
 
     <CustomInfo
         :option="optionInfo"
