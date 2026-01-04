@@ -1,5 +1,7 @@
 <template>
   <view class="dashboard">
+    <Watermark  text="仅供分析不得传播©lumengshop.com" />
+
     <view class="platform-grid">
       <view v-for="i in platformData" :key="i.platformId" class="platform-card-wrapper">
         <view class="platform-card" :style="getPlatformColor(i.platformId)">
@@ -54,9 +56,11 @@
 import { onShow } from "@dcloudio/uni-app";
 import { getPlatformStatistic } from "../../api/dashboard";
 import bottomBar from "../../components/BottomBar.vue";
+import Watermark from "../../components/Watermark.vue";
 
 export default {
   components: {
+    Watermark,
     bottomBar
   },
   

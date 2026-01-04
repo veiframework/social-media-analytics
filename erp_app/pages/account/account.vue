@@ -1,5 +1,7 @@
 <template>
   <view class="account-container">
+    <Watermark  text="仅供分析不得传播©lumengshop.com" />
+
     <!-- 搜索栏 -->
     <view class="search-bar">
       <input class="search-input" type="text" v-model="searchParams.nickname" placeholder="请输入昵称搜索"
@@ -68,9 +70,11 @@
 import {ref, onMounted} from 'vue'
 import {listSocialMediaAccount, syncWork, updateAutoSync} from '../../api/account.js'
 import BottomBar from "../../components/BottomBar.vue";
+import Watermark from "../../components/Watermark.vue";
 
 export default {
   components: {
+    Watermark,
     BottomBar
 
   },

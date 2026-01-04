@@ -1,5 +1,7 @@
 <template>
   <view class="work-container">
+    <Watermark  text="仅供分析不得传播©lumengshop.com" />
+
     <!-- 筛选栏 -->
     <view class="filter-bar">
       <!-- 时间范围筛选 -->
@@ -102,7 +104,6 @@
     </scroll-view>
 
     <!-- 添加作品弹窗 -->
-    <Watermark :visible="showAddWorkModal" text="添加作品" />
     <ModalMask :visible="showAddWorkModal" :title="'添加作品'" @close="handleCloseAddWorkModal">
       <AddWorkForm @close="handleCloseAddWorkModal" @success="handleAddWorkSuccess"/>
     </ModalMask>

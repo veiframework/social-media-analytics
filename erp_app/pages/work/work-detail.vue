@@ -1,5 +1,7 @@
 <template>
   <view class="detail-container">
+    <Watermark  text="仅供分析不得传播©lumengshop.com" />
+
     <!-- 加载中提示 -->
     <view class="loading" v-if="loading">
       <text>加载中...</text>
@@ -147,8 +149,10 @@
 <script>
 import { ref, onMounted } from 'vue'
 import { getWorkApi } from '../../api/work.js'
+import Watermark from "../../components/Watermark.vue";
 
 export default {
+  components: {Watermark},
   setup() {
     // 作品详情数据
     const workDetail = ref({})
@@ -300,7 +304,7 @@ export default {
   line-height: 44rpx;
   white-space: pre-wrap;
   user-select: text;
-  margin: 0 10rpx;
+  margin: 5rpx 10rpx;
   padding: 5rpx 15rpx;
   border-radius: 15rpx;
   background-color: rgba(0, 122, 255, 0.1);
