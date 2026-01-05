@@ -19,9 +19,9 @@ async (id) => {
     const buildUrl = (awemeId) => {
         const p = new URLSearchParams({
             aweme_id: awemeId,
-            device_platform: "web",
-            aid: "6383",
-            channel: "channel_pc_web"
+            // device_platform: "web",
+            // aid: "6383",
+            // channel: "channel_pc_web"
         });
         return `https://www.douyin.com/aweme/v1/web/aweme/detail/?${p}`;
     };
@@ -43,7 +43,6 @@ async (id) => {
     const doFetch = async (awemeId) => {
         const url = buildUrl(awemeId);
         const res = await fetchWithTimeout(url, {
-            headers: {"x-secsdk-csrf-token": "DOWNGRADE"},
             credentials: "include"
         }, 30000);
         if (res.ok) {

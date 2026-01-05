@@ -9,7 +9,6 @@ import cn.hutool.core.util.RandomUtil;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpStatus;
 import cn.hutool.http.HttpUtil;
-import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.chargehub.admin.account.vo.SocialMediaAccountVo;
 import com.chargehub.admin.datasync.DataSyncMessageQueue;
 import com.chargehub.admin.datasync.DataSyncService;
@@ -27,8 +26,10 @@ import com.chargehub.common.core.utils.MessageFormatUtils;
 import com.chargehub.common.security.utils.DictUtils;
 import com.chargehub.common.security.utils.JacksonUtil;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.microsoft.playwright.*;
-import com.microsoft.playwright.options.WaitUntilState;
+import com.microsoft.playwright.BrowserContext;
+import com.microsoft.playwright.Page;
+import com.microsoft.playwright.Response;
+import com.microsoft.playwright.Route;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.collections4.CollectionUtils;
@@ -800,7 +801,6 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
         try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(PlaywrightBrowser.buildProxy())) {
             Proxy proxy = BrowserConfig.getProxy();
             Page page = DouYinWorkScheduler.navigateToDouYinUserPage(playwrightBrowser, proxy);
-            page.navigate(DouYinWorkScheduler.DOUYIN_USER_PAGE, new Page.NavigateOptions().setWaitUntil(WaitUntilState.DOMCONTENTLOADED).setTimeout(120_000));
             Object object = page.evaluate(DOUYIN_FETCH_WORK_JS, "7581819255117647144");
             System.out.println(object);
             ThreadUtil.safeSleep(600_00000);
