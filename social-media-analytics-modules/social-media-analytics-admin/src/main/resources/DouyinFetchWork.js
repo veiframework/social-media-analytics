@@ -19,9 +19,9 @@ async (id) => {
     const buildUrl = (awemeId) => {
         const p = new URLSearchParams({
             aweme_id: awemeId,
-            // device_platform: "web",
-            // aid: "6383",
-            // channel: "channel_pc_web"
+            device_platform: "webapp",
+            aid: "6383",
+            channel: "channel_pc_web"
         });
         return `https://www.douyin.com/aweme/v1/web/aweme/detail/?${p}`;
     };

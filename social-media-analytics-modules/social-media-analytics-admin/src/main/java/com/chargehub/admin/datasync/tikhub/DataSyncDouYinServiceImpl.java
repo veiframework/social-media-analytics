@@ -580,7 +580,7 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
         String shareUrl = "https://www.douyin.com/video/" + workUid;
         Date postTime = DateUtil.date(node.get("create_time").asLong(0) * 1000L);
         //内容类型 (0=普通视频, 68=图文)
-        String workType = node.get("aweme_type").asInt() == 0 ? WorkTypeEnum.NORMAL_VIDEO.getType() : WorkTypeEnum.RICH_TEXT.getType();
+        String workType = node.get("media_type").asInt() == 4 ? WorkTypeEnum.NORMAL_VIDEO.getType() : WorkTypeEnum.RICH_TEXT.getType();
         //媒体类型 (2=图片, 4=视频)
         String mediaType = node.get("media_type").asInt() == 4 ? MediaTypeEnum.VIDEO.getType() : MediaTypeEnum.PICTURE.getType();
 
@@ -801,7 +801,7 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
         try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(PlaywrightBrowser.buildProxy())) {
             Proxy proxy = BrowserConfig.getProxy();
             Page page = DouYinWorkScheduler.navigateToDouYinUserPage(playwrightBrowser, proxy);
-            Object object = page.evaluate(DOUYIN_FETCH_WORK_JS, "7581819255117647144");
+            Object object = page.evaluate(DOUYIN_FETCH_WORK_JS, "7581889286216207616");
             System.out.println(object);
             ThreadUtil.safeSleep(600_00000);
         }
