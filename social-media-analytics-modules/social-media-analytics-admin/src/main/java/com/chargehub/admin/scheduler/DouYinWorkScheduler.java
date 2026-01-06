@@ -1,11 +1,9 @@
 package com.chargehub.admin.scheduler;
 
 import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.io.IoUtil;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpUtil;
 import com.alibaba.fastjson.support.spring.FastJsonHttpMessageConverter;
-import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.chargehub.admin.account.domain.SocialMediaAccount;
 import com.chargehub.admin.account.service.SocialMediaAccountService;
 import com.chargehub.admin.account.service.SocialMediaAccountTaskService;
@@ -32,12 +30,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.net.Proxy;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -201,5 +195,7 @@ public class DouYinWorkScheduler extends AbstractWorkScheduler {
         return page;
     }
 
-
+    public static void clearCache() {
+        LOCAL_CACHE.clear();
+    }
 }

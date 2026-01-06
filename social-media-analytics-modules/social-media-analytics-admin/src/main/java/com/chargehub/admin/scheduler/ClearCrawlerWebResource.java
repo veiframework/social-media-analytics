@@ -14,6 +14,7 @@ public class ClearCrawlerWebResource {
 
     public void execute() {
         FileUtil.del(new File(AbstractWorkScheduler.WEB_RESOURCE_PATH));
+        DouYinWorkScheduler.clearCache();
     }
 
 }
