@@ -1,159 +1,199 @@
 (() => {
-    // ======================
-    // 1. navigator 基础属性（完全按你提供的值）
-    // ======================
-    const REAL_USER_AGENT = "{REAL_USER_AGENT}";
 
-    Object.defineProperty(navigator, 'webdriver', {
-        get: () => false
-    });
+    const MAX_TEXTURE_SIZES = [4096, 8192, 16384];
 
-    Object.defineProperty(navigator, 'platform', {
-        get: () => 'Win32'
-    });
+    const webglProfiles = [
+        // ── NVIDIA 高端 ───────────────────────
+        {
+            VENDOR: 'Mozilla',
+            RENDERER: 'ANGLE (NVIDIA, NVIDIA GeForce RTX 4090 Direct3D11 vs_5_0 ps_5_0), or similar',
+            UNMASKED_VENDOR: 'Google Inc. (NVIDIA)',
+            UNMASKED_RENDERER: 'ANGLE (NVIDIA, NVIDIA GeForce RTX 4090 Direct3D11 vs_5_0 ps_5_0), or similar'
+        },
+        {
+            VENDOR: 'Mozilla',
+            RENDERER: 'ANGLE (NVIDIA, NVIDIA GeForce RTX 4080 Direct3D11 vs_5_0 ps_5_0), or similar',
+            UNMASKED_VENDOR: 'Google Inc. (NVIDIA)',
+            UNMASKED_RENDERER: 'ANGLE (NVIDIA, NVIDIA GeForce RTX 4080 Direct3D11 vs_5_0 ps_5_0), or similar'
+        },
+        {
+            VENDOR: 'Mozilla',
+            RENDERER: 'ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Ti Direct3D11 vs_5_0 ps_5_0), or similar',
+            UNMASKED_VENDOR: 'Google Inc. (NVIDIA)',
+            UNMASKED_RENDERER: 'ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Ti Direct3D11 vs_5_0 ps_5_0), or similar'
+        },
 
-    Object.defineProperty(navigator, 'language', {
-        get: () => 'zh-CN'
-    });
+        // ── NVIDIA 主流 ───────────────────────
+        {
+            VENDOR: 'Mozilla',
+            RENDERER: 'ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Ti Direct3D11 vs_5_0 ps_5_0), or similar',
+            UNMASKED_VENDOR: 'Google Inc. (NVIDIA)',
+            UNMASKED_RENDERER: 'ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Ti Direct3D11 vs_5_0 ps_5_0), or similar'
+        },
+        {
+            VENDOR: 'Mozilla',
+            RENDERER: 'ANGLE (NVIDIA, NVIDIA GeForce RTX 3060 Direct3D11 vs_5_0 ps_5_0), or similar',
+            UNMASKED_VENDOR: 'Google Inc. (NVIDIA)',
+            UNMASKED_RENDERER: 'ANGLE (NVIDIA, NVIDIA GeForce RTX 3060 Direct3D11 vs_5_0 ps_5_0), or similar'
+        },
+        {
+            VENDOR: 'Mozilla',
+            RENDERER: 'ANGLE (NVIDIA, NVIDIA GeForce GTX 1660 SUPER Direct3D11 vs_5_0 ps_5_0), or similar',
+            UNMASKED_VENDOR: 'Google Inc. (NVIDIA)',
+            UNMASKED_RENDERER: 'ANGLE (NVIDIA, NVIDIA GeForce GTX 1660 SUPER Direct3D11 vs_5_0 ps_5_0), or similar'
+        },
 
-    Object.defineProperty(navigator, 'languages', {
-        get: () => ['zh-CN', 'zh', 'zh-TW', 'zh-HK', 'en-US', 'en']
-    });
+        // ── AMD 显卡（Firefox + ANGLE on Windows 也支持）──────────────
+        {
+            VENDOR: 'Mozilla',
+            RENDERER: 'ANGLE (AMD, AMD Radeon RX 7900 XT Direct3D11 vs_5_0 ps_5_0), or similar',
+            UNMASKED_VENDOR: 'Google Inc. (AMD)',
+            UNMASKED_RENDERER: 'ANGLE (AMD, AMD Radeon RX 7900 XT Direct3D11 vs_5_0 ps_5_0), or similar'
+        },
+        {
+            VENDOR: 'Mozilla',
+            RENDERER: 'ANGLE (AMD, AMD Radeon RX 6700 XT Direct3D11 vs_5_0 ps_5_0), or similar',
+            UNMASKED_VENDOR: 'Google Inc. (AMD)',
+            UNMASKED_RENDERER: 'ANGLE (AMD, AMD Radeon RX 6700 XT Direct3D11 vs_5_0 ps_5_0), or similar'
+        },
 
-    Object.defineProperty(navigator, 'hardwareConcurrency', {
-        get: () => 12
-    });
+        // ── Intel 核显 ───────────────────────
+        {
+            VENDOR: 'Mozilla',
+            RENDERER: 'ANGLE (Intel, Intel(R) Iris(R) Xe Graphics Direct3D11 vs_5_0 ps_5_0), or similar',
+            UNMASKED_VENDOR: 'Google Inc. (Intel)',
+            UNMASKED_RENDERER: 'ANGLE (Intel, Intel(R) Iris(R) Xe Graphics Direct3D11 vs_5_0 ps_5_0), or similar'
+        },
+        {
+            VENDOR: 'Mozilla',
+            RENDERER: 'ANGLE (Intel, Intel(R) UHD Graphics 630 Direct3D11 vs_5_0 ps_5_0), or similar',
+            UNMASKED_VENDOR: 'Google Inc. (Intel)',
+            UNMASKED_RENDERER: 'ANGLE (Intel, Intel(R) UHD Graphics 630 Direct3D11 vs_5_0 ps_5_0), or similar'
+        },
 
-    Object.defineProperty(navigator, 'maxTouchPoints', {
-        get: () => 0
-    });
+        // ── 老旧核显（兼容性）────────────────
+        {
+            VENDOR: 'Mozilla',
+            RENDERER: 'ANGLE (Intel, Intel(R) HD Graphics 520 Direct3D11 vs_5_0 ps_5_0), or similar',
+            UNMASKED_VENDOR: 'Google Inc. (Intel)',
+            UNMASKED_RENDERER: 'ANGLE (Intel, Intel(R) HD Graphics 520 Direct3D11 vs_5_0 ps_5_0), or similar'
+        }
+    ];
 
-    Object.defineProperty(navigator, 'pdfViewerEnabled', {
-        get: () => true
-    });
+    const hardwareProfiles = [
+        // 低配入门级
+        {hardwareConcurrency: 2, deviceMemory: 2},
+        {hardwareConcurrency: 2, deviceMemory: 4},
+        {hardwareConcurrency: 4, deviceMemory: 4},
 
-    Object.defineProperty(navigator, 'cookieEnabled', {
-        get: () => true
-    });
+        // 主流中端（最常见）
+        {hardwareConcurrency: 4, deviceMemory: 8},
+        {hardwareConcurrency: 6, deviceMemory: 8},
+        {hardwareConcurrency: 8, deviceMemory: 8},
 
-    Object.defineProperty(navigator, 'product', {
-        get: () => 'Gecko'
-    });
+        // 高配性能机
+        {hardwareConcurrency: 8, deviceMemory: 16},
+        {hardwareConcurrency: 12, deviceMemory: 16},
+        {hardwareConcurrency: 16, deviceMemory: 16},
 
-    Object.defineProperty(navigator, 'productSub', {
-        get: () => '20100101'
-    });
+        // 工作站/旗舰
+        {hardwareConcurrency: 16, deviceMemory: 32},
+        {hardwareConcurrency: 12, deviceMemory: 32}
+    ];
 
-    Object.defineProperty(navigator, 'vendor', {
-        get: () => ''
-    });
+    const randomIndex = Math.floor(Math.random() * hardwareProfiles.length);
 
-    Object.defineProperty(navigator, 'vendorSub', {
-        get: () => ''
-    });
+    let randomProfile = hardwareProfiles[randomIndex];
 
-    Object.defineProperty(navigator, 'userAgent', {
-        get: () => REAL_USER_AGENT
-    });
+    Object.defineProperty(navigator, 'webdriver', {get: () => false});
+    Object.defineProperty(navigator, 'platform', {get: () => 'Win32'});
+    Object.defineProperty(navigator, 'language', {get: () => 'zh-CN'});
+    Object.defineProperty(navigator, 'languages', {get: () => ['zh-CN', 'zh', 'zh-TW', 'zh-HK', 'en-US', 'en']});
+    Object.defineProperty(navigator, 'hardwareConcurrency', {get: () => randomProfile.hardwareConcurrency});
+    Object.defineProperty(navigator, 'maxTouchPoints', {get: () => 0});
+    Object.defineProperty(navigator, 'pdfViewerEnabled', {get: () => true});
+    Object.defineProperty(navigator, 'cookieEnabled', {get: () => true});
+    Object.defineProperty(navigator, 'product', {get: () => 'Gecko'});
+    Object.defineProperty(navigator, 'productSub', {get: () => '20100101'});
+    Object.defineProperty(navigator, 'vendor', {get: () => ''});
+    Object.defineProperty(navigator, 'vendorSub', {get: () => ''});
+    Object.defineProperty(navigator, 'oscpu', {get: () => 'Windows NT 10.0; Win64; x64'});
 
     // ======================
     // 2. Plugins & MIME Types（完全按你提供的列表）
     // ======================
     const fakePlugins = [
-        { name: "PDF Viewer", filename: "internal-pdf-viewer", description: "Portable Document Format" },
-        { name: "Chrome PDF Viewer", filename: "internal-pdf-viewer", description: "Portable Document Format" },
-        { name: "Chromium PDF Viewer", filename: "internal-pdf-viewer", description: "Portable Document Format" },
-        { name: "Microsoft Edge PDF Viewer", filename: "internal-pdf-viewer", description: "Portable Document Format" },
-        { name: "WebKit built-in PDF", filename: "internal-pdf-viewer", description: "Portable Document Format" }
+        {name: "PDF Viewer", filename: "internal-pdf-viewer", description: "Portable Document Format"},
+        {name: "Chrome PDF Viewer", filename: "internal-pdf-viewer", description: "Portable Document Format"},
+        {name: "Chromium PDF Viewer", filename: "internal-pdf-viewer", description: "Portable Document Format"},
+        {name: "Microsoft Edge PDF Viewer", filename: "internal-pdf-viewer", description: "Portable Document Format"},
+        {name: "WebKit built-in PDF", filename: "internal-pdf-viewer", description: "Portable Document Format"}
     ];
 
     const pluginArray = Object.assign([...fakePlugins], {
-        item: function(i) { return fakePlugins[i] || null; },
-        namedItem: function(name) { return fakePlugins.find(p => p.name === name) || null; },
-        refresh: function() {},
+        item: i => fakePlugins[i] || null,
+        namedItem: name => fakePlugins.find(p => p.name === name) || null,
         length: fakePlugins.length
     });
 
-    Object.defineProperty(navigator, 'plugins', {
-        get: () => pluginArray
-    });
+    Object.defineProperty(navigator, 'plugins', {get: () => pluginArray});
+
 
     const fakeMimeTypes = [
-        { type: "application/pdf", suffixes: "pdf", description: "Portable Document Format" },
-        { type: "text/pdf", suffixes: "pdf", description: "Portable Document Format" }
+        {type: "application/pdf", suffixes: "pdf", description: "Portable Document Format"},
+        {type: "text/pdf", suffixes: "pdf", description: "Portable Document Format"}
     ];
 
     const mimeTypeArray = Object.assign([...fakeMimeTypes], {
-        item: function(i) { return fakeMimeTypes[i] || null; },
-        namedItem: function(type) { return fakeMimeTypes.find(m => m.type === type) || null; },
+        item: i => fakeMimeTypes[i] || null,
+        namedItem: type => fakeMimeTypes.find(m => m.type === type) || null,
         length: fakeMimeTypes.length
     });
 
-    Object.defineProperty(navigator, 'mimeTypes', {
-        get: () => mimeTypeArray
-    });
+    Object.defineProperty(navigator, 'mimeTypes', {get: () => mimeTypeArray});
 
-    // ======================
-    // 3. WebGL 伪装 → 改为无 GPU 安全指纹（SwiftShader）
-    // ======================
-    const FAKE_WEBGL = {
-        VENDOR: "Google Inc.",
-        RENDERER: "Google SwiftShader",
-        VERSION: "WebGL 1.0",
-        SHADING_LANGUAGE_VERSION: "WebGL GLSL ES 1.0",
-        MAX_TEXTURE_SIZE: 8192,   // 软件渲染典型值（≤8192）
-        hasDebugExtension: false  // 无 GPU 环境通常不支持
-    };
 
+    // WebGL
+    const webglProfile = webglProfiles[Math.floor(Math.random() * webglProfiles.length)];
+    const randomMaxTextureSize = MAX_TEXTURE_SIZES[Math.floor(Math.random() * MAX_TEXTURE_SIZES.length)];
     const _g = HTMLCanvasElement.prototype.getContext;
-    HTMLCanvasElement.prototype.getContext = function(type, attributes) {
+    HTMLCanvasElement.prototype.getContext = function (type, attributes) {
         const ctx = _g.call(this, type, attributes);
-        if (ctx && (type === 'webgl' || type === 'experimental-webgl')) {
-            const _getParam = ctx.getParameter;
-            ctx.getParameter = function(param) {
-                if (param === ctx.VENDOR) return FAKE_WEBGL.VENDOR;
-                if (param === ctx.RENDERER) return FAKE_WEBGL.RENDERER;
-                if (param === ctx.VERSION) return FAKE_WEBGL.VERSION;
-                if (param === ctx.SHADING_LANGUAGE_VERSION) return FAKE_WEBGL.SHADING_LANGUAGE_VERSION;
-                if (param === ctx.MAX_TEXTURE_SIZE) return FAKE_WEBGL.MAX_TEXTURE_SIZE;
-                // 不暴露 UNMASKED_*（因 hasDebugExtension=false）
-                return _getParam.call(this, param);
+
+        if (ctx && (['webgl', 'experimental-webgl', 'webgl2'].includes(type))) {
+            const originalGetParameter = ctx.getParameter;
+            const originalGetExtension = ctx.getExtension;
+
+            // 🔁 只重写一次 getParameter
+            ctx.getParameter = function (param) {
+                // 标准参数
+                if (param === ctx.VENDOR) return webglProfile.VENDOR;
+                if (param === ctx.RENDERER) return webglProfile.RENDERER;
+                if (param === ctx.VERSION) return 'WebGL 1.0';
+                if (param === ctx.SHADING_LANGUAGE_VERSION) return 'WebGL GLSL ES 1.0';
+                if (param === ctx.MAX_TEXTURE_SIZE) return randomMaxTextureSize;
+
+                // UNMASKED 参数（通过 WEBGL_debug_renderer_info 暴露）
+                if (param === 0x9245) return webglProfile.UNMASKED_VENDOR;   // UNMASKED_VENDOR_WEBGL
+                if (param === 0x9246) return webglProfile.UNMASKED_RENDERER; // UNMASKED_RENDERER_WEBGL
+
+                return originalGetParameter.call(this, param);
             };
 
-            const _getExtension = ctx.getExtension;
-            ctx.getExtension = function(name) {
-                // 禁用 WEBGL_debug_renderer_info（更真实）
+            // 重写 getExtension 以支持 UNMASKED 查询
+            ctx.getExtension = function (name) {
                 if (name === 'WEBGL_debug_renderer_info') {
-                    return null;
+                    return {
+                        UNMASKED_VENDOR_WEBGL: 0x9245,
+                        UNMASKED_RENDERER_WEBGL: 0x9246
+                    };
                 }
-                return _getExtension.call(this, name);
+                return originalGetExtension.call(this, name);
             };
         }
+
         return ctx;
     };
-
-    // ======================
-    // 4. Screen 信息（保持不变）
-    // ======================
-    const screenProps = {
-        width: 1920,
-        height: 1080,
-        availWidth: 1920,
-        availHeight: 1040,
-        colorDepth: 24,
-        pixelDepth: 24
-    };
-
-    Object.keys(screenProps).forEach(key => {
-        try {
-            Object.defineProperty(screen, key, {
-                value: screenProps[key],
-                writable: false,
-                configurable: false,
-                enumerable: true
-            });
-        } catch (e) {}
-    });
 
     // ======================
     // 5. 清理 Service Worker
@@ -161,7 +201,8 @@
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(registrations => {
             for (const reg of registrations) reg.unregister();
-        }).catch(() => {});
+        }).catch(() => {
+        });
     }
 
     // ======================
@@ -170,7 +211,5 @@
     if ('chrome' in window) {
         delete window.chrome;
     }
-
-
 
 })();

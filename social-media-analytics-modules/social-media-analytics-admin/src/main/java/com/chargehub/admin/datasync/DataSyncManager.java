@@ -2,15 +2,12 @@ package com.chargehub.admin.datasync;
 
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.RandomUtil;
-import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.chargehub.admin.account.vo.SocialMediaAccountVo;
 import com.chargehub.admin.datasync.domain.*;
 import com.chargehub.admin.enums.SocialMediaPlatformEnum;
 import com.chargehub.admin.playwright.BrowserConfig;
 import com.chargehub.admin.playwright.PlaywrightBrowser;
 import com.chargehub.admin.scheduler.DouYinWorkScheduler;
-import com.microsoft.playwright.BrowserContext;
-import com.microsoft.playwright.Playwright;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -54,23 +51,6 @@ public class DataSyncManager {
         return dataSyncService.getWorks(socialMediaAccount, cursor, count);
     }
 
-    public <T> SocialMediaWorkDetail<T> getWork(String accountId, String shareLink, SocialMediaPlatformEnum.PlatformExtra platformExtra) {
-        DataSyncParamContext dataSyncParamContext = new DataSyncParamContext();
-        SocialMediaPlatformEnum platform = platformExtra.getPlatformEnum();
-        String location = platformExtra.getLocation();
-        dataSyncParamContext.setRedirectUrl(location);
-        Playwright playwright = Playwright.create();
-        BrowserContext browserContext = PlaywrightBrowser.buildBrowserContext(dataSyncParamContext.getStorageState(), playwright);
-        try {
-            dataSyncParamContext.setAccountId(accountId);
-            dataSyncParamContext.setShareLink(shareLink);
-            dataSyncParamContext.setBrowserContext(browserContext);
-            return this.getWork(dataSyncParamContext, platform);
-        } finally {
-            browserContext.close();
-            playwright.close();
-        }
-    }
 
     public <T> SocialMediaWorkDetail<T> fetchWork(String shareLink, SocialMediaPlatformEnum.PlatformExtra platformExtra) {
         DataSyncParamContext dataSyncParamContext = new DataSyncParamContext();

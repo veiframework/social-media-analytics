@@ -179,7 +179,7 @@ public class DouYinWorkScheduler extends AbstractWorkScheduler {
         Page page = playwrightBrowser.newPage();
         for (int i = 0; i <= BrowserConfig.LOAD_PAGE_RETRY; i++) {
             try {
-                page.navigate(DouYinWorkScheduler.DOUYIN_USER_PAGE, new Page.NavigateOptions().setWaitUntil(WaitUntilState.DOMCONTENTLOADED).setTimeout(BrowserConfig.LOAD_PAGE_TIMEOUT));
+                page.navigate(DouYinWorkScheduler.DOUYIN_USER_PAGE, new Page.NavigateOptions().setWaitUntil(WaitUntilState.LOAD).setTimeout(BrowserConfig.LOAD_PAGE_TIMEOUT));
                 break;
             } catch (Exception e) {
                 if (i == BrowserConfig.LOAD_PAGE_RETRY) {

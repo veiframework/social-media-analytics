@@ -8,6 +8,7 @@ import com.chargehub.admin.playwright.BrowserConfig;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.Getter;
+import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.Assert;
 
@@ -113,12 +114,13 @@ public enum SocialMediaPlatformEnum {
         }
     }
 
+    @SneakyThrows
     public static void main(String[] args) {
-        SecUser redNote = SocialMediaPlatformEnum.parseSecUserId("https://xhslink.com/m/4LAAkBKkwiX");
+        Object redNote = SocialMediaPlatformEnum.getPlatformByWorkUrl("https://xhslink.com/m/4LAAkBKkwiX");
         System.out.println(redNote);
-        SecUser douyin = SocialMediaPlatformEnum.parseSecUserId("https://v.douyin.com/mHR6pDL6FEg/ 0@1.com :1pm");
+        Object douyin = SocialMediaPlatformEnum.getPlatformByWorkUrl("https://v.douyin.com/mHR6pDL6FEg/ 0@1.com :1pm");
         System.out.println(douyin);
-        SecUser b = SocialMediaPlatformEnum.parseSecUserId("https://b23.tv/BBkZ3lo");
+        Object b = SocialMediaPlatformEnum.getPlatformByWorkUrl("https://b23.tv/BBkZ3lo");
         System.out.println(b);
 
     }

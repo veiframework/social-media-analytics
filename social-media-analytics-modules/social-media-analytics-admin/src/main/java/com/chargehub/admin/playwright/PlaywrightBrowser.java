@@ -1,12 +1,10 @@
 package com.chargehub.admin.playwright;
 
-import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.RandomUtil;
 import com.chargehub.common.security.utils.DictUtils;
 import com.chargehub.common.security.utils.JacksonUtil;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.google.common.collect.Lists;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.Proxy;
 import com.microsoft.playwright.options.ServiceWorkerPolicy;
@@ -14,15 +12,14 @@ import com.microsoft.playwright.options.ViewportSize;
 import com.microsoft.playwright.options.WaitUntilState;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import net.datafaker.providers.base.Internet;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
-import org.springframework.core.io.support.ResourcePatternResolver;
 
-import java.text.MessageFormat;
-import java.util.*;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -35,12 +32,6 @@ import java.util.stream.Stream;
 public class PlaywrightBrowser implements AutoCloseable {
 
 
-    private static final List<BrowserConfig> BROWSER_CONFIGS = Lists.newArrayList(
-//            new BrowserConfig(Internet.UserAgent.FIREFOX)
-            new BrowserConfig(Internet.UserAgent.CHROME)
-//            ,new BrowserConfig(Internet.UserAgent.SAFARI)
-    );
-
     private BrowserContext browserContext;
 
     private Page page;
@@ -51,7 +42,11 @@ public class PlaywrightBrowser implements AutoCloseable {
 
     private Playwright playwright;
 
+    private Proxy proxy;
+
     private static volatile boolean headless;
+
+    private BrowserConfig browserConfig;
 
     public PlaywrightBrowser(String username, String password, String storageState) {
         this(storageState);
@@ -60,8 +55,11 @@ public class PlaywrightBrowser implements AutoCloseable {
     }
 
     public PlaywrightBrowser(Proxy proxy) {
+        this.proxy = proxy;
         this.playwright = Playwright.create();
-        this.browserContext = PlaywrightBrowser.buildBrowserContext(null, this.playwright, proxy);
+        this.browserConfig = new BrowserConfig(this.playwright);
+        this.browserContext = PlaywrightBrowser.buildBrowserContext(this.browserConfig, null, proxy);
+
     }
 
     public PlaywrightBrowser(String storageState) {
@@ -70,7 +68,8 @@ public class PlaywrightBrowser implements AutoCloseable {
             loginState = storageState;
         }
         this.playwright = Playwright.create();
-        this.browserContext = PlaywrightBrowser.buildBrowserContext(loginState, this.playwright);
+        this.browserConfig = new BrowserConfig(this.playwright);
+        this.browserContext = PlaywrightBrowser.buildBrowserContext(this.browserConfig, loginState);
     }
 
     public PlaywrightBrowser(BrowserContext browserContext) {
@@ -96,19 +95,23 @@ public class PlaywrightBrowser implements AutoCloseable {
         }
     }
 
-    public static BrowserContext buildBrowserContext(String storageState, Playwright playwright) {
+    public static BrowserContext buildBrowserContext(BrowserConfig browserConfig, String storageState) {
         Proxy proxy = buildProxy();
-        return buildBrowserContext(storageState, playwright, proxy);
+        return buildBrowserContext(browserConfig, storageState, proxy);
     }
 
     @SuppressWarnings("all")
-    public static BrowserContext buildBrowserContext(String storageState, Playwright playwright, Proxy proxy) {
+    public static BrowserContext buildBrowserContext(BrowserConfig browserConfig, String storageState, Proxy proxy) {
         // 随机选择一个浏览器
-        BrowserConfig browserConfig = new BrowserConfig(Internet.UserAgent.CHROME);
-        browserConfig.setPlaywright(playwright);
         BrowserType browserType = browserConfig.getBrowserType();
+        log.debug("当前浏览器: {}", browserType.name());
+        Integer width = browserConfig.getWidth();
+        Integer height = browserConfig.getHeight();
+        Map<String, String> extraHeaders = browserConfig.getExtraHeaders();
+        List<String> args = browserConfig.getArgs();
         String randomUa = browserConfig.getRandomUa();
-        String version = BrowserConfig.extractChromeMajorVersion(randomUa);
+        String fingerprint = browserConfig.getFingerprint();
+        Path executablePath = browserConfig.getExecutablePath();
         Browser.NewContextOptions newContextOptions = new Browser.NewContextOptions()
                 .setIgnoreHTTPSErrors(true)
                 .setLocale("zh-CN")
@@ -116,48 +119,21 @@ public class PlaywrightBrowser implements AutoCloseable {
                 .setDeviceScaleFactor(1)
                 .setServiceWorkers(ServiceWorkerPolicy.BLOCK)
                 .setStorageState(storageState)
-                .setViewportSize(1920, 1080)
+                .setViewportSize(width, height)
                 .setBypassCSP(true)
-                .setExtraHTTPHeaders(MapUtil.of("Sec-Ch-Ua", "\"Google Chrome\";v=\"" + version + "\", \"Chromium\";v=\"" + version + "\", \"Not A(Brand\";v=\"24\""))
+                .setExtraHTTPHeaders(extraHeaders)
                 .setUserAgent(randomUa);
-        // 启动选项（可统一配置）
-        BrowserContext browserContext = browserType.launch(new BrowserType.LaunchOptions()
-                .setHeadless(headless)
-                .setProxy(proxy)
-                //设置启动系统浏览器
-//                .setExecutablePath(Paths.get("C://Program Files (x86)//Microsoft//Edge//Application//msedge.exe"))
-                .setArgs(Arrays.asList(
-                        "--no-sandbox"
-                        , "--disable-web-security"
-//                       TODO 屏蔽webgl警告,未来需要截图的话需要开启
-                        , "--disable-gpu"
-                        , "--enable-unsafe-swiftshader"
-                        , "--use-gl=swiftshader"
-                        , "--disable-setuid-sandbox"
-                        , "--disable-dev-shm-usage"
-                        , "--disable-blink-features=AutomationControlled"
-                        , "--MOZ_DISABLE_FIREFOX_SAFEBROWSING=1"
-                        , "--MOZ_DISABLE_TELEMETRY=1"
-                        , "--disable-component-update",
-                        "--allow-running-insecure-content",
-                        "--unsafely-treat-insecure-origin-as-secure",
-                        "--ignore-certificate-errors"
-                ))).newContext(newContextOptions);
-        String fingerprintJs = loadBrowserFingerprintJs(randomUa);
-        browserContext.addInitScript(fingerprintJs);
+        BrowserType.LaunchOptions launchOptions = new BrowserType.LaunchOptions().setHeadless(headless).setProxy(proxy).setArgs(args).setExecutablePath(executablePath);
+        BrowserContext browserContext = browserType.launch(launchOptions).newContext(newContextOptions);
+        if (StringUtils.isNotBlank(fingerprint)) {
+            browserContext.addInitScript(fingerprint);
+        }
         return browserContext;
     }
 
-    public static String loadBrowserFingerprintJs(String randomUa) {
-        ResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
-        Resource resource = resolver.getResource(MessageFormat.format("classpath:{0}", "BrowserFingerprint.js"));
-        try {
-            return IoUtil.readUtf8(resource.getInputStream()).replace("{REAL_USER_AGENT}", randomUa);
-        } catch (Exception e) {
-            throw new IllegalArgumentException(e.getMessage());
-        }
+    public BrowserContext newContext() {
+        return PlaywrightBrowser.buildBrowserContext(this.browserConfig, null, this.proxy);
     }
-
 
     public static JsonNode request(String id, Page page, String script, String envUrl) {
         if (StringUtils.isBlank(id)) {
