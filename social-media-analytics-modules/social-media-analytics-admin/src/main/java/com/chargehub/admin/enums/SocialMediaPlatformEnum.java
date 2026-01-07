@@ -1,10 +1,11 @@
 package com.chargehub.admin.enums;
 
 import cn.hutool.core.util.URLUtil;
-import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpUtil;
-import com.chargehub.admin.playwright.BrowserConfig;
+import com.chargehub.admin.playwright.PlaywrightBrowser;
+import com.microsoft.playwright.Page;
+import com.microsoft.playwright.options.WaitUntilState;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.Getter;
@@ -12,7 +13,6 @@ import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.Assert;
 
-import java.net.Proxy;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.function.Function;
@@ -45,10 +45,9 @@ public enum SocialMediaPlatformEnum {
     }
 
     public static PlatformExtra getPlatformByWorkUrl(String workUrl) {
-        HttpRequest httpRequest = HttpUtil.createGet(workUrl);
-        Proxy proxy = BrowserConfig.getProxy();
-        try (HttpResponse execute = httpRequest.headerMap(BrowserConfig.BROWSER_HEADERS, true).setFollowRedirects(true).setProxy(proxy).execute()) {
-            String location = httpRequest.getUrl();
+        try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(PlaywrightBrowser.buildProxy()); Page page = playwrightBrowser.newPage()) {
+            page.navigate(workUrl, new Page.NavigateOptions().setWaitUntil(WaitUntilState.COMMIT));
+            String location = page.url();
             URI uri = URLUtil.toURI(location);
             String host = uri.getHost();
             SocialMediaPlatformEnum socialMediaPlatformEnum = Arrays.stream(values()).filter(i -> host.contains(i.domain) || workUrl.contains(i.domain)).findFirst().orElseThrow(() -> new IllegalArgumentException("不支持的平台类型"));

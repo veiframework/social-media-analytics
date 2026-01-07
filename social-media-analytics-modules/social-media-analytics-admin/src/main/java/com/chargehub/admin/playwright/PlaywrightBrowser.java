@@ -101,6 +101,7 @@ public class PlaywrightBrowser implements AutoCloseable {
                     .setUsername(crawlerProxy.get("proxy_username"))
                     .setPassword(crawlerProxy.get("proxy_password"));
         } catch (Exception e) {
+//            return new Proxy("tun-igkddr.qg.net:28614").setUsername("37D9A171").setPassword("D9AA789BC9A0");
             return null;
         }
     }
