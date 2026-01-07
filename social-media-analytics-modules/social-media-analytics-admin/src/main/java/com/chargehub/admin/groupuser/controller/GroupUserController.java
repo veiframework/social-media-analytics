@@ -2,6 +2,7 @@ package com.chargehub.admin.groupuser.controller;
 
 import com.chargehub.admin.api.domain.SysUser;
 import com.chargehub.admin.api.model.LoginUser;
+import com.chargehub.admin.groupuser.domain.GroupUser;
 import com.chargehub.admin.groupuser.dto.GroupUserBatchAddDto;
 import com.chargehub.admin.groupuser.dto.GroupUserQueryDto;
 import com.chargehub.admin.groupuser.service.GroupUserService;
@@ -16,6 +17,7 @@ import com.google.common.collect.Lists;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.Assert;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -49,6 +51,11 @@ public class GroupUserController {
     @PostMapping("/batch")
     public void batchAdd(@RequestBody @Validated GroupUserBatchAddDto dto) {
         String userId = SecurityUtils.getUserId() + "";
+        LoginUser loginUser = SecurityUtils.getLoginUser();
+        if (loginUser.isLeader()) {
+            GroupUser groupUser = groupUserService.getByUserId(userId);
+            Assert.notNull(groupUser, "请先咨询主管关联当前账号");
+        }
         dto.setParentUserId(userId);
         groupUserService.batchAdd(dto);
     }

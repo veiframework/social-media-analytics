@@ -14,4 +14,4 @@ fi
 
 
 echo "execting" $APP
-java $JAVA_OPTS -jar $DIR/$APP
+exec java $JAVA_OPTS -jar $DIR/$APP

@@ -15,7 +15,7 @@ deb-src https://mirrors.aliyun.com/ubuntu/ jammy-backports main restricted unive
 EOF
 
 
-RUN apt update && apt install openjdk-8-jre bash curl zip -y
+RUN apt update && apt install openjdk-8-jre bash curl zip tini  -y
 RUN sed -i 's/^jdk.tls.disabledAlgorithms=.*$/jdk.tls.disabledAlgorithms=RC4, DES, MD5withRSA, DH keySize < 1024, EC keySize < 224, 3DES_EDE_CBC, anon, NULL, include jdk.disabled.namedCurves/' $(find / -name java.security)
 ENV TZ=Asia/Shanghai
 
@@ -42,4 +42,4 @@ RUN sed -i "s/{{APP_NAME}}/${APP_NAME}/g" start.sh
 
 #ENTRYPOINT ["bash", "-c", "Xvfb :99 -screen 0 1920x1080x24 & export DISPLAY=:99 && bash -x start.sh"]
 
-ENTRYPOINT ["bash","-x","start.sh"]
+ENTRYPOINT ["/usr/bin/tini", "--", "./start.sh"]

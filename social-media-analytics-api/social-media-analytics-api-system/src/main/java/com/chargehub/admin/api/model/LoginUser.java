@@ -209,6 +209,12 @@ public class LoginUser implements Serializable {
         return getRoles().contains("员工");
     }
 
+    public boolean isLeader(){
+        if (CollectionUtils.isEmpty(roles)) {
+            return false;
+        }
+        return getRoles().contains("组长");
+    }
 
     public boolean isNormalUser() {
        return !this.isAdmin() && !this.isCharger();

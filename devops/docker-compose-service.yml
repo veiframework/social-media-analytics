@@ -67,8 +67,6 @@ services:
         max_attempts: 3
 
   admin:
-    # 解决僵尸进程问题
-    init: true
     # 共享宿主机内存
     ipc: host
     build:
@@ -94,7 +92,7 @@ services:
 #      interval: 30s
 #      timeout: 10s
 #      retries: 3
-    stop_grace_period: 30s
+    stop_grace_period: 60s
     deploy:
       replicas: 1
       update_config:
