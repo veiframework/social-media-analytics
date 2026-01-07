@@ -9,9 +9,9 @@ import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.Proxy;
 import com.microsoft.playwright.options.ServiceWorkerPolicy;
 import com.microsoft.playwright.options.ViewportSize;
-import com.microsoft.playwright.options.WaitUntilState;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import net.datafaker.providers.base.Internet;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -55,11 +56,14 @@ public class PlaywrightBrowser implements AutoCloseable {
     }
 
     public PlaywrightBrowser(Proxy proxy) {
+        this(proxy, null);
+    }
+
+    public PlaywrightBrowser(Proxy proxy, Internet.UserAgent browserType) {
         this.proxy = proxy;
         this.playwright = Playwright.create();
-        this.browserConfig = new BrowserConfig(this.playwright);
+        this.browserConfig = new BrowserConfig(this.playwright, browserType);
         this.browserContext = PlaywrightBrowser.buildBrowserContext(this.browserConfig, null, proxy);
-
     }
 
     public PlaywrightBrowser(String storageState) {
@@ -81,6 +85,12 @@ public class PlaywrightBrowser implements AutoCloseable {
         PlaywrightBrowser.headless = headless;
     }
 
+    /**
+     * 获取代理
+     * 此处好像safari只支持ip白名单
+     *
+     * @return
+     */
     public static Proxy buildProxy() {
         try {
             Map<String, String> crawlerProxy = DictUtils.getDictLabelMap("crawler_proxy_chrome");
@@ -132,22 +142,39 @@ public class PlaywrightBrowser implements AutoCloseable {
     }
 
     public BrowserContext newContext() {
-        return PlaywrightBrowser.buildBrowserContext(this.browserConfig, null, this.proxy);
+        this.browserConfig = null;
+        if (this.page != null) {
+            if (!this.page.isClosed()) {
+                this.page.close();
+            }
+            this.page = null;
+        }
+        if (this.browserContext != null) {
+            try {
+                this.browserContext.close();
+            } catch (Exception e) {
+                log.error("browserContext close failed");
+            }
+            this.browserContext = null;
+        }
+        this.browserConfig = new BrowserConfig(this.playwright);
+        this.browserContext = PlaywrightBrowser.buildBrowserContext(this.browserConfig, null, proxy);
+        return this.browserContext;
     }
 
-    public static JsonNode request(String id, Page page, String script, String envUrl) {
+    public static JsonNode request(String id, PlaywrightBrowser playwrightBrowser, String script, Consumer<PlaywrightBrowser> consumer) {
         if (StringUtils.isBlank(id)) {
             return null;
         }
         List<String> collect = Stream.of(id).collect(Collectors.toList());
-        List<JsonNode> jsonNodes = requests(collect, page, script, envUrl);
+        List<JsonNode> jsonNodes = requests(collect, playwrightBrowser, script, consumer);
         if (CollectionUtils.isEmpty(jsonNodes)) {
             return null;
         }
         return jsonNodes.get(0);
     }
 
-    public static List<JsonNode> requests(Collection<String> ids, Page page, String script, String envUrl) {
+    public static List<JsonNode> requests(Collection<String> ids, PlaywrightBrowser playwrightBrowser, String script, Consumer<PlaywrightBrowser> consumer) {
         List<JsonNode> result = new ArrayList<>();
         if (CollectionUtils.isEmpty(ids)) {
             return result;
@@ -157,12 +184,14 @@ public class PlaywrightBrowser implements AutoCloseable {
                 boolean success = false;
                 String json = null;
                 for (int attempt = 0; attempt <= BrowserConfig.LOAD_PAGE_RETRY; attempt++) {
-                    json = doRequest(script, page, id);
+                    json = doRequest(script, playwrightBrowser, id);
                     if (StringUtils.isNotBlank(json) && !"reload".equals(json)) {
                         success = true;
                         break;
                     }
-                    page = cleanupAndReload(page, envUrl);
+                    //重置浏览器
+                    playwrightBrowser.newContext();
+                    consumer.accept(playwrightBrowser);
                 }
                 if (success) {
                     JsonNode jsonNode = JacksonUtil.toObj(json);
@@ -178,8 +207,9 @@ public class PlaywrightBrowser implements AutoCloseable {
         }
     }
 
-    private static String doRequest(String script, Page page, String workId) {
+    private static String doRequest(String script, PlaywrightBrowser playwrightBrowser, String workId) {
         try {
+            Page page = playwrightBrowser.getPage();
             if (page.isClosed()) {
                 return null;
             }
@@ -190,35 +220,6 @@ public class PlaywrightBrowser implements AutoCloseable {
         }
     }
 
-
-    public static Page cleanupAndReload(Page page, String envUrl) {
-        if (page == null || page.isClosed()) {
-            throw new IllegalArgumentException("Page is null or already closed");
-        }
-        Page newPage = null;
-        for (int attempt = 0; attempt <= BrowserConfig.LOAD_PAGE_RETRY; attempt++) {
-            try {
-                BrowserContext context = page.context();
-                context.clearCookies();
-                context.clearPermissions();
-                newPage = context.newPage();
-                newPage.navigate(envUrl, new Page.NavigateOptions().setWaitUntil(WaitUntilState.DOMCONTENTLOADED).setTimeout(BrowserConfig.LOAD_PAGE_TIMEOUT));
-                newPage.waitForTimeout(RandomUtil.randomInt(1000, 5000));
-                if (!page.isClosed()) {
-                    page.close();
-                }
-                return newPage;
-            } catch (Exception e) {
-                if (attempt == BrowserConfig.LOAD_PAGE_RETRY) {
-                    if (newPage != null && !newPage.isClosed()) {
-                        newPage.close();
-                    }
-                    return page;
-                }
-            }
-        }
-        return page;
-    }
 
     public Page newPage() {
         this.page = this.browserContext.newPage();

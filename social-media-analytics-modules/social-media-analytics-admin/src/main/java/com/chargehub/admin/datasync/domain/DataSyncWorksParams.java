@@ -1,8 +1,8 @@
 package com.chargehub.admin.datasync.domain;
 
+import com.chargehub.admin.playwright.PlaywrightBrowser;
 import com.chargehub.admin.work.domain.SocialMediaWork;
 import com.microsoft.playwright.BrowserContext;
-import com.microsoft.playwright.Page;
 import lombok.Data;
 
 import java.net.Proxy;
@@ -27,5 +27,5 @@ public class DataSyncWorksParams {
 
     private Map<String, SocialMediaWork> workMap;
 
-    private Page page;
+    private PlaywrightBrowser playwrightBrowser;
 }

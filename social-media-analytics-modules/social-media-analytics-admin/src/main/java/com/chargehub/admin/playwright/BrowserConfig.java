@@ -34,10 +34,10 @@ import java.util.regex.Pattern;
 @Data
 public class BrowserConfig {
 
-    private static final List<Internet.UserAgent> BROWSERS = Lists.newArrayList(
+    public static final List<Internet.UserAgent> BROWSERS = Lists.newArrayList(
             Internet.UserAgent.CHROME
-//           ,  Internet.UserAgent.FIREFOX
-//            , Internet.UserAgent.SAFARI
+            , Internet.UserAgent.FIREFOX
+            , Internet.UserAgent.SAFARI
     );
 
     protected static final int[][] RESOLUTIONS = {
@@ -130,10 +130,14 @@ public class BrowserConfig {
     private Path executablePath;
 
     public BrowserConfig(Playwright playwright) {
+        this(playwright, null);
+    }
+
+    public BrowserConfig(Playwright playwright, Internet.UserAgent browserType) {
         ViewportSize randomViewport = this.getRandomViewport();
         this.width = randomViewport.width;
         this.height = randomViewport.height;
-        this.userAgent = RandomUtil.randomEle(BROWSERS);
+        this.userAgent = browserType == null ? RandomUtil.randomEle(BROWSERS) : browserType;
         this.setPlaywright(playwright);
     }
 

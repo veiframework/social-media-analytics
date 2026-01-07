@@ -2,7 +2,6 @@ package com.chargehub.admin.scheduler;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.date.DatePattern;
-import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.ReflectUtil;
 import com.alibaba.fastjson.JSON;
@@ -48,6 +47,8 @@ import java.util.stream.Collectors;
 @Component("workAlarmIntervalScheduler")
 public class WorkAlarmIntervalScheduler {
 
+    public static final String WORK_ALARM_RECORD_KEY = "work-alarm-record:";
+
     private static final SpelExpressionParser PARSER = new SpelExpressionParser();
 
     @Autowired
@@ -67,9 +68,6 @@ public class WorkAlarmIntervalScheduler {
     @Autowired
     private SocialMediaAccountService socialMediaAccountService;
 
-    public static final String WORK_ALARM_RECORD_KEY = "work-alarm-record:";
-
-    public static final String WORK_ALARM_LAST_EXECUTE_TIME_KEY = "work-alarm-last-execute-time:";
 
     @Autowired
     private ISysUserService iSysUserService;
@@ -84,20 +82,17 @@ public class WorkAlarmIntervalScheduler {
             return;
         }
         LocalDate localDate = LocalDate.now();
-        String now = localDate.format(DatePattern.NORM_DATE_FORMATTER);
+        String start = localDate.minusDays(62).format(DatePattern.NORM_DATE_FORMATTER);
         String tomorrow = localDate.plusDays(1).format(DatePattern.NORM_DATE_FORMATTER);
-        String workAlarmLastExecuteTimeKey = WORK_ALARM_LAST_EXECUTE_TIME_KEY + taskId;
         String keyword = socialMediaWorkAlarm.getKeyword();
         String keywordValue = socialMediaWorkAlarm.getKeywordValue();
-        String lastDatetime = redisService.getCacheObject(workAlarmLastExecuteTimeKey);
         boolean hasMore = true;
         long pageNum = 1;
         while (hasMore) {
             SocialMediaWorkQueryDto socialMediaAccountQueryDto = new SocialMediaWorkQueryDto();
             socialMediaAccountQueryDto.setNumber(pageNum);
             socialMediaAccountQueryDto.setSize(50L);
-            socialMediaAccountQueryDto.setUpdateTime(lastDatetime);
-            socialMediaAccountQueryDto.setStartCreateTime(now);
+            socialMediaAccountQueryDto.setStartCreateTime(start);
             socialMediaAccountQueryDto.setEndCreateTime(tomorrow);
             socialMediaAccountQueryDto.setState(Sets.newHashSet(WorkStateEnum.OPEN.getDesc(), WorkStateEnum.PRIVATE.getDesc()));
             socialMediaAccountQueryDto.setSearchCount(false);
@@ -112,7 +107,6 @@ public class WorkAlarmIntervalScheduler {
                 this.executeAlarmCheck(taskId, socialMediaWorkVo, socialMediaWorkAlarm);
             }
         }
-        redisService.setCacheObject(workAlarmLastExecuteTimeKey, DateUtil.now());
     }
 
     private void executeAlarmCheck(String taskId,
@@ -128,7 +122,7 @@ public class WorkAlarmIntervalScheduler {
         WorkAlarmRecordValue lastRecordValue = redisService.getCacheObject(workAlarmRecordKey);
         Integer startInterval = socialMediaWorkAlarm.getStartInterval();
         if (lastRecordValue == null) {
-            redisService.setCacheObject(workAlarmRecordKey, new WorkAlarmRecordValue(currentFieldValue, 0), 1L, TimeUnit.DAYS);
+            redisService.setCacheObject(workAlarmRecordKey, new WorkAlarmRecordValue(currentFieldValue, 0), 65L, TimeUnit.DAYS);
             return;
         }
         int count = lastRecordValue.getCount() + 1;
@@ -165,7 +159,7 @@ public class WorkAlarmIntervalScheduler {
                 alarmNotificationConfig.setMsgTemplate(msgTemplate);
             }
             alarmNotificationManager.send(leadershipWebhook);
-            redisService.setCacheObject(workAlarmRecordKey, new WorkAlarmRecordValue(currentFieldValue, count), 1L, TimeUnit.DAYS);
+            redisService.setCacheObject(workAlarmRecordKey, new WorkAlarmRecordValue(currentFieldValue, count), 65L, TimeUnit.DAYS);
         }
     }
 

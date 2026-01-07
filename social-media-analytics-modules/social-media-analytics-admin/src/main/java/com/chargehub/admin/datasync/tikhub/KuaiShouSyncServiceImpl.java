@@ -305,82 +305,75 @@ public class KuaiShouSyncServiceImpl implements DataSyncService {
         } else {
             isVideo = redirectUrl.contains("short-video");
         }
-        HttpRequest httpRequest = HttpUtil.createGet(shareLink)
-                .setFollowRedirects(true)
-                .timeout(60000)
-                .setProxy(dataSyncParamContext.getProxy())
-                .headerMap(BrowserConfig.BROWSER_HEADERS, true);
-        try (HttpResponse response = httpRequest.execute()) {
-            String currentUrl = httpRequest.getUrl();
-            InputStream inputStream = response.bodyStream();
-            int commentNum = 0;
-            int collectNum = 0;
-            int thumbNum = 0;
-            int shareNum = 0;
-            int playNum = 0;
-            String nickname = "";
-            String uid = "";
-            String desc = "";
-            String title;
-            String topics;
-            String customType;
-            String workUid = "";
-            Date postTime = null;
-            String mediaType = "";
-            String workType = "";
-            String secUid = "";
-            if (isVideo) {
-                try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(PlaywrightBrowser.buildProxy())) {
-                    Page page = playwrightBrowser.newPage();
-                    AtomicReference<String> navigateContent = new AtomicReference<>();
-                    Response commentRes = page.waitForResponse(res -> {
-                        boolean graphql = res.url().contains("graphql");
-                        if (graphql) {
-                            String postData = res.request().postData();
-                            return postData.contains("commentListQuery");
-                        }
-                        return false;
-                    }, () -> {
-                        Response navigate = page.navigate(shareLink, new Page.NavigateOptions().setTimeout(BrowserConfig.LOAD_PAGE_TIMEOUT));
-                        navigateContent.set(new String(navigate.body()));
-                    });
-                    Integer commentCountV2 = JacksonUtil.readField(commentRes.body(), "commentCountV2", Integer.class);
-                    commentNum = commentCountV2 == null ? 0 : commentCountV2;
-                    String content = navigateContent.get();
-                    Document document = JsoupUtil.parse(content);
-                    if (document.text().contains("作品已失效")) {
-                        log.error("快手检测到对方已删除此作品! {}", dataSyncParamContext.getShareLink());
-                        SocialMediaWork socialMediaWork = new SocialMediaWork();
-                        socialMediaWork.setShareLink(dataSyncParamContext.getShareLink());
-                        socialMediaWork.setWorkUid("-1");
-                        return (SocialMediaWorkDetail<T>) new SocialMediaWorkDetail<>(socialMediaWork, null);
+        String currentUrl = redirectUrl;
+        int commentNum = 0;
+        int collectNum = 0;
+        int thumbNum = 0;
+        int shareNum = 0;
+        int playNum = 0;
+        String nickname = "";
+        String uid = "";
+        String desc = "";
+        String title;
+        String topics;
+        String customType;
+        String workUid = "";
+        Date postTime = null;
+        String mediaType = "";
+        String workType = "";
+        String secUid = "";
+        if (isVideo) {
+            try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(PlaywrightBrowser.buildProxy()); Page page = playwrightBrowser.newPage()) {
+                AtomicReference<String> navigateContent = new AtomicReference<>();
+                Response commentRes = page.waitForResponse(res -> {
+                    boolean graphql = res.url().contains("graphql");
+                    if (graphql) {
+                        String postData = res.request().postData();
+                        return postData.contains("commentListQuery");
                     }
-                    String json = JsoupUtil.findContentInScript(document, "window.__APOLLO_STATE__=");
-                    Assert.hasText(json, "触发快手限流了,开始重试");
-                    JsonNode jsonNode = JacksonUtil.toObj(json);
-                    JsonNode defaultClient = jsonNode.get("defaultClient");
-                    Iterator<Map.Entry<String, JsonNode>> fields = defaultClient.fields();
-                    while (fields.hasNext()) {
-                        Map.Entry<String, JsonNode> entry = fields.next();
-                        String key = entry.getKey();
-                        JsonNode value = entry.getValue();
-                        if (key.startsWith("VisionVideoDetailPhoto")) {
-                            workUid = value.get("id").asText();
-                            thumbNum = value.get("realLikeCount").asInt();
-                            playNum = BrowserConfig.clearWord(value.get("viewCount").asText());
-                            shareNum = 0;
-                            collectNum = 0;
-                            desc = value.get("caption").asText();
-                            postTime = DateUtil.date(value.get("timestamp").asLong(0));
-                            mediaType = MediaTypeEnum.VIDEO.getType();
-                            workType = WorkTypeEnum.NORMAL_VIDEO.getType();
+                    return false;
+                }, () -> {
+                    Response navigate = page.navigate(shareLink, new Page.NavigateOptions().setTimeout(BrowserConfig.LOAD_PAGE_TIMEOUT));
+                    navigateContent.set(new String(navigate.body()));
+                });
+                Integer commentCountV2 = JacksonUtil.readField(commentRes.body(), "commentCountV2", Integer.class);
+                commentNum = commentCountV2 == null ? 0 : commentCountV2;
+                String content = navigateContent.get();
+                Document document = JsoupUtil.parse(content);
+                if (document.text().contains("作品已失效")) {
+                    log.error("快手检测到对方已删除此作品! {}", dataSyncParamContext.getShareLink());
+                    SocialMediaWork socialMediaWork = new SocialMediaWork();
+                    socialMediaWork.setShareLink(dataSyncParamContext.getShareLink());
+                    socialMediaWork.setWorkUid("-1");
+                    return (SocialMediaWorkDetail<T>) new SocialMediaWorkDetail<>(socialMediaWork, null);
+                }
+                String json = JsoupUtil.findContentInScript(document, "window.__APOLLO_STATE__=");
+                Assert.hasText(json, "触发快手限流了,开始重试");
+                JsonNode jsonNode = JacksonUtil.toObj(json);
+                JsonNode defaultClient = jsonNode.get("defaultClient");
+                Iterator<Map.Entry<String, JsonNode>> fields = defaultClient.fields();
+                while (fields.hasNext()) {
+                    Map.Entry<String, JsonNode> entry = fields.next();
+                    String key = entry.getKey();
+                    JsonNode value = entry.getValue();
+                    if (key.startsWith("VisionVideoDetailPhoto")) {
+                        workUid = value.get("id").asText();
+                        thumbNum = value.get("realLikeCount").asInt();
+                        playNum = BrowserConfig.clearWord(value.get("viewCount").asText());
+                        shareNum = 0;
+                        collectNum = 0;
+                        desc = value.get("caption").asText();
+                        postTime = DateUtil.date(value.get("timestamp").asLong(0));
+                        mediaType = MediaTypeEnum.VIDEO.getType();
+                        workType = WorkTypeEnum.NORMAL_VIDEO.getType();
+                    }
+                    if (key.contains("VisionVideoDetailAuthor")) {
+                        nickname = value.get("name").asText();
+                        secUid = value.get("id").asText();
+                        if (isScheduler) {
+                            continue;
                         }
-                        if (key.contains("VisionVideoDetailAuthor")) {
-                            nickname = value.get("name").asText();
-                            secUid = value.get("id").asText();
-                            if (isScheduler) {
-                                continue;
-                            }
+                        try {
                             Page popupPage = page.waitForPopup(() -> {
                                 ElementHandle element = page.querySelector("span[class*='profile-user-name-title']");
                                 BoundingBox box = element.boundingBox();
@@ -391,10 +384,21 @@ public class KuaiShouSyncServiceImpl implements DataSyncService {
                             });
                             String fullText = popupPage.textContent(":text-matches(' 快手号：.*')");
                             uid = fullText.replace(" 快手号：", "");
+                        } catch (Exception e) {
+                            log.error("获取快手号异常", e);
                         }
                     }
                 }
-            } else {
+            }
+        } else {
+            HttpRequest httpRequest = HttpUtil.createGet(shareLink)
+                    .setFollowRedirects(true)
+                    .timeout(60000)
+                    .setProxy(dataSyncParamContext.getProxy())
+                    .headerMap(BrowserConfig.BROWSER_HEADERS, true);
+            try (HttpResponse response = httpRequest.execute()) {
+                currentUrl = httpRequest.getUrl();
+                InputStream inputStream = response.bodyStream();
                 String json = JsoupUtil.findContentInScript(inputStream, "window.INIT_STATE = ");
                 JsonNode obj = JacksonUtil.toObj(json);
                 JsonNode jsonNode = null;
@@ -429,32 +433,32 @@ public class KuaiShouSyncServiceImpl implements DataSyncService {
                 mediaType = MediaTypeEnum.PICTURE.getType();
                 workType = WorkTypeEnum.RICH_TEXT.getType();
             }
-            title = MessageFormatUtils.cleanDescription(desc);
-            topics = MessageFormatUtils.extractHashtagsStr(desc);
-            SocialMediaWork socialMediaWork = new SocialMediaWork();
-            socialMediaWork.setUrl(currentUrl);
-            socialMediaWork.setShareLink(shareLink);
-            socialMediaWork.setPlatformId(SocialMediaPlatformEnum.KUAI_SHOU.getDomain());
-            socialMediaWork.setDescription(desc);
-            socialMediaWork.setWorkUid(workUid);
-            socialMediaWork.setPostTime(postTime);
-            socialMediaWork.setMediaType(mediaType);
-            socialMediaWork.setType(workType);
-            socialMediaWork.setThumbNum(thumbNum);
-            socialMediaWork.setCollectNum(collectNum);
-            socialMediaWork.setShareNum(shareNum);
-            socialMediaWork.setCommentNum(commentNum);
-            socialMediaWork.setLikeNum(0);
-            socialMediaWork.setPlayNum(playNum);
-            socialMediaWork.setTitle(title);
-            socialMediaWork.setTopics(topics);
-            socialMediaWork.setStatisticMd5(socialMediaWork.generateStatisticMd5());
-            SocialMediaUserInfo socialMediaUserInfo = new SocialMediaUserInfo();
-            socialMediaUserInfo.setSecUid(secUid);
-            socialMediaUserInfo.setNickname(nickname);
-            socialMediaUserInfo.setUid(uid);
-            return (SocialMediaWorkDetail<T>) new SocialMediaWorkDetail<>(socialMediaWork, socialMediaUserInfo);
         }
+        title = MessageFormatUtils.cleanDescription(desc);
+        topics = MessageFormatUtils.extractHashtagsStr(desc);
+        SocialMediaWork socialMediaWork = new SocialMediaWork();
+        socialMediaWork.setUrl(currentUrl);
+        socialMediaWork.setShareLink(shareLink);
+        socialMediaWork.setPlatformId(SocialMediaPlatformEnum.KUAI_SHOU.getDomain());
+        socialMediaWork.setDescription(desc);
+        socialMediaWork.setWorkUid(workUid);
+        socialMediaWork.setPostTime(postTime);
+        socialMediaWork.setMediaType(mediaType);
+        socialMediaWork.setType(workType);
+        socialMediaWork.setThumbNum(thumbNum);
+        socialMediaWork.setCollectNum(collectNum);
+        socialMediaWork.setShareNum(shareNum);
+        socialMediaWork.setCommentNum(commentNum);
+        socialMediaWork.setLikeNum(0);
+        socialMediaWork.setPlayNum(playNum);
+        socialMediaWork.setTitle(title);
+        socialMediaWork.setTopics(topics);
+        socialMediaWork.setStatisticMd5(socialMediaWork.generateStatisticMd5());
+        SocialMediaUserInfo socialMediaUserInfo = new SocialMediaUserInfo();
+        socialMediaUserInfo.setSecUid(secUid);
+        socialMediaUserInfo.setNickname(nickname);
+        socialMediaUserInfo.setUid(uid);
+        return (SocialMediaWorkDetail<T>) new SocialMediaWorkDetail<>(socialMediaWork, socialMediaUserInfo);
     }
 
     public static void main(String[] args) {

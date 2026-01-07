@@ -67,8 +67,8 @@ public class DataSyncManager {
         }
         com.microsoft.playwright.options.Proxy browserProxy = PlaywrightBrowser.buildProxy();
         try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(browserProxy)) {
-            DouYinWorkScheduler.navigateToDouYinUserPage(playwrightBrowser, proxy);
-            dataSyncParamContext.setPage(playwrightBrowser.getPage());
+            DouYinWorkScheduler.navigateToDouYinUserPage(playwrightBrowser);
+            dataSyncParamContext.setPlaywrightBrowser(playwrightBrowser);
             return dataSyncService.fetchWork(dataSyncParamContext);
         }
     }
