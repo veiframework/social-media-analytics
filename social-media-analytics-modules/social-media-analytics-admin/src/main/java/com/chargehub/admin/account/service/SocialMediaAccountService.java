@@ -3,10 +3,10 @@ package com.chargehub.admin.account.service;
 import cn.afterturn.easypoi.handler.inter.IExcelDictHandler;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.bean.copier.CopyOptions;
-import cn.hutool.core.date.DatePattern;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.toolkit.Db;
 import com.chargehub.admin.account.domain.SocialMediaAccount;
 import com.chargehub.admin.account.dto.*;
 import com.chargehub.admin.account.mapper.SocialMediaAccountMapper;
@@ -21,7 +21,6 @@ import com.chargehub.admin.enums.SocialMediaPlatformEnum;
 import com.chargehub.admin.enums.SyncWorkStatusEnum;
 import com.chargehub.admin.scheduler.AbstractWorkScheduler;
 import com.chargehub.admin.work.domain.SocialMediaWork;
-import com.chargehub.admin.work.dto.SocialMediaWorkQueryDto;
 import com.chargehub.admin.work.service.SocialMediaWorkService;
 import com.chargehub.common.core.properties.HubProperties;
 import com.chargehub.common.redis.service.RedisService;
@@ -292,6 +291,14 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
         qw.select(SocialMediaAccount::getNickname, SocialMediaAccount::getId);
         List<SocialMediaAccount> socialMediaAccounts = this.baseMapper.selectList(qw);
         return BeanUtil.copyToList(socialMediaAccounts, SocialMediaAccountSelectorVo.class);
+    }
+
+    public void updateBatchById(List<SocialMediaAccount> list) {
+        if (CollectionUtils.isEmpty(list)) {
+            return;
+        }
+        list.sort(Comparator.comparing(SocialMediaAccount::getId));
+        Db.updateBatchById(list);
     }
 
     @Override

@@ -16,7 +16,7 @@ public class PlainClass {
         DouYinWorkScheduler.loadLocalCache();
         try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(PlaywrightBrowser.buildProxy())) {
             Page page = playwrightBrowser.newPage();
-            page.navigate("http://xhslink.com/o/6R3NyJo6mSD", new Page.NavigateOptions().setWaitUntil(WaitUntilState.COMMIT));
+            page.navigate("https://v.douyin.com/74d1AS59dVc/", new Page.NavigateOptions().setWaitUntil(WaitUntilState.COMMIT));
             System.out.println(page.url());
         }
     }

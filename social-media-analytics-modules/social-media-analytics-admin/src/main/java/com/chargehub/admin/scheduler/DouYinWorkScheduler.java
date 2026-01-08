@@ -152,7 +152,7 @@ public class DouYinWorkScheduler extends AbstractWorkScheduler {
                     }
                 }
             }
-            this.socialMediaWorkService.saveOrUpdateBatch(updateList);
+            this.socialMediaWorkService.updateBatchById(updateList);
         }
     }
 

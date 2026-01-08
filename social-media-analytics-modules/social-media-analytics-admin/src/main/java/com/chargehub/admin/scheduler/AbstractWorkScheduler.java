@@ -3,7 +3,6 @@ package com.chargehub.admin.scheduler;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.StopWatch;
-import com.baomidou.mybatisplus.extension.toolkit.Db;
 import com.chargehub.admin.account.domain.SocialMediaAccount;
 import com.chargehub.admin.account.domain.SocialMediaAccountTask;
 import com.chargehub.admin.account.service.SocialMediaAccountService;
@@ -115,9 +114,7 @@ public abstract class AbstractWorkScheduler {
                 socialMediaAccount.setSyncWorkStatus(SyncWorkStatusEnum.COMPLETE.ordinal());
                 return socialMediaAccount;
             }).collect(Collectors.toList());
-            if (CollectionUtils.isNotEmpty(completeList)) {
-                Db.updateBatchById(completeList);
-            }
+            socialMediaAccountService.updateBatchById(completeList);
         } catch (Exception e) {
             log.error("{}同步作品异常 {}", taskName, e.getMessage());
             Thread.currentThread().interrupt();
@@ -190,7 +187,7 @@ public abstract class AbstractWorkScheduler {
                 }
             }
         }
-        this.socialMediaWorkService.saveOrUpdateBatch(updateList);
+        this.socialMediaWorkService.updateBatchById(updateList);
     }
 
 }

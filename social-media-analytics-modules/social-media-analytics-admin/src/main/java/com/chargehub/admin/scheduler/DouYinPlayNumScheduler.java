@@ -3,7 +3,6 @@ package com.chargehub.admin.scheduler;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpStatus;
 import cn.hutool.http.HttpUtil;
-import com.baomidou.mybatisplus.extension.toolkit.Db;
 import com.chargehub.admin.datasync.DataSyncMessageQueue;
 import com.chargehub.admin.datasync.tikhub.DataSyncDouYinServiceImpl;
 import com.chargehub.admin.work.domain.SocialMediaWork;
@@ -90,9 +89,7 @@ public class DouYinPlayNumScheduler {
                         updateWorks.add(update);
                     }
                 }
-                if (CollectionUtils.isNotEmpty(updateWorks)) {
-                    Db.updateBatchById(updateWorks);
-                }
+                socialMediaWorkService.updateBatchById(updateWorks);
                 return new DataSyncMessageQueue.AsyncResult(true, null);
             } catch (Exception e) {
                 return new DataSyncMessageQueue.AsyncResult(false, String.join(",", awemeIds) + ": " + e.getMessage());

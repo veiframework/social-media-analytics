@@ -164,7 +164,16 @@ public class SocialMediaWorkService extends AbstractZ9CrudServiceImpl<SocialMedi
                 .update();
     }
 
-    public void saveOrUpdateBatch(Collection<SocialMediaWork> works) {
+    public void updateBatchById(List<SocialMediaWork> works) {
+        if (CollectionUtils.isEmpty(works)) {
+            return;
+        }
+        //批量更新前按照id升序排序,防止死锁
+        works.sort(Comparator.comparing(SocialMediaWork::getId));
+        Db.updateBatchById(works);
+    }
+
+    public void saveOrUpdateBatch(List<SocialMediaWork> works) {
         Db.saveOrUpdateBatch(works);
     }
 
