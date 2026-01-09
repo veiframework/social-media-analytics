@@ -71,6 +71,10 @@ public class DouYinWorkScheduler extends AbstractWorkScheduler {
             "https://www.douyin.com/?recommend=1"
     );
 
+    protected static final Set<String> ALLOW_SCRIPTS = Sets.newHashSet("index.js", "index.umd.production.js"
+            , "mammon-worklet-processor.min.js", "bdms_", "browser.cn.js", "runtime_bundler_", "webmssdk", "sdk-glue"
+            , "routes-Help-route", "framework");
+
     private static final Map<String, byte[]> CHROME_CACHE = new ConcurrentHashMap<>();
 
     private static final Map<String, byte[]> FIREFOX_CACHE = new ConcurrentHashMap<>();
@@ -119,7 +123,6 @@ public class DouYinWorkScheduler extends AbstractWorkScheduler {
         }
         DataSyncWorksParams dataSyncWorksParams = new DataSyncWorksParams();
         try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(browserProxy)) {
-            navigateToDouYinUserPage(playwrightBrowser);
             this.socialMediaAccountService.updateSyncWorkStatus(accountId, SyncWorkStatusEnum.SYNCING);
             Map<String, SocialMediaWork> workMap = new HashMap<>();
             for (SocialMediaWork socialMediaWork : latestWork) {
@@ -162,14 +165,11 @@ public class DouYinWorkScheduler extends AbstractWorkScheduler {
         BrowserConfig browserConfig = playwrightBrowser.getBrowserConfig();
         Internet.UserAgent userAgent = browserConfig.getUserAgent();
         browserContext.addInitScript("localStorage.clear(); sessionStorage.clear();");
-        Set<String> allowScripts = Sets.newHashSet("index.js", "index.umd.production.js"
-                , "mammon-worklet-processor.min.js", "bdms_", "browser.cn.js", "runtime_bundler_", "webmssdk", "sdk-glue"
-                , "routes-Help-route", "framework");
         browserContext.onResponse(response -> {
             String url = response.url();
             String resourceType = response.request().resourceType();
             boolean isScript = "script".equals(resourceType);
-            if (isScript && allowScripts.stream().anyMatch(url::contains) && response.ok()) {
+            if (isScript && ALLOW_SCRIPTS.stream().anyMatch(url::contains) && response.ok()) {
                 String fileName = FileUtils.sanitizeUrlFileName(url);
                 byte[] body = response.body();
                 putCache(userAgent, fileName, body);
@@ -186,7 +186,7 @@ public class DouYinWorkScheduler extends AbstractWorkScheduler {
                 return;
             }
             boolean isScript = "script".equals(resourceType);
-            if (isScript && allowScripts.stream().anyMatch(url::contains)) {
+            if (isScript && ALLOW_SCRIPTS.stream().anyMatch(url::contains)) {
                 String fileName = FileUtils.sanitizeUrlFileName(url);
                 byte[] cachedWebResource = getCache(userAgent, fileName);
                 if (cachedWebResource != null) {

@@ -180,9 +180,6 @@ public class SocialMediaWork implements Serializable, Z9CrudEntity {
         if (!this.getWorkUid().equals(newWork.getWorkUid())) {
             updateWork.setWorkUid(newWork.getWorkUid());
         }
-        if (!this.getUrl().equals(newWork.getUrl())) {
-            updateWork.setUrl(newWork.getUrl());
-        }
         if (!this.getDescription().equals(newWork.getDescription())) {
             updateWork.setDescription(newWork.getDescription());
         }

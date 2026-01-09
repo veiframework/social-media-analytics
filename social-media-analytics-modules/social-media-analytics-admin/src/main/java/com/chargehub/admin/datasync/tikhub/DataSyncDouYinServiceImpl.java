@@ -48,6 +48,7 @@ import java.net.Proxy;
 import java.text.MessageFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -479,10 +480,12 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
     @Override
     public <T> SocialMediaWorkResult<T> fetchWorks(DataSyncWorksParams dataSyncWorksParams) {
         PlaywrightBrowser playwrightBrowser = dataSyncWorksParams.getPlaywrightBrowser();
+        Consumer<PlaywrightBrowser> navigate = DouYinWorkScheduler::navigateToDouYinUserPage;
+        navigate.accept(playwrightBrowser);
         Map<String, SocialMediaWork> workMap = dataSyncWorksParams.getWorkMap();
         SocialMediaWorkResult<SocialMediaWork> socialMediaWorkResult = new SocialMediaWorkResult<>();
         Set<String> ids = workMap.keySet();
-        List<JsonNode> jsonNodes = PlaywrightBrowser.requests(ids, playwrightBrowser, DOUYIN_FETCH_WORK_JS, DouYinWorkScheduler::navigateToDouYinUserPage);
+        List<JsonNode> jsonNodes = PlaywrightBrowser.requests(ids, playwrightBrowser, DOUYIN_FETCH_WORK_JS, navigate);
         List<SocialMediaWork> socialMediaWorks = new ArrayList<>();
         for (JsonNode jsonNode : jsonNodes) {
             SocialMediaWorkDetail<SocialMediaWork> workDetail = this.buildWorkDetail(jsonNode, null);
@@ -512,9 +515,11 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
         } else {
             UrlBuilder urlBuilder = UrlBuilder.of(redirectUrl);
             UrlPath urlPath = urlBuilder.getPath();
-            workUid = urlPath.getSegment(1);
+            workUid = urlPath.getSegment(urlPath.getSegments().size() - 1);
         }
-        JsonNode jsonNode = PlaywrightBrowser.request(workUid, playwrightBrowser, DOUYIN_FETCH_WORK_JS, DouYinWorkScheduler::navigateToDouYinUserPage);
+        Consumer<PlaywrightBrowser> navigate = DouYinWorkScheduler::navigateToDouYinUserPage;
+        navigate.accept(playwrightBrowser);
+        JsonNode jsonNode = PlaywrightBrowser.request(workUid, playwrightBrowser, DOUYIN_FETCH_WORK_JS, navigate);
         SocialMediaWorkDetail<SocialMediaWork> workDetail = this.buildWorkDetail(jsonNode, dataSyncParamContext.getShareLink());
         if (workDetail == null) {
             return null;
@@ -522,7 +527,7 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
         SocialMediaWork socialMediaWork = workDetail.getWork();
         if ("-1".equals(socialMediaWork.getWorkUid())) {
             if (StringUtils.isNotBlank(redirectUrl)) {
-                log.error("找不到的作品url是: " + redirectUrl);
+                log.error("找不到的作品url是: {}", redirectUrl);
             }
             return (SocialMediaWorkDetail<T>) workDetail;
         }

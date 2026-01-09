@@ -40,6 +40,17 @@ spring:
     pathmatch:
       matching-strategy: ant_path_matcher
 
+  quartz:
+    waitForJobsToCompleteOnShutdown: true
+    properties:
+      org:
+        quartz:
+          threadPool:
+            class: org.quartz.simpl.SimpleThreadPool
+            threadCount: 100
+            threadPriority: 5
+            threadsInheritContextClassLoaderOfInitializingThread: true
+
 rocketmq:
   name-server: 1.94.247.196:9876
   producer:

@@ -3,6 +3,7 @@ package com.chargehub.admin.enums;
 import cn.hutool.core.util.URLUtil;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpUtil;
+import com.chargehub.admin.playwright.BrowserConfig;
 import com.chargehub.admin.playwright.PlaywrightBrowser;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.WaitUntilState;
@@ -46,7 +47,7 @@ public enum SocialMediaPlatformEnum {
 
     public static PlatformExtra getPlatformByWorkUrl(String workUrl) {
         try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(PlaywrightBrowser.buildProxy()); Page page = playwrightBrowser.newPage()) {
-            page.navigate(workUrl, new Page.NavigateOptions().setWaitUntil(WaitUntilState.COMMIT));
+            page.navigate(workUrl, new Page.NavigateOptions().setTimeout(BrowserConfig.LOAD_PAGE_TIMEOUT).setWaitUntil(WaitUntilState.COMMIT));
             String location = page.url();
             URI uri = URLUtil.toURI(location);
             String host = uri.getHost();

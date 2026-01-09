@@ -70,26 +70,14 @@
     // ======================
     // 3. WebGL 指纹（Safari on macOS）
     // ======================
-    const MAX_TEXTURE_SIZES = [4096, 8192, 16384];
+    const MAX_TEXTURE_SIZES = [8192];
 
     const webglProfiles = [
         // Apple Silicon
         {VENDOR: 'Apple Inc.', RENDERER: 'Apple M1'},
-        {VENDOR: 'Apple Inc.', RENDERER: 'Apple M1 Pro'},
-        {VENDOR: 'Apple Inc.', RENDERER: 'Apple M1 Max'},
         {VENDOR: 'Apple Inc.', RENDERER: 'Apple M2'},
-        {VENDOR: 'Apple Inc.', RENDERER: 'Apple M2 Pro'},
-        {VENDOR: 'Apple Inc.', RENDERER: 'Apple M2 Max'},
         {VENDOR: 'Apple Inc.', RENDERER: 'Apple M3'},
 
-        // Intel Mac + AMD GPU
-        {VENDOR: 'Apple Inc.', RENDERER: 'AMD Radeon Pro 5500M'},
-        {VENDOR: 'Apple Inc.', RENDERER: 'AMD Radeon Pro 5300M'},
-        {VENDOR: 'Apple Inc.', RENDERER: 'AMD Radeon Pro Vega II'},
-
-        // Intel Mac + Intel 核显
-        {VENDOR: 'Apple Inc.', RENDERER: 'Intel Iris Plus Graphics'},
-        {VENDOR: 'Apple Inc.', RENDERER: 'Intel UHD Graphics 630'}
     ];
 
     const webglProfile = webglProfiles[Math.floor(Math.random() * webglProfiles.length)];
@@ -99,27 +87,44 @@
     HTMLCanvasElement.prototype.getContext = function (type, attributes) {
         const ctx = _g.call(this, type, attributes);
 
-        if (ctx && (['webgl', 'experimental-webgl', 'webgl2', 'webkit-3d'].includes(type))) {
+        if (ctx && ['webgl', 'experimental-webgl', 'webgl2', 'webkit-3d'].includes(type)) {
             const originalGetParameter = ctx.getParameter;
             const originalGetExtension = ctx.getExtension;
 
-            ctx.getParameter = function (param) {
-                if (param === ctx.VENDOR) return webglProfile.VENDOR; // 'Apple Inc.'
-                if (param === ctx.RENDERER) return webglProfile.RENDERER; // e.g., 'Apple M2'
+            // 创建伪造的 getParameter 函数
+            const fakeGetParameter = function (param) {
+                if (param === ctx.VENDOR) return webglProfile.VENDOR;          // 'Apple Inc.'
+                if (param === ctx.RENDERER) return webglProfile.RENDERER;      // e.g., 'Apple GPU'
                 if (param === ctx.VERSION) return 'WebGL 1.0';
                 if (param === ctx.SHADING_LANGUAGE_VERSION) return 'WebGL GLSL ES 1.0 (1.0)';
-                if (param === ctx.MAX_TEXTURE_SIZE) return randomMaxTextureSize;
+                if (param === ctx.MAX_TEXTURE_SIZE) return randomMaxTextureSize; // 通常 4096
 
-                // Safari 不支持 UNMASKED，所以即使查 0x9245 也应走原生（通常返回 null）
+                // Safari 不支持 UNMASKED，所有其他参数走原生
                 return originalGetParameter.call(this, param);
             };
 
-            // 🔑 关键：Safari 不支持 WEBGL_debug_renderer_info
+            // 🔑 关键修复：让 toString() 返回原生格式
+            try {
+                Object.defineProperty(fakeGetParameter, 'toString', {
+                    value: function () {
+                        return 'function getParameter() { [native code] }';
+                    },
+                    writable: false,
+                    configurable: false,
+                    enumerable: false
+                });
+            } catch (e) {
+                // 忽略 defineProperty 失败（如严格 CSP 环境）
+            }
+
+            ctx.getParameter = fakeGetParameter;
+
+            // 🔑 Safari 真实行为：不支持 WEBGL_debug_renderer_info，必须返回 null
             ctx.getExtension = function (name) {
                 if (name === 'WEBGL_debug_renderer_info') {
-                    return null; // ← 必须返回 null！
+                    return null; // ← 这是 Safari 的标准行为！
                 }
-                return originalGetExtension.call(this, name);
+                return originalGetExtension ? originalGetExtension.call(this, name) : null;
             };
         }
 

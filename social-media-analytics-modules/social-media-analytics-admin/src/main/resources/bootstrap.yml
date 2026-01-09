@@ -37,15 +37,7 @@ spring:
             group: ${nacos.group}
 
 
-  quartz:
-    properties:
-      org:
-        quartz:
-          threadPool:
-            class: org.quartz.simpl.SimpleThreadPool
-            threadCount: 100
-            threadPriority: 5
-            threadsInheritContextClassLoaderOfInitializingThread: true
+
 
 
 chargehub:

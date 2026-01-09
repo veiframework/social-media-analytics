@@ -1,89 +1,61 @@
 (() => {
 
-    const MAX_TEXTURE_SIZES = [4096, 8192, 16384];
+    const MAX_TEXTURE_SIZES = [8192];
 
     const webglProfiles = [
-        // ── NVIDIA 高端 ───────────────────────
-        {
-            VENDOR: 'Mozilla',
-            RENDERER: 'ANGLE (NVIDIA, NVIDIA GeForce RTX 4090 Direct3D11 vs_5_0 ps_5_0), or similar',
-            UNMASKED_VENDOR: 'Google Inc. (NVIDIA)',
-            UNMASKED_RENDERER: 'ANGLE (NVIDIA, NVIDIA GeForce RTX 4090 Direct3D11 vs_5_0 ps_5_0), or similar'
-        },
-        {
-            VENDOR: 'Mozilla',
-            RENDERER: 'ANGLE (NVIDIA, NVIDIA GeForce RTX 4080 Direct3D11 vs_5_0 ps_5_0), or similar',
-            UNMASKED_VENDOR: 'Google Inc. (NVIDIA)',
-            UNMASKED_RENDERER: 'ANGLE (NVIDIA, NVIDIA GeForce RTX 4080 Direct3D11 vs_5_0 ps_5_0), or similar'
-        },
-        {
-            VENDOR: 'Mozilla',
-            RENDERER: 'ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Ti Direct3D11 vs_5_0 ps_5_0), or similar',
-            UNMASKED_VENDOR: 'Google Inc. (NVIDIA)',
-            UNMASKED_RENDERER: 'ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Ti Direct3D11 vs_5_0 ps_5_0), or similar'
-        },
-
         // ── NVIDIA 主流 ───────────────────────
         {
             VENDOR: 'Mozilla',
-            RENDERER: 'ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Ti Direct3D11 vs_5_0 ps_5_0), or similar',
+            RENDERER: 'ANGLE (NVIDIA, NVIDIA GeForce RTX 3050 Direct3D11 vs_5_0 ps_5_0)',
             UNMASKED_VENDOR: 'Google Inc. (NVIDIA)',
-            UNMASKED_RENDERER: 'ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Ti Direct3D11 vs_5_0 ps_5_0), or similar'
+            UNMASKED_RENDERER: 'ANGLE (NVIDIA, NVIDIA GeForce RTX 3050 Direct3D11 vs_5_0 ps_5_0)'
         },
         {
             VENDOR: 'Mozilla',
-            RENDERER: 'ANGLE (NVIDIA, NVIDIA GeForce RTX 3060 Direct3D11 vs_5_0 ps_5_0), or similar',
+            RENDERER: 'ANGLE (NVIDIA, NVIDIA GeForce GTX 1650 Direct3D11 vs_5_0 ps_5_0)',
             UNMASKED_VENDOR: 'Google Inc. (NVIDIA)',
-            UNMASKED_RENDERER: 'ANGLE (NVIDIA, NVIDIA GeForce RTX 3060 Direct3D11 vs_5_0 ps_5_0), or similar'
+            UNMASKED_RENDERER: 'ANGLE (NVIDIA, NVIDIA GeForce GTX 1650 Direct3D11 vs_5_0 ps_5_0)'
         },
         {
             VENDOR: 'Mozilla',
-            RENDERER: 'ANGLE (NVIDIA, NVIDIA GeForce GTX 1660 SUPER Direct3D11 vs_5_0 ps_5_0), or similar',
+            RENDERER: 'ANGLE (NVIDIA, NVIDIA GeForce GTX 1050 Ti Direct3D11 vs_5_0 ps_5_0)',
             UNMASKED_VENDOR: 'Google Inc. (NVIDIA)',
-            UNMASKED_RENDERER: 'ANGLE (NVIDIA, NVIDIA GeForce GTX 1660 SUPER Direct3D11 vs_5_0 ps_5_0), or similar'
+            UNMASKED_RENDERER: 'ANGLE (NVIDIA, NVIDIA GeForce GTX 1050 Ti Direct3D11 vs_5_0 ps_5_0)'
         },
 
         // ── AMD 显卡（Firefox + ANGLE on Windows 也支持）──────────────
         {
             VENDOR: 'Mozilla',
-            RENDERER: 'ANGLE (AMD, AMD Radeon RX 7900 XT Direct3D11 vs_5_0 ps_5_0), or similar',
+            RENDERER: 'ANGLE (AMD, AMD Radeon(TM) RX 6500M Direct3D11 vs_5_0 ps_5_0)',
             UNMASKED_VENDOR: 'Google Inc. (AMD)',
-            UNMASKED_RENDERER: 'ANGLE (AMD, AMD Radeon RX 7900 XT Direct3D11 vs_5_0 ps_5_0), or similar'
+            UNMASKED_RENDERER: 'ANGLE (AMD, AMD Radeon(TM) RX 6500M Direct3D11 vs_5_0 ps_5_0)'
         },
         {
             VENDOR: 'Mozilla',
-            RENDERER: 'ANGLE (AMD, AMD Radeon RX 6700 XT Direct3D11 vs_5_0 ps_5_0), or similar',
+            RENDERER: 'ANGLE (AMD, AMD Radeon(TM) RX 6600M Direct3D11 vs_5_0 ps_5_0)',
             UNMASKED_VENDOR: 'Google Inc. (AMD)',
-            UNMASKED_RENDERER: 'ANGLE (AMD, AMD Radeon RX 6700 XT Direct3D11 vs_5_0 ps_5_0), or similar'
+            UNMASKED_RENDERER: 'ANGLE (AMD, AMD Radeon(TM) RX 6600M Direct3D11 vs_5_0 ps_5_0)'
         },
 
         // ── Intel 核显 ───────────────────────
         {
             VENDOR: 'Mozilla',
-            RENDERER: 'ANGLE (Intel, Intel(R) Iris(R) Xe Graphics Direct3D11 vs_5_0 ps_5_0), or similar',
+            RENDERER: 'ANGLE (Intel, Intel(R) HD Graphics 630 Direct3D11 vs_5_0 ps_5_0)',
             UNMASKED_VENDOR: 'Google Inc. (Intel)',
-            UNMASKED_RENDERER: 'ANGLE (Intel, Intel(R) Iris(R) Xe Graphics Direct3D11 vs_5_0 ps_5_0), or similar'
+            UNMASKED_RENDERER: 'ANGLE (Intel, Intel(R) HD Graphics 630 Direct3D11 vs_5_0 ps_5_0)'
         },
         {
             VENDOR: 'Mozilla',
-            RENDERER: 'ANGLE (Intel, Intel(R) UHD Graphics 630 Direct3D11 vs_5_0 ps_5_0), or similar',
+            RENDERER: 'ANGLE (Intel, Intel(R) UHD Graphics Direct3D11 vs_5_0 ps_5_0)',
             UNMASKED_VENDOR: 'Google Inc. (Intel)',
-            UNMASKED_RENDERER: 'ANGLE (Intel, Intel(R) UHD Graphics 630 Direct3D11 vs_5_0 ps_5_0), or similar'
-        },
-
-        // ── 老旧核显（兼容性）────────────────
-        {
-            VENDOR: 'Mozilla',
-            RENDERER: 'ANGLE (Intel, Intel(R) HD Graphics 520 Direct3D11 vs_5_0 ps_5_0), or similar',
-            UNMASKED_VENDOR: 'Google Inc. (Intel)',
-            UNMASKED_RENDERER: 'ANGLE (Intel, Intel(R) HD Graphics 520 Direct3D11 vs_5_0 ps_5_0), or similar'
+            UNMASKED_RENDERER: 'ANGLE (Intel, Intel(R) UHD Graphics Direct3D11 vs_5_0 ps_5_0)'
         }
+
+
     ];
 
     const hardwareProfiles = [
         // 低配入门级
-        {hardwareConcurrency: 2, deviceMemory: 2},
-        {hardwareConcurrency: 2, deviceMemory: 4},
         {hardwareConcurrency: 4, deviceMemory: 4},
 
         // 主流中端（最常见）
@@ -96,9 +68,6 @@
         {hardwareConcurrency: 12, deviceMemory: 16},
         {hardwareConcurrency: 16, deviceMemory: 16},
 
-        // 工作站/旗舰
-        {hardwareConcurrency: 16, deviceMemory: 32},
-        {hardwareConcurrency: 12, deviceMemory: 32}
     ];
 
     const randomIndex = Math.floor(Math.random() * hardwareProfiles.length);
@@ -164,9 +133,8 @@
             const originalGetParameter = ctx.getParameter;
             const originalGetExtension = ctx.getExtension;
 
-            // 🔁 只重写一次 getParameter
-            ctx.getParameter = function (param) {
-                // 标准参数
+            // 🔁 创建伪造的 getParameter 函数
+            const fakeGetParameter = function (param) {
                 if (param === ctx.VENDOR) return webglProfile.VENDOR;
                 if (param === ctx.RENDERER) return webglProfile.RENDERER;
                 if (param === ctx.VERSION) return 'WebGL 1.0';
@@ -180,6 +148,23 @@
                 return originalGetParameter.call(this, param);
             };
 
+            // 关键修复：让 toString() 返回原生格式，避免被检测
+            try {
+                Object.defineProperty(fakeGetParameter, 'toString', {
+                    value: function () {
+                        return 'function getParameter() { [native code] }';
+                    },
+                    writable: false,
+                    configurable: false,
+                    enumerable: false
+                });
+            } catch (e) {
+                // 忽略 defineProperty 失败（某些环境严格模式）
+            }
+
+            // 替换为伪造函数
+            ctx.getParameter = fakeGetParameter;
+
             // 重写 getExtension 以支持 UNMASKED 查询
             ctx.getExtension = function (name) {
                 if (name === 'WEBGL_debug_renderer_info') {
@@ -188,7 +173,7 @@
                         UNMASKED_RENDERER_WEBGL: 0x9246
                     };
                 }
-                return originalGetExtension.call(this, name);
+                return originalGetExtension ? originalGetExtension.call(this, name) : null;
             };
         }
 

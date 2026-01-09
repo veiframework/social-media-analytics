@@ -1,77 +1,61 @@
 // fingerprint-spoof.js
 (() => {
 
-    const MAX_TEXTURE_SIZES = [4096, 8192, 16384];
+    const MAX_TEXTURE_SIZES = [8192];
 
     const webglProfiles = [
-        // ── NVIDIA 高端 ───────────────────────
+        // // ── NVIDIA 主流 ───────────────────────
         {
-            VENDOR: 'WebKit',
+            VENDOR: 'Google Inc.',
             RENDERER: 'WebKit WebGL',
             UNMASKED_VENDOR: 'Google Inc. (NVIDIA)',
-            UNMASKED_RENDERER: 'ANGLE (NVIDIA, NVIDIA GeForce RTX 4090 (0x00002684) Direct3D11 vs_5_0 ps_5_0, D3D11)'
+            UNMASKED_RENDERER: 'ANGLE (NVIDIA, NVIDIA GeForce RTX 3050 (0x00002503) Direct3D11 vs_5_0 ps_5_0, D3D11)'
         },
         {
-            VENDOR: 'WebKit',
-            RENDERER: 'WebKit WebGL',
-            UNMASKED_VENDOR: 'Google Inc. (NVIDIA)',
-            UNMASKED_RENDERER: 'ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Ti (0x00002704) Direct3D11 vs_5_0 ps_5_0, D3D11)'
-        },
-        {
-            VENDOR: 'WebKit',
-            RENDERER: 'WebKit WebGL',
-            UNMASKED_VENDOR: 'Google Inc. (NVIDIA)',
-            UNMASKED_RENDERER: 'ANGLE (NVIDIA, NVIDIA GeForce RTX 3080 (0x00002206) Direct3D11 vs_5_0 ps_5_0, D3D11)'
-        },
-
-        // ── NVIDIA 主流/入门 ───────────────────
-        {
-            VENDOR: 'WebKit',
-            RENDERER: 'WebKit WebGL',
-            UNMASKED_VENDOR: 'Google Inc. (NVIDIA)',
-            UNMASKED_RENDERER: 'ANGLE (NVIDIA, NVIDIA GeForce RTX 3060 (0x00002504) Direct3D11 vs_5_0 ps_5_0, D3D11)'
-        },
-        {
-            VENDOR: 'WebKit',
+            VENDOR: 'Google Inc.',
             RENDERER: 'WebKit WebGL',
             UNMASKED_VENDOR: 'Google Inc. (NVIDIA)',
             UNMASKED_RENDERER: 'ANGLE (NVIDIA, NVIDIA GeForce GTX 1650 (0x00001F0A) Direct3D11 vs_5_0 ps_5_0, D3D11)'
         },
-
-        // ── AMD 高端/主流 ─────────────────────
         {
-            VENDOR: 'WebKit',
+            VENDOR: 'Google Inc.',
             RENDERER: 'WebKit WebGL',
-            UNMASKED_VENDOR: 'Google Inc. (AMD)',
-            UNMASKED_RENDERER: 'ANGLE (AMD, AMD Radeon RX 7900 XT (0x000073A0) Direct3D11 vs_5_0 ps_5_0, D3D11)'
-        },
-        {
-            VENDOR: 'WebKit',
-            RENDERER: 'WebKit WebGL',
-            UNMASKED_VENDOR: 'Google Inc. (AMD)',
-            UNMASKED_RENDERER: 'ANGLE (AMD, AMD Radeon RX 6700 XT (0x000073DF) Direct3D11 vs_5_0 ps_5_0, D3D11)'
+            UNMASKED_VENDOR: 'Google Inc. (NVIDIA)',
+            UNMASKED_RENDERER: 'ANGLE (NVIDIA, NVIDIA GeForce GTX 1050 Ti (0x00001C82) Direct3D11 vs_5_0 ps_5_0, D3D11)'
         },
 
-        // ── Intel 核显（近 5 年主流）────────────
+        // ── AMD 显卡 ───────────────────────
         {
-            VENDOR: 'WebKit',
+            VENDOR: 'Google Inc.',
             RENDERER: 'WebKit WebGL',
-            UNMASKED_VENDOR: 'Google Inc. (Intel)',
-            UNMASKED_RENDERER: 'ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x00009A49) Direct3D11 vs_5_0 ps_5_0, D3D11)'
+            UNMASKED_VENDOR: 'Google Inc. (AMD)',
+            UNMASKED_RENDERER: 'ANGLE (AMD, AMD Radeon(TM) RX 6500M (0x000073FF) Direct3D11 vs_5_0 ps_5_0, D3D11)'
         },
         {
-            VENDOR: 'WebKit',
+            VENDOR: 'Google Inc.',
+            RENDERER: 'WebKit WebGL',
+            UNMASKED_VENDOR: 'Google Inc. (AMD)',
+            UNMASKED_RENDERER: 'ANGLE (AMD, AMD Radeon(TM) RX 6600M (0x000073E0) Direct3D11 vs_5_0 ps_5_0, D3D11)'
+        },
+
+        // ── Intel 核显 ───────────────────────
+        {
+            VENDOR: 'Google Inc.',
             RENDERER: 'WebKit WebGL',
             UNMASKED_VENDOR: 'Google Inc. (Intel)',
-            UNMASKED_RENDERER: 'ANGLE (Intel, Intel(R) UHD Graphics 630 (0x00003E9B) Direct3D11 vs_5_0 ps_5_0, D3D11)'
+            UNMASKED_RENDERER: 'ANGLE (Intel, Intel(R) HD Graphics 630 (0x0000591B) Direct3D11 vs_5_0 ps_5_0, D3D11)'
         },
+        {
+            VENDOR: 'Google Inc.',
+            RENDERER: 'WebKit WebGL',
+            UNMASKED_VENDOR: 'Google Inc. (Intel)',
+            UNMASKED_RENDERER: 'ANGLE (Intel, Intel(R) UHD Graphics (0x00009BC4) Direct3D11 vs_5_0 ps_5_0, D3D11)'
+        }
 
     ];
 
     const hardwareProfiles = [
         // 低配入门级
-        {hardwareConcurrency: 2, deviceMemory: 2},
-        {hardwareConcurrency: 2, deviceMemory: 4},
         {hardwareConcurrency: 4, deviceMemory: 4},
 
         // 主流中端（最常见）
@@ -83,10 +67,6 @@
         {hardwareConcurrency: 8, deviceMemory: 16},
         {hardwareConcurrency: 12, deviceMemory: 16},
         {hardwareConcurrency: 16, deviceMemory: 16},
-
-        // 工作站/旗舰
-        {hardwareConcurrency: 16, deviceMemory: 32},
-        {hardwareConcurrency: 12, deviceMemory: 32}
     ];
 
     const randomIndex = Math.floor(Math.random() * hardwareProfiles.length);
@@ -145,9 +125,8 @@
             const originalGetParameter = ctx.getParameter;
             const originalGetExtension = ctx.getExtension;
 
-            // 🔁 只重写一次 getParameter
-            ctx.getParameter = function (param) {
-                // 标准参数
+            // 🔁 创建伪造的 getParameter 函数
+            const fakeGetParameter = function (param) {
                 if (param === ctx.VENDOR) return webglProfile.VENDOR;
                 if (param === ctx.RENDERER) return webglProfile.RENDERER;
                 if (param === ctx.VERSION) return 'WebGL 1.0 (OpenGL ES 2.0 Chromium)';
@@ -161,6 +140,23 @@
                 return originalGetParameter.call(this, param);
             };
 
+            // 关键修复：让 toString() 返回原生格式，避免被检测
+            try {
+                Object.defineProperty(fakeGetParameter, 'toString', {
+                    value: function () {
+                        return 'function getParameter() { [native code] }';
+                    },
+                    writable: false,
+                    configurable: false,
+                    enumerable: false
+                });
+            } catch (e) {
+                // 忽略 defineProperty 失败（某些环境严格模式）
+            }
+
+            // 替换为伪造函数
+            ctx.getParameter = fakeGetParameter;
+
             // 重写 getExtension 以支持 UNMASKED 查询
             ctx.getExtension = function (name) {
                 if (name === 'WEBGL_debug_renderer_info') {
@@ -169,7 +165,7 @@
                         UNMASKED_RENDERER_WEBGL: 0x9246
                     };
                 }
-                return originalGetExtension.call(this, name);
+                return originalGetExtension ? originalGetExtension.call(this, name) : null;
             };
         }
 
