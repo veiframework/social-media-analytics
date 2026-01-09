@@ -1,6 +1,7 @@
 package com.chargehub.admin.scheduler;
 
 import cn.hutool.core.thread.ThreadUtil;
+import com.chargehub.admin.enums.SocialMediaPlatformEnum;
 import com.chargehub.admin.work.domain.SocialMediaWork;
 import com.chargehub.admin.work.service.SocialMediaWorkService;
 import com.chargehub.admin.work.service.SocialMediaWorkTaskService;
@@ -46,7 +47,7 @@ public class DataSyncWorkSchedulerV5 {
                 if (CollectionUtils.isNotEmpty(latestWork)) {
                     Date now = new Date();
                     Integer updateMinutes = hubProperties.getUpdateMinutes();
-                    latestWork.removeIf(e -> !e.computeSyncDuration(now, updateMinutes));
+                    latestWork.removeIf(e -> !e.computeSyncDuration(now, updateMinutes) || e.getPlatformId().equals(SocialMediaPlatformEnum.WECHAT_VIDEO.getDomain()));
                 }
                 socialMediaWorkTaskService.batchAddTask(latestWork, true);
                 return;
