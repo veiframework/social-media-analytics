@@ -14,12 +14,13 @@ import org.springframework.stereotype.Component;
  * @author zhanghaowei
  * @since 1.0
  */
+@Deprecated
 @Component
 public class RedNodeWorkScheduler extends AbstractWorkScheduler {
 
 
     protected RedNodeWorkScheduler(SocialMediaAccountTaskService socialMediaAccountTaskService, RedisService redisService, DataSyncManager dataSyncManager, SocialMediaAccountService socialMediaAccountService, SocialMediaWorkService socialMediaWorkService, SocialMediaWorkCreateService socialMediaWorkCreateService, HubProperties hubProperties) {
-        super(socialMediaAccountTaskService, redisService, dataSyncManager, socialMediaAccountService, socialMediaWorkService, socialMediaWorkCreateService, hubProperties, 5);
+        super(socialMediaAccountTaskService, redisService, dataSyncManager, socialMediaAccountService, socialMediaWorkService, socialMediaWorkCreateService, hubProperties, null);
         this.setTaskName(SocialMediaPlatformEnum.RED_NOTE.getDomain());
     }
 

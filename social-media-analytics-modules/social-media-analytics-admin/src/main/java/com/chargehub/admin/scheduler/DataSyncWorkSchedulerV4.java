@@ -15,6 +15,7 @@ import java.util.List;
  * @author zhanghaowei
  * @since 1.0
  */
+@Deprecated
 @Component
 public class DataSyncWorkSchedulerV4 {
 

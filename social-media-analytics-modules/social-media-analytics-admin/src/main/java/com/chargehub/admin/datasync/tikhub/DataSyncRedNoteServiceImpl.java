@@ -5,7 +5,6 @@ import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.URLUtil;
-import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpStatus;
 import cn.hutool.http.HttpUtil;
@@ -28,9 +27,9 @@ import com.chargehub.common.security.utils.DictUtils;
 import com.chargehub.common.security.utils.JacksonUtil;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.MissingNode;
-import com.microsoft.playwright.APIResponse;
-import com.microsoft.playwright.BrowserContext;
-import com.microsoft.playwright.Page;
+import com.microsoft.playwright.*;
+import com.microsoft.playwright.options.BoundingBox;
+import com.microsoft.playwright.options.WaitUntilState;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -43,8 +42,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.net.Proxy;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -283,26 +282,23 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
     @SuppressWarnings("unchecked")
     public <T> SocialMediaWorkDetail<T> fetchWork0(DataSyncParamContext dataSyncParamContext) {
         String shareLink = dataSyncParamContext.getShareLink();
-        Proxy proxy = dataSyncParamContext.getProxy();
-        try (HttpResponse response = HttpUtil.createGet(shareLink)
-                .setFollowRedirects(true)
-                .timeout(60000)
-                .setProxy(proxy)
-                .headerMap(BrowserConfig.BROWSER_HEADERS, true)
-                .execute()) {
-            InputStream inputStream = response.bodyStream();
+        PlaywrightBrowser playwrightBrowser = dataSyncParamContext.getPlaywrightBrowser();
+        try (Page page = playwrightBrowser.newPage()) {
+            Response navigate = page.navigate(shareLink, new Page.NavigateOptions().setWaitUntil(WaitUntilState.DOMCONTENTLOADED).setTimeout(BrowserConfig.LOAD_PAGE_TIMEOUT));
+            Assert.isTrue(navigate.ok(), "小红书打开链接失败");
+            InputStream inputStream = new ByteArrayInputStream(navigate.body());
             String globalJson = JsoupUtil.findContentInScript(inputStream, "window.__INITIAL_STATE__=");
             Assert.hasText(globalJson, "触发小红书限流了,开始重试");
             globalJson = globalJson.replace("undefined", "null");
             JsonNode jsonNode = JacksonUtil.toObj(globalJson).at("/note/noteDetailMap");
             if (jsonNode.isEmpty()) {
-                log.error("无法获取小红书作品" + shareLink);
+                log.error("无法获取小红书作品{}", shareLink);
                 return null;
             }
             JsonNode detailNode = jsonNode.get(jsonNode.fieldNames().next());
             JsonNode noteNode = detailNode.get("note");
             if (noteNode.isEmpty()) {
-                log.error("小红书笔记不存在" + shareLink);
+                log.error("小红书笔记不存在{}", shareLink);
                 SocialMediaWork socialMediaWork = new SocialMediaWork();
                 socialMediaWork.setShareLink(shareLink);
                 socialMediaWork.setWorkUid("-1");
@@ -331,14 +327,20 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
             int playNum = (thumbNum + collectNum + shareNum + commentNum) * 10;
             String uid = "";
             if (!dataSyncParamContext.isScheduler()) {
-                String uidUrl = RED_NOTE_UID_URL + secUid;
-                uid = dataSyncMessageQueue.retryWithExponentialBackoff(() -> {
-                    try (HttpResponse httpResponse = HttpUtil.createGet(uidUrl).timeout(60000).setProxy(proxy).headerMap(BrowserConfig.BROWSER_HEADERS, true).execute()) {
-                        InputStream uidStream = httpResponse.bodyStream();
-                        return JsoupUtil.findContent(uidStream, "小红书号：");
-                    }
-                }, RED_NOTE_RETRY, uidUrl);
-                Assert.hasText(uid, "小红书号获取失败");
+                page.waitForSelector(".icon-btn-wrapper.close-button");
+                page.click("div.icon-btn-wrapper.close-button");
+                Page popupPage = page.waitForPopup(() -> {
+                    ElementHandle element = page.querySelector(".outer-link-container #noteContainer .interaction-container .author-container .author-wrapper .info .username");
+                    BoundingBox box = element.boundingBox();
+                    double x = box.x + box.width / 2;
+                    double y = box.y + box.height / 2;
+                    page.mouse().move(x, y);
+                    page.mouse().click(x, y);
+                });
+                popupPage.waitForLoadState();
+                // 在弹窗页面执行 JS
+                uid = String.valueOf(popupPage.evaluate("__INITIAL_STATE__.user.userPageData._rawValue.basicInfo.redId"));
+                Assert.hasText(uid, "小红书号获取失败" + shareLink);
             }
             SocialMediaWork socialMediaWork = new SocialMediaWork();
             socialMediaWork.setUrl(shareUrl);
@@ -668,17 +670,5 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
         socialMediaWorkMap.put(workUid, socialMediaWork);
     }
 
-    public static void main(String[] args) {
-        String noteRq = "https://edith.xiaohongshu.com/api/sns/web/v1/feed";
-        String noteBody = "{\"source_note_id\":\"694bc0a7000000001e02f482\",\"image_formats\":[\"jpg\",\"webp\",\"avif\"],\"extra\":{\"need_body_topic\":\"1\"},\"xsec_source\":\"pc_user\",\"xsec_token\":\"ABosVZfLyWkGd6FPxv98xnUC35EtaBrkYsIOmF-TYgaEQ=\"}";
-        String profileRq = "https://www.xiaohongshu.com/user/profile/59e0b13c20e88f68e8af29a0";
-        HttpRequest httpRequest = HttpUtil.createGet(profileRq)
-                .headerMap(BrowserConfig.BROWSER_HEADERS, true);
-        try (HttpResponse response = httpRequest.execute()) {
-            InputStream uidStream = response.bodyStream();
-            String content = JsoupUtil.findContent(uidStream, "小红书号：");
-            System.out.println(content);
-        }
-    }
 
 }

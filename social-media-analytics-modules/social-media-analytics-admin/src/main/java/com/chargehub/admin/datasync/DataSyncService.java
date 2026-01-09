@@ -3,11 +3,9 @@ package com.chargehub.admin.datasync;
 import com.chargehub.admin.account.vo.SocialMediaAccountVo;
 import com.chargehub.admin.datasync.domain.*;
 import com.chargehub.admin.enums.SocialMediaPlatformEnum;
-import com.chargehub.admin.scheduler.DouYinWorkScheduler;
+import com.chargehub.admin.playwright.PlaywrightBrowser;
 import com.chargehub.admin.work.domain.SocialMediaWork;
 import com.microsoft.playwright.BrowserContext;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.logging.log4j.LogManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,6 +47,7 @@ public interface DataSyncService {
     @SuppressWarnings("unchecked")
     default <T> SocialMediaWorkResult<T> fetchWorks(DataSyncWorksParams dataSyncWorksParams) {
         BrowserContext browserContext = dataSyncWorksParams.getBrowserContext();
+        PlaywrightBrowser playwrightBrowser = dataSyncWorksParams.getPlaywrightBrowser();
         Map<String, SocialMediaWork> workMap = dataSyncWorksParams.getWorkMap();
         SocialMediaWorkResult<SocialMediaWork> socialMediaWorkResult = new SocialMediaWorkResult<>();
         List<SocialMediaWork> socialMediaWorks = new ArrayList<>();
@@ -61,6 +60,7 @@ public interface DataSyncService {
             dataSyncParamContext.setMediaType(mediaType);
             dataSyncParamContext.setProxy(dataSyncWorksParams.getProxy());
             dataSyncParamContext.setStorageState(dataSyncWorksParams.getStorageState());
+            dataSyncParamContext.setPlaywrightBrowser(playwrightBrowser);
             dataSyncParamContext.setWorkUid(v.getWorkUid());
             try {
                 SocialMediaWorkDetail<SocialMediaWork> workDetail = this.fetchWork(dataSyncParamContext);

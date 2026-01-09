@@ -9,6 +9,7 @@ import com.chargehub.admin.work.dto.SocialMediaWorkPlayNumDto;
 import com.chargehub.admin.work.dto.SocialMediaWorkQueryDto;
 import com.chargehub.admin.work.service.SocialMediaWorkCreateService;
 import com.chargehub.admin.work.service.SocialMediaWorkService;
+import com.chargehub.admin.work.service.SocialMediaWorkTaskService;
 import com.chargehub.admin.work.vo.SocialMediaWorkCreateVo;
 import com.chargehub.admin.work.vo.SocialMediaWorkVo;
 import com.chargehub.common.log.annotation.Log;
@@ -44,6 +45,9 @@ public class SocialMediaWorkController {
 
     @Autowired
     private SocialMediaWorkCreateService socialMediaWorkCreateService;
+
+    @Autowired
+    private SocialMediaWorkTaskService socialMediaWorkTaskService;
 
     @RequiresPermissions("work:page")
     @ApiOperation("分页")
@@ -134,6 +138,13 @@ public class SocialMediaWorkController {
     @DeleteMapping("/social-media/work/share-link/task/{ids}")
     public void deleteCreateShareLinkTask(@PathVariable String ids) {
         this.socialMediaWorkCreateService.deleteByIds(ids);
+    }
+
+    @RequiresLogin
+    @GetMapping("/social-media/work/sync/{workId}")
+    @ApiOperation("同步全部作品")
+    public synchronized void syncWorkData(@PathVariable String workId) {
+        this.socialMediaWorkTaskService.addTask(workId);
     }
 
 

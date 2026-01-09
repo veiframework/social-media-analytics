@@ -14,7 +14,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
-import java.text.MessageFormat;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -268,6 +267,11 @@ public class RedisService implements ApplicationContextAware {
         return operations.entries();
     }
 
+    public boolean existKey(String pattern) {
+        try (Cursor<?> cursor = redisTemplate.scan(ScanOptions.scanOptions().match(pattern).count(1).build())) {
+            return cursor.hasNext();
+        }
+    }
 
     /**
      * 设置有效时间

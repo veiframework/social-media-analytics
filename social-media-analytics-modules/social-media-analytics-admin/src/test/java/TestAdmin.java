@@ -1,20 +1,7 @@
-import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.thread.ThreadUtil;
-import cn.hutool.http.HttpRequest;
-import cn.hutool.http.HttpResponse;
-import cn.hutool.http.HttpUtil;
 import com.chargehub.admin.AdminApplication;
-
-import com.chargehub.admin.datasync.DataSyncManager;
-import com.chargehub.admin.datasync.domain.SocialMediaWorkDetail;
-import com.chargehub.admin.enums.SocialMediaPlatformEnum;
-import com.chargehub.admin.playwright.BrowserConfig;
-import com.chargehub.admin.work.domain.SocialMediaWork;
 import com.chargehub.biz.region.service.impl.RegionInitService;
 import com.chargehub.common.redis.service.RedisService;
-import com.chargehub.common.security.utils.JacksonUtil;
-import com.fasterxml.jackson.databind.JsonNode;
-import lombok.SneakyThrows;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,4 +47,9 @@ public class TestAdmin {
     }
 
 
+    @Test
+    public void testExistKey() {
+        boolean existKey = redisService.existKey("work-alarm-last-execute-time:*");
+        System.out.println(existKey);
+    }
 }

@@ -1,9 +1,11 @@
 package com.chargehub.admin.work.domain;
 
+import cn.hutool.core.date.DateUtil;
 import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.chargehub.admin.enums.SyncWorkStatusEnum;
 import com.chargehub.common.security.template.annotation.CrudSubUniqueId;
 import com.chargehub.common.security.template.domain.Z9CrudEntity;
 import io.swagger.annotations.ApiModelProperty;
@@ -184,6 +186,8 @@ public class SocialMediaWork implements Serializable, Z9CrudEntity {
             updateWork.setDescription(newWork.getDescription());
         }
         updateWork.setStatisticMd5(newWork.getStatisticMd5());
+        updateWork.setSyncWorkDate(new Date());
+        updateWork.setSyncWorkStatus(SyncWorkStatusEnum.COMPLETE.ordinal());
         return updateWork;
     }
 
@@ -196,6 +200,12 @@ public class SocialMediaWork implements Serializable, Z9CrudEntity {
                 updateWork.setPlayNumChange(upNum - this.getPlayNumUp());
             }
         }
+    }
+
+    public boolean computeSyncDuration(Date now, Integer minutes) {
+        Date date = this.getSyncWorkDate();
+        long betweenMs = DateUtil.betweenMs(date, now);
+        return betweenMs > 1000L * 60 * minutes;
     }
 
 }

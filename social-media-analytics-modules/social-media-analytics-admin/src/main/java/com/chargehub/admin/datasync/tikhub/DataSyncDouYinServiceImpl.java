@@ -4,7 +4,6 @@ import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.net.url.UrlBuilder;
 import cn.hutool.core.net.url.UrlPath;
-import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpStatus;
@@ -18,7 +17,7 @@ import com.chargehub.admin.enums.SocialMediaPlatformEnum;
 import com.chargehub.admin.enums.WorkTypeEnum;
 import com.chargehub.admin.playwright.BrowserConfig;
 import com.chargehub.admin.playwright.PlaywrightBrowser;
-import com.chargehub.admin.scheduler.DouYinWorkScheduler;
+import com.chargehub.admin.scheduler.DouYinSyncWorkScheduler;
 import com.chargehub.admin.work.domain.SocialMediaWork;
 import com.chargehub.common.core.properties.HubProperties;
 import com.chargehub.common.core.utils.JsoupUtil;
@@ -480,7 +479,7 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
     @Override
     public <T> SocialMediaWorkResult<T> fetchWorks(DataSyncWorksParams dataSyncWorksParams) {
         PlaywrightBrowser playwrightBrowser = dataSyncWorksParams.getPlaywrightBrowser();
-        Consumer<PlaywrightBrowser> navigate = DouYinWorkScheduler::navigateToDouYinUserPage;
+        Consumer<PlaywrightBrowser> navigate = DouYinSyncWorkScheduler::navigateToDouYinUserPage;
         navigate.accept(playwrightBrowser);
         Map<String, SocialMediaWork> workMap = dataSyncWorksParams.getWorkMap();
         SocialMediaWorkResult<SocialMediaWork> socialMediaWorkResult = new SocialMediaWorkResult<>();
@@ -517,7 +516,7 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
             UrlPath urlPath = urlBuilder.getPath();
             workUid = urlPath.getSegment(urlPath.getSegments().size() - 1);
         }
-        Consumer<PlaywrightBrowser> navigate = DouYinWorkScheduler::navigateToDouYinUserPage;
+        Consumer<PlaywrightBrowser> navigate = DouYinSyncWorkScheduler::navigateToDouYinUserPage;
         navigate.accept(playwrightBrowser);
         JsonNode jsonNode = PlaywrightBrowser.request(workUid, playwrightBrowser, DOUYIN_FETCH_WORK_JS, navigate);
         SocialMediaWorkDetail<SocialMediaWork> workDetail = this.buildWorkDetail(jsonNode, dataSyncParamContext.getShareLink());
@@ -805,14 +804,5 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
         }
     }
 
-    public static void main(String[] args) {
-        DouYinWorkScheduler.loadLocalCache();
-        try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(PlaywrightBrowser.buildProxy())) {
-            DouYinWorkScheduler.navigateToDouYinUserPage(playwrightBrowser);
-            Object object = playwrightBrowser.getPage().evaluate(DOUYIN_FETCH_WORK_JS, "7581889286216207616");
-            System.out.println(object);
-            ThreadUtil.safeSleep(600_00000);
-        }
-    }
 
 }

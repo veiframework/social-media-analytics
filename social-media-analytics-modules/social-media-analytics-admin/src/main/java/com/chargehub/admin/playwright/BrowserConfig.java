@@ -10,6 +10,7 @@ import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.ViewportSize;
 import lombok.Data;
 import net.datafaker.providers.base.Internet;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
@@ -200,6 +201,9 @@ public class BrowserConfig {
 
 
     public static Integer clearWord(String text) {
+        if (StringUtils.isBlank(text)) {
+            return 0;
+        }
         if (text.contains("万")) {
             String replace = text.replace("万", "").replace("+", "");
             return new BigDecimal(replace).multiply(BigDecimal.valueOf(10000)).intValue();

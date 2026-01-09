@@ -1,6 +1,6 @@
 <template>
   <div>
-    <Watermark  text="仅供分析不得传播©lumengshop.com" />
+    <Watermark text="仅供分析不得传播©lumengshop.com"/>
 
     <!-- 社交媒体账号管理表格 -->
     <CustomTable
@@ -453,16 +453,18 @@ const option = reactive({
       sortable: false,
       isShow: true,
       dicData: socialMediaAccountTypeDict
-    }, {
-      type: 'tag',
-      label: '作品同步状态',
-      prop: 'syncWorkStatus',
-      width: 120,
-      fixed: false,
-      sortable: false,
-      isShow: true,
-      dicData: syncWorkStatusDict
-    }, {
+    },
+    // {
+    //   type: 'tag',
+    //   label: '作品同步状态',
+    //   prop: 'syncWorkStatus',
+    //   width: 120,
+    //   fixed: false,
+    //   sortable: false,
+    //   isShow: true,
+    //   dicData: syncWorkStatusDict
+    // },
+    {
       type: 'custom',
       label: '自动同步',
       prop: 'autoSync',
@@ -513,16 +515,16 @@ const option = reactive({
         return row.syncWorkStatus !== '1'
       },
     },
-    {
-      type: 'primary',
-      isShow: true,
-      icon: 'Delete',
-      label: '同步作品',
-      judge: (row) => {
-        return row.syncWorkStatus !== '1'
-      },
-      value: 'syncWork'
-    },
+    // {
+    //   type: 'primary',
+    //   isShow: true,
+    //   icon: 'Delete',
+    //   label: '同步作品',
+    //   judge: (row) => {
+    //     return row.syncWorkStatus !== '1'
+    //   },
+    //   value: 'syncWork'
+    // },
     {
       type: 'primary',
       isShow: true,

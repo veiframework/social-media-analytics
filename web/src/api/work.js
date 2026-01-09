@@ -94,3 +94,10 @@ export function getWorkByShareLinkApi(params) {
         params
     })
 }
+
+export function syncWork(data) {
+    return request({
+        url: `${prefix}/sync/` + data,
+        method: 'get',
+    })
+}

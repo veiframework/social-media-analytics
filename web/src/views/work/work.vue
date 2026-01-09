@@ -1,6 +1,6 @@
 <template>
   <div>
-    <Watermark  text="仅供分析不得传播©lumengshop.com" />
+    <Watermark text="仅供分析不得传播©lumengshop.com"/>
 
     <!-- 作品管理表格 -->
     <CustomTable
@@ -161,7 +161,8 @@ import {
   deleteShareLinkTask,
   retryShareLinkTask,
   createShareLinkTask,
-  getWorkByShareLinkApi
+  getWorkByShareLinkApi,
+  syncWork
 } from '@/api/work'
 import {getDicts} from '@/api/system/dict/data'
 import CustomTable from "@/components/CustomTable"
@@ -562,6 +563,29 @@ const handleMenu = async (val) => {
     case 'viewEdit':
       await handleViewEdit(row)
       break
+    case 'syncWork':
+      await handleSyncWork2(row.id)
+      break
+  }
+}
+
+const handleSyncWork2 = async (workId) => {
+  try {
+    await ElMessageBox.confirm('确定要同步作品吗？', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+
+    const response = await syncWork(workId)
+    if (response.code === 200) {
+      ElMessage.success('同步作品需要时间，请稍后前往《作品管理》查看~')
+      await getData()
+    } else {
+
+    }
+  } catch (error) {
+
   }
 }
 
@@ -749,15 +773,15 @@ const option = reactive({
   /** 表格顶部左侧 button 配置项 */
   headerBtn: [
     {key: "export", text: "导出", icon: "Download", isShow: true, type: "primary", disabled: false},
-    {
-      key: "syncWork",
-      text: "同步作品",
-      icon: "Refresh",
-      isShow: true,
-      type: "primary",
-      disabled: false,
-      hasPermi: ['sync:all:work']
-    },
+    // {
+    //   key: "syncWork",
+    //   text: "同步作品",
+    //   icon: "Refresh",
+    //   isShow: true,
+    //   type: "primary",
+    //   disabled: false,
+    //   hasPermi: ['sync:all:work']
+    // },
     {key: "shareLink", text: "通过作品分享链接添加", icon: "Link", isShow: true, type: "primary", disabled: false},
     // {
     //   key: "wechatVideo",
@@ -963,6 +987,16 @@ const option = reactive({
     fixed: 'right'
   },
   menuItemBtn: [
+    {
+      type: 'primary',
+      isShow: true,
+      icon: 'View',
+      label: '同步作品',
+      judge: (row) => {
+        return row.syncWorkStatus !== '1'
+      },
+      value: 'syncWork'
+    },
     {
       type: 'primary',
       isShow: true,

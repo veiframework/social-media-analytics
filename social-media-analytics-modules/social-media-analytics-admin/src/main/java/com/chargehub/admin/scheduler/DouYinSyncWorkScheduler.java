@@ -3,20 +3,13 @@ package com.chargehub.admin.scheduler;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.RandomUtil;
 import com.alibaba.fastjson.support.spring.FastJsonHttpMessageConverter;
-import com.chargehub.admin.account.domain.SocialMediaAccount;
-import com.chargehub.admin.account.service.SocialMediaAccountService;
-import com.chargehub.admin.account.service.SocialMediaAccountTaskService;
 import com.chargehub.admin.datasync.DataSyncManager;
-import com.chargehub.admin.datasync.domain.DataSyncWorksParams;
-import com.chargehub.admin.datasync.domain.SocialMediaWorkResult;
 import com.chargehub.admin.enums.SocialMediaPlatformEnum;
-import com.chargehub.admin.enums.SyncWorkStatusEnum;
-import com.chargehub.admin.enums.WorkStateEnum;
 import com.chargehub.admin.playwright.BrowserConfig;
 import com.chargehub.admin.playwright.PlaywrightBrowser;
-import com.chargehub.admin.work.domain.SocialMediaWork;
 import com.chargehub.admin.work.service.SocialMediaWorkCreateService;
 import com.chargehub.admin.work.service.SocialMediaWorkService;
+import com.chargehub.admin.work.service.SocialMediaWorkTaskService;
 import com.chargehub.common.core.properties.HubProperties;
 import com.chargehub.common.core.utils.file.FileUtils;
 import com.chargehub.common.redis.service.RedisService;
@@ -30,24 +23,22 @@ import com.microsoft.playwright.options.WaitUntilState;
 import lombok.extern.slf4j.Slf4j;
 import net.datafaker.providers.base.Internet;
 import org.apache.commons.collections4.CollectionUtils;
-import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
-import java.net.Proxy;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author zhanghaowei
  * @since 1.0
  */
-@Deprecated
-@Order
 @Slf4j
 @Component
-public class DouYinWorkScheduler extends AbstractWorkScheduler {
+public class DouYinSyncWorkScheduler extends AbstractSyncWorkScheduler {
 
     public static final String DOUYIN_WEB_RESOURCE_PATH = WEB_RESOURCE_PATH + "/web-douyin";
 
@@ -83,11 +74,12 @@ public class DouYinWorkScheduler extends AbstractWorkScheduler {
     private static final Map<String, byte[]> WEBKIT_CACHE = new ConcurrentHashMap<>();
 
 
-    protected DouYinWorkScheduler(SocialMediaAccountTaskService socialMediaAccountTaskService, RedisService redisService, DataSyncManager dataSyncManager, SocialMediaAccountService socialMediaAccountService, SocialMediaWorkService socialMediaWorkService, SocialMediaWorkCreateService socialMediaWorkCreateService, HubProperties hubProperties) {
-        super(socialMediaAccountTaskService, redisService, dataSyncManager, socialMediaAccountService, socialMediaWorkService, socialMediaWorkCreateService, hubProperties, null);
+    protected DouYinSyncWorkScheduler(SocialMediaWorkTaskService socialMediaWorkTaskService, RedisService redisService, DataSyncManager dataSyncManager, SocialMediaWorkService socialMediaWorkService, SocialMediaWorkCreateService socialMediaWorkCreateService, HubProperties hubProperties) {
+        super(socialMediaWorkTaskService, redisService, dataSyncManager, socialMediaWorkService, socialMediaWorkCreateService, hubProperties, 10);
         this.setTaskName(SocialMediaPlatformEnum.DOU_YIN.getDomain());
         loadLocalCache();
     }
+
 
     public static void loadLocalCache() {
         try {
@@ -110,53 +102,6 @@ public class DouYinWorkScheduler extends AbstractWorkScheduler {
             log.info("douyin crawler web resource load complete length: douyin:{}, firefox:{}, webkit:{}", CHROME_CACHE.size(), FIREFOX_CACHE.size(), WEBKIT_CACHE.size());
         } catch (Exception e) {
             log.error("douyin crawler web resource load error {}", e.getMessage());
-        }
-    }
-
-    @Override
-    public void fetchWorks(SocialMediaAccount socialMediaAccountVo, Proxy proxy, com.microsoft.playwright.options.Proxy browserProxy) {
-        String accountId = socialMediaAccountVo.getId();
-        String platformId = socialMediaAccountVo.getPlatformId();
-        String secUid = socialMediaAccountVo.getSecUid();
-        List<SocialMediaWork> latestWork = this.socialMediaWorkService.getLatestWork(accountId);
-        if (CollectionUtils.isEmpty(latestWork)) {
-            return;
-        }
-        DataSyncWorksParams dataSyncWorksParams = new DataSyncWorksParams();
-        try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(browserProxy)) {
-            this.socialMediaAccountService.updateSyncWorkStatus(accountId, SyncWorkStatusEnum.SYNCING);
-            Map<String, SocialMediaWork> workMap = new HashMap<>();
-            for (SocialMediaWork socialMediaWork : latestWork) {
-                workMap.put(socialMediaWork.getWorkUid(), socialMediaWork);
-            }
-            dataSyncWorksParams.setSecUid(secUid);
-            dataSyncWorksParams.setWorkMap(workMap);
-            dataSyncWorksParams.setProxy(proxy);
-            dataSyncWorksParams.setPlaywrightBrowser(playwrightBrowser);
-            SocialMediaWorkResult<SocialMediaWork> result = this.dataSyncManager.fetchWorks(platformId, dataSyncWorksParams);
-            List<SocialMediaWork> newWorks = result.getWorks();
-            if (CollectionUtils.isEmpty(newWorks)) {
-                return;
-            }
-            List<SocialMediaWork> updateList = new ArrayList<>();
-            for (SocialMediaWork newWork : newWorks) {
-                String workUid = newWork.getWorkUid();
-                if ("-1".equals(workUid)) {
-                    String shareLink = newWork.getShareLink();
-                    log.error("删除作品分享链接:" + shareLink);
-                    this.socialMediaWorkService.updateStateByShareLink(shareLink, WorkStateEnum.DELETED);
-                } else {
-                    SocialMediaWork existWork = workMap.get(workUid);
-                    if (existWork == null) {
-                        continue;
-                    }
-                    SocialMediaWork updateWork = existWork.computeMd5(newWork);
-                    if (updateWork != null) {
-                        updateList.add(updateWork);
-                    }
-                }
-            }
-            this.socialMediaWorkService.updateBatchById(updateList);
         }
     }
 
@@ -209,7 +154,8 @@ public class DouYinWorkScheduler extends AbstractWorkScheduler {
         Page page = playwrightBrowser.newPage();
         for (int i = 0; i <= BrowserConfig.LOAD_PAGE_RETRY; i++) {
             try {
-                page.navigate(DouYinWorkScheduler.randomPage(), new Page.NavigateOptions().setWaitUntil(WaitUntilState.LOAD).setTimeout(BrowserConfig.LOAD_PAGE_TIMEOUT));
+                String randomPage = RandomUtil.randomEle(DOUYIN_PAGES);
+                page.navigate(randomPage, new Page.NavigateOptions().setWaitUntil(WaitUntilState.LOAD).setTimeout(BrowserConfig.LOAD_PAGE_TIMEOUT));
                 break;
             } catch (Exception e) {
                 if (i == BrowserConfig.LOAD_PAGE_RETRY) {
@@ -282,10 +228,6 @@ public class DouYinWorkScheduler extends AbstractWorkScheduler {
                 }
             }
         }
-    }
-
-    public static String randomPage() {
-        return RandomUtil.randomEle(DOUYIN_PAGES);
     }
 
 

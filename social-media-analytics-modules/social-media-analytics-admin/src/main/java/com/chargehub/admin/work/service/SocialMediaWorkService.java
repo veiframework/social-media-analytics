@@ -8,7 +8,6 @@ import com.baomidou.mybatisplus.extension.toolkit.Db;
 import com.chargehub.admin.account.dto.SocialMediaTransferAccountDto;
 import com.chargehub.admin.enums.SocialMediaPlatformEnum;
 import com.chargehub.admin.enums.WorkStateEnum;
-import com.chargehub.admin.scheduler.AbstractWorkScheduler;
 import com.chargehub.admin.work.domain.SocialMediaWork;
 import com.chargehub.admin.work.domain.SocialMediaWorkCreate;
 import com.chargehub.admin.work.dto.SocialMediaWorkDto;
@@ -16,6 +15,7 @@ import com.chargehub.admin.work.dto.SocialMediaWorkPlayNumDto;
 import com.chargehub.admin.work.dto.SocialMediaWorkQueryDto;
 import com.chargehub.admin.work.mapper.SocialMediaWorkMapper;
 import com.chargehub.admin.work.vo.SocialMediaWorkVo;
+import com.chargehub.common.core.constant.CacheConstants;
 import com.chargehub.common.core.properties.HubProperties;
 import com.chargehub.common.redis.service.RedisService;
 import com.chargehub.common.security.service.ChargeExcelDictHandler;
@@ -66,7 +66,7 @@ public class SocialMediaWorkService extends AbstractZ9CrudServiceImpl<SocialMedi
     public void updateViewNum(SocialMediaWorkPlayNumDto dto) {
         String workId = dto.getWorkId();
         Integer playNum = dto.getPlayNum();
-        Boolean hasKey = redisService.hasKey(AbstractWorkScheduler.SYNCING_WORK_LOCK);
+        Boolean hasKey = redisService.hasKey(CacheConstants.SYNCING_WORK_LOCK);
         cn.hutool.core.lang.Assert.isFalse(hasKey, "该作品账号正在同步数据请稍后再修改");
         SocialMediaWork work = this.baseMapper.lambdaQuery().eq(SocialMediaWork::getId, workId).one();
         int playNumUp = 0;
@@ -123,10 +123,28 @@ public class SocialMediaWorkService extends AbstractZ9CrudServiceImpl<SocialMedi
                 .remove();
     }
 
+    public List<SocialMediaWork> getWorkByIds(Collection<String> ids) {
+        if (CollectionUtils.isEmpty(ids)) {
+            return new ArrayList<>();
+        }
+        return this.baseMapper.lambdaQuery().in(SocialMediaWork::getId, ids).list();
+    }
+
+    public List<SocialMediaWork> getLatestWorkByUserIds(Set<String> userIds) {
+        return this.getLatestWork(null, userIds);
+    }
+
 
     public List<SocialMediaWork> getLatestWork(String accountId) {
+        return this.getLatestWork(accountId, null);
+    }
+
+
+    public List<SocialMediaWork> getLatestWork(String accountId, Set<String> userIds) {
         LocalDate[] period = SocialMediaWorkService.getValidDatePeriod(LocalDateTime.now());
-        return this.baseMapper.lambdaQuery().eq(SocialMediaWork::getAccountId, accountId)
+        return this.baseMapper.lambdaQuery()
+                .eq(StringUtils.isNotBlank(accountId), SocialMediaWork::getAccountId, accountId)
+                .in(CollectionUtils.isNotEmpty(userIds), SocialMediaWork::getUserId, userIds)
                 .ne(SocialMediaWork::getState, WorkStateEnum.DELETED.getDesc())
                 .ge(SocialMediaWork::getCreateTime, period[0])
                 .lt(SocialMediaWork::getCreateTime, period[1])
@@ -226,6 +244,9 @@ public class SocialMediaWorkService extends AbstractZ9CrudServiceImpl<SocialMedi
         }
     }
 
+    public SocialMediaWork getById(String id) {
+        return this.baseMapper.doGetDetailById(id);
+    }
 
     @Override
     public IExcelDictHandler getDictHandler() {

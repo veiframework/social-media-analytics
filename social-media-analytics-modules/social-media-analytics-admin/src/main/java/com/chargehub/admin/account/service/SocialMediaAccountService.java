@@ -19,9 +19,9 @@ import com.chargehub.admin.datasync.domain.SocialMediaUserInfo;
 import com.chargehub.admin.enums.AutoSyncEnum;
 import com.chargehub.admin.enums.SocialMediaPlatformEnum;
 import com.chargehub.admin.enums.SyncWorkStatusEnum;
-import com.chargehub.admin.scheduler.AbstractWorkScheduler;
 import com.chargehub.admin.work.domain.SocialMediaWork;
 import com.chargehub.admin.work.service.SocialMediaWorkService;
+import com.chargehub.common.core.constant.CacheConstants;
 import com.chargehub.common.core.properties.HubProperties;
 import com.chargehub.common.redis.service.RedisService;
 import com.chargehub.common.security.service.ChargeExcelDictHandler;
@@ -120,7 +120,7 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
 
     @Override
     public void deleteByIds(String ids) {
-        Boolean hasKey = redisService.hasKey(AbstractWorkScheduler.SYNCING_WORK_LOCK);
+        Boolean hasKey = redisService.hasKey(CacheConstants.SYNCING_WORK_LOCK);
         cn.hutool.core.lang.Assert.isFalse(hasKey, "账号正在同步数据,请稍后操作");
         String[] split = ids.split(",");
         if (ArrayUtils.isEmpty(split)) {

@@ -5,14 +5,11 @@ import cn.hutool.core.util.RandomUtil;
 import com.chargehub.admin.account.vo.SocialMediaAccountVo;
 import com.chargehub.admin.datasync.domain.*;
 import com.chargehub.admin.enums.SocialMediaPlatformEnum;
-import com.chargehub.admin.playwright.BrowserConfig;
 import com.chargehub.admin.playwright.PlaywrightBrowser;
-import com.chargehub.admin.scheduler.DouYinWorkScheduler;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
-import java.net.Proxy;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
@@ -58,13 +55,9 @@ public class DataSyncManager {
         DataSyncService dataSyncService = SERVICES.get(platform);
         Assert.notNull(dataSyncService, "不支持的数据同步平台");
         String location = platformExtra.getLocation();
-        Proxy proxy = BrowserConfig.getProxy();
         dataSyncParamContext.setRedirectUrl(location);
         dataSyncParamContext.setShareLink(shareLink);
-        dataSyncParamContext.setProxy(proxy);
-        if (platform != SocialMediaPlatformEnum.DOU_YIN) {
-            return dataSyncService.fetchWork(dataSyncParamContext);
-        }
+        dataSyncParamContext.setProxy(null);
         com.microsoft.playwright.options.Proxy browserProxy = PlaywrightBrowser.buildProxy();
         try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(browserProxy)) {
             dataSyncParamContext.setPlaywrightBrowser(playwrightBrowser);

@@ -171,4 +171,6 @@ public class CacheConstants {
      */
     //public static final String ALIPAY_REFUND_QUERY_NUM = "charge:pay:alipay:refund:query_num:";
 
+    public static final String SYNCING_WORK_LOCK = "SYNCING_WORK_LOCK";
+
 }

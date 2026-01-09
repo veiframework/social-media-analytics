@@ -14,6 +14,7 @@ import com.chargehub.admin.work.service.SocialMediaWorkCreateService;
 import com.chargehub.admin.work.service.SocialMediaWorkService;
 import com.chargehub.admin.work.vo.SocialMediaWorkCreateVo;
 import com.chargehub.biz.admin.service.ISysUserService;
+import com.chargehub.common.core.constant.CacheConstants;
 import com.chargehub.common.core.utils.ExceptionUtil;
 import com.chargehub.common.redis.service.RedisService;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -53,7 +55,7 @@ public class CreateWorkScheduler {
 
     @SuppressWarnings("unchecked")
     public void execute() {
-        Boolean hasKey = redisService.hasKey(AbstractWorkScheduler.SYNCING_WORK_LOCK);
+        Boolean hasKey = redisService.hasKey(CacheConstants.SYNCING_WORK_LOCK);
         if (BooleanUtils.isTrue(hasKey)) {
             return;
         }
@@ -107,6 +109,7 @@ public class CreateWorkScheduler {
         socialMediaWork.setShareLink(shareLink);
         socialMediaWork.setTenantId(tenantId);
         socialMediaWork.setCustomType(customType);
+        socialMediaWork.setSyncWorkDate(new Date());
         String workId = socialMediaWorkService.getAndSave(socialMediaWork);
         String dbUserId = socialMediaAccount.getUserId();
         boolean equals = dbUserId.equals(userId);
