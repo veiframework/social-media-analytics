@@ -660,7 +660,7 @@ const extractUrlFromText = (text) => {
 const option = reactive({
   showSearch: true,
   searchLabelWidth: 90,
-  descFields: new Set(["createTime"]),
+  descFields: new Set(["updateTime"]),
   /** 搜索字段配置项 */
   searchItem: [
     {
@@ -835,8 +835,8 @@ const option = reactive({
     },
     {
       type: 'text',
-      label: '创建时间',
-      prop: 'createTime',
+      label: '更新时间',
+      prop: 'updateTime',
       width: 160,
       fixed: false,
       sortable: true,
