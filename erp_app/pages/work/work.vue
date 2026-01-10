@@ -59,31 +59,36 @@
     <scroll-view class="work-list" @scrolltolower="handleLoadMore" scroll-y="true" refresher-enabled="true"
                  :refresher-triggered="refreshing" @refresherrefresh="onRefresh" lower-threshold="60"
                  refresher-background="#f5f5f5">
-      <view class="work-item" v-for="item in workList" :key="item.id" @click="navigateToDetail(item.id)">
-        <view class="work-header">
-          <text class="work-title">{{ item.description }}</text>
-          <text class="work-platform" :style="platformStyle(item.platformId)">{{ item.platformId_dictText }}</text>
-        </view>
-        <view class="work-stats">
-          <text class="stat-item">播放量：{{ item.playNum || 0 }}</text>
-          <text class="stat-item">点赞数：{{ item.thumbNum || 0 }}</text>
-          <text class="stat-item">评论数：{{ item.commentNum || 0 }}</text>
-          <text class="stat-item">点赞增长量：{{ item.thumbNumUp || 0 }}
-            <text class="trend" :class="{ 'trend-up': item.thumbNumChange > 0, 'trend-down': item.thumbNumChange < 0 }">
-              <text v-if="item.thumbNumChange > 0">↑{{ Math.abs(item.thumbNumChange) || 0 }}</text>
-              <text v-else-if="item.thumbNumChange < 0">↓{{ Math.abs(item.thumbNumChange) || 0 }}</text>
+      <view class="work-item" v-for="item in workList" :key="item.id" >
+        <view @click="navigateToDetail(item.id)">
+          <view class="work-header">
+            <text class="work-title">{{ item.description }}</text>
+            <text class="work-platform" :style="platformStyle(item.platformId)">{{ item.platformId_dictText }}</text>
+          </view>
+          <view class="work-stats">
+            <text class="stat-item">播放量：{{ item.playNum || 0 }}</text>
+            <text class="stat-item">点赞数：{{ item.thumbNum || 0 }}</text>
+            <text class="stat-item">评论数：{{ item.commentNum || 0 }}</text>
+            <text class="stat-item">点赞增长量：{{ item.thumbNumUp || 0 }}
+              <text class="trend" :class="{ 'trend-up': item.thumbNumChange > 0, 'trend-down': item.thumbNumChange < 0 }">
+                <text v-if="item.thumbNumChange > 0">↑{{ Math.abs(item.thumbNumChange) || 0 }}</text>
+                <text v-else-if="item.thumbNumChange < 0">↓{{ Math.abs(item.thumbNumChange) || 0 }}</text>
+              </text>
             </text>
-          </text>
-          <text class="stat-item">播放增长量：{{ item.playNumUp || 0 }}
-            <text class="trend" :class="{ 'trend-up': item.playNumChange > 0, 'trend-down': item.playNumChange < 0 }">
-              <text v-if="item.playNumChange > 0">↑{{ Math.abs(item.playNumChange) || 0 }}</text>
-              <text v-else-if="item.playNumChange < 0">↓{{ Math.abs(item.playNumChange) || 0 }}</text>
+            <text class="stat-item">播放增长量：{{ item.playNumUp || 0 }}
+              <text class="trend" :class="{ 'trend-up': item.playNumChange > 0, 'trend-down': item.playNumChange < 0 }">
+                <text v-if="item.playNumChange > 0">↑{{ Math.abs(item.playNumChange) || 0 }}</text>
+                <text v-else-if="item.playNumChange < 0">↓{{ Math.abs(item.playNumChange) || 0 }}</text>
+              </text>
             </text>
-          </text>
+          </view>
+          <view class="work-info">
+            <text class="info-item">作者：{{ item.accountId_dictText }}</text>
+            <text class="info-item">发布时间：{{ item.postTime }}</text>
+          </view>
         </view>
-        <view class="work-info">
-          <text class="info-item">作者：{{ item.accountId_dictText }}</text>
-          <text class="info-item">发布时间：{{ item.postTime }}</text>
+        <view class="account-actions">
+          <button v-if="computeButton(item)" class="action-btn sync-btn" @tap="handleSync(item.id)">同步作品</button>
         </view>
       </view>
 
@@ -115,7 +120,7 @@
 
 <script>
 import {ref, onMounted} from 'vue'
-import {getWorkListApi} from '../../api/work.js'
+import {getWorkListApi,syncWork} from '../../api/work.js'
 import ModalMask from '../../components/ModalMask.vue'
 import AddWorkForm from '../../components/AddWorkForm.vue'
 import Watermark from '../../components/Watermark.vue'
@@ -226,6 +231,39 @@ export default {
     const handlerShareLinkKeyword = () => {
       currentPage.value = 1
       getWorkList()
+    }
+
+    const computeButton = ((item) => {
+      if (item.syncWorkStatus === 2) {
+        return true
+      } else if (item.syncWorkStatus === 0) {
+        return true
+      } else {
+        return false
+      }
+    })
+
+    // 同步作品
+    const handleSync = async (id) => {
+      try {
+        uni.showLoading({
+          title: '开始同步...',
+          mask: true
+        });
+        await syncWork(id)
+        uni.showToast({
+          title: '操作成功,请稍后查看',
+          icon: 'none',
+          duration: 2000,
+        });
+        setTimeout(function () {
+          uni.hideLoading();
+        }, 3000);
+        // 重新获取列表
+      } catch (error) {
+        console.error('同步失败', error)
+        uni.hideLoading();
+      }
     }
 
     // 计算时间范围的开始和结束日期
@@ -447,7 +485,9 @@ export default {
       platformStyle,
       handleCreateWorkByShareLink,
       handleCloseAddWorkModal,
-      handleAddWorkSuccess
+      handleAddWorkSuccess,
+      computeButton,
+      handleSync
     }
   }
 }
@@ -676,5 +716,17 @@ export default {
   padding: 30rpx 0;
   color: #999;
   font-size: 28rpx;
+}
+
+.account-actions {
+  margin-top: 20rpx;
+}
+.action-btn {
+  font-size: 18rpx;
+  border-radius: 35rpx;
+}
+.sync-btn {
+  background-color: #cea156;
+  color: #fff;
 }
 </style>

@@ -40,9 +40,7 @@
             <view class="account-number">{{ item.uid }}</view>
           </view>
         </view>
-        <view class="account-actions">
-          <button v-if="computeButton(item)" class="action-btn sync-btn" @tap="handleSync(item.id)">同步作品</button>
-        </view>
+
       </view>
 
       <!-- 空状态 -->

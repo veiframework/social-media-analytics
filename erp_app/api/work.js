@@ -20,3 +20,7 @@ export function createWorkByShareLink(shareLink, accountType, customType) {
 export function getDicts(dictType) {
     return get('/admin-api/dict/data/type/' + dictType)
 }
+
+export function syncWork(id) {
+    return get(`${prefix}/sync/${id}`)
+}
