@@ -21,12 +21,12 @@
         <!-- 由于使用了 tag 类型和 dicData，不再需要自定义模板 -->
         <template v-if="prop == 'thumbNumUp'">
           <div class="thumb_num_box">
-            <div>
+            <div class="thumb_num_box_text">
               {{ Math.abs(row.thumbNumUp) }}
             </div>
             <template v-if="row.thumbNumChange>0">
 
-              <div class="thumb_num_change" style="color: green;margin-top: -6px;padding-left: 6px;">
+              <div class="thumb_num_change" style="color: green;margin-top: -16px;padding-left: 6px;">
                 <el-icon>
                   <arrow-up color="green"/>
                 </el-icon>
@@ -34,7 +34,7 @@
               </div>
             </template>
             <template v-if="row.thumbNumChange<0">
-              <div class="thumb_num_change" style="color: red;padding: 6px 0 0 6px">
+              <div class="thumb_num_change" style="color: red;padding: 16px 0 0 6px">
                 <el-icon>
                   <arrow-down color="red"/>
                 </el-icon>
@@ -47,12 +47,12 @@
         </template>
         <template v-if="prop == 'playNumUp'">
           <div class="thumb_num_box">
-            <div>
+            <div class="thumb_num_box_text">
               {{ Math.abs(row.playNumUp) }}
             </div>
             <template v-if="row.playNumChange>0">
 
-              <div class="thumb_num_change" style="color: green;margin-top: -6px;padding-left: 6px;">
+              <div class="thumb_num_change" style="color: green;margin-top: -16px;padding-left: 6px;">
                 <el-icon>
                   <arrow-up color="green"/>
                 </el-icon>
@@ -60,7 +60,7 @@
               </div>
             </template>
             <template v-if="row.playNumChange<0">
-              <div class="thumb_num_change" style="color: red;padding: 6px 0 0 6px">
+              <div class="thumb_num_change" style="color: red;padding: 16px 0 0 6px">
                 <el-icon>
                   <arrow-down color="red"/>
                 </el-icon>
@@ -974,7 +974,7 @@ const option = reactive({
   /** 操作菜单配置项 */
   menu: {
     isShow: true,
-    width: 180,
+    width: 135,
     fixed: 'right'
   },
   moreItem: [
@@ -1005,7 +1005,7 @@ const option = reactive({
       type: 'success',
       isShow: true,
       icon: 'Refresh',
-      label: '同步作品',
+      label: '同步',
       judge: (row) => {
         return row.syncWorkStatus !== '1'
       },
@@ -1457,7 +1457,7 @@ init()
 <style scoped>
 /* 自定义样式 */
 .thumb_num_box {
-  height: 32px;
+  height: 30px;
   display: flex;
   justify-content: center;
 }
@@ -1467,6 +1467,10 @@ init()
   display: flex;
   align-items: center;
 }
-
+.thumb_num_box_text{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 
 </style>
