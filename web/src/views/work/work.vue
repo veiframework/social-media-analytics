@@ -835,7 +835,7 @@ const option = reactive({
     },
     {
       type: 'text',
-      label: '更新时间',
+      label: '数据变化时间',
       prop: 'updateTime',
       width: 160,
       fixed: false,
