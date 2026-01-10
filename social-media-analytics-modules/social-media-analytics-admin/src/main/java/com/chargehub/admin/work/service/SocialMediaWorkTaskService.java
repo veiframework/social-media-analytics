@@ -7,6 +7,7 @@ import com.chargehub.admin.account.mapper.SocialMediaAccountMapper;
 import com.chargehub.admin.account.service.SocialMediaAccountTaskService;
 import com.chargehub.admin.enums.SocialMediaPlatformEnum;
 import com.chargehub.admin.work.domain.SocialMediaWork;
+import com.chargehub.admin.work.domain.SocialMediaWorkCreateTaskEvent;
 import com.chargehub.admin.work.domain.SocialMediaWorkTask;
 import com.chargehub.admin.work.mapper.SocialMediaWorkTaskMapper;
 import com.chargehub.common.datasource.mybatis.MybatisDbUtils;
@@ -14,7 +15,10 @@ import com.chargehub.common.redis.service.RedisService;
 import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
+import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,7 +35,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @Transactional(rollbackFor = Exception.class)
-public class SocialMediaWorkTaskService {
+public class SocialMediaWorkTaskService implements ApplicationContextAware {
 
     public static final String BATCH_ADD_TASK_LOCK = "batch-add-work-task:";
 
@@ -50,6 +54,8 @@ public class SocialMediaWorkTaskService {
     @Autowired
     private SocialMediaAccountTaskService socialMediaAccountTaskService;
 
+    private ApplicationContext applicationContext;
+
     public synchronized void addTask(String workId) {
         SocialMediaWork socialMediaWork = this.socialMediaWorkService.getById(workId);
         if (socialMediaWork == null) {
@@ -57,7 +63,9 @@ public class SocialMediaWorkTaskService {
         }
         String platformId = socialMediaWork.getPlatformId();
         if (!SocialMediaPlatformEnum.WECHAT_VIDEO.getDomain().equals(platformId)) {
-            this.batchAddTask(Lists.newArrayList(socialMediaWork), false);
+            List<SocialMediaWork> list = Lists.newArrayList(socialMediaWork);
+            this.batchAddTask(list, false);
+            this.applicationContext.publishEvent(new SocialMediaWorkCreateTaskEvent(list));
             return;
         }
         SocialMediaAccount socialMediaAccount = this.socialMediaAccountMapper.doGetDetailById(socialMediaWork.getAccountId());
@@ -107,4 +115,8 @@ public class SocialMediaWorkTaskService {
     }
 
 
+    @Override
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        this.applicationContext = applicationContext;
+    }
 }

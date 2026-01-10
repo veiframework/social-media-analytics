@@ -4,6 +4,7 @@ import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -238,6 +239,14 @@ public class RedisService implements ApplicationContextAware {
      */
     public boolean deleteCacheMapValue(final String key, final String hKey) {
         return redisTemplate.opsForHash().delete(key, hKey) > 0;
+    }
+
+    public <T> void deleteCacheSet(final String key, Collection<T> items) {
+        if (CollectionUtils.isEmpty(items)) {
+            return;
+        }
+        BoundSetOperations<String, T> setOps = redisTemplate.boundSetOps(key);
+        setOps.remove(items.toArray());
     }
 
     /**

@@ -14,7 +14,7 @@ import java.io.File;
 public class ClearCrawlerWebResource {
 
     public void execute(Boolean reload) {
-        FileUtil.del(new File(AbstractWorkScheduler.WEB_RESOURCE_PATH));
+        FileUtil.del(new File(AbstractSyncWorkScheduler.WEB_RESOURCE_PATH));
         DouYinSyncWorkScheduler.clearCache();
         if (BooleanUtils.isTrue(reload)) {
             DouYinSyncWorkScheduler.reloadCache();
