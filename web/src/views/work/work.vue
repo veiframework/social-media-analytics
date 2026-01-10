@@ -7,7 +7,7 @@
         :data="tableData"
         :option="option"
         @search="handleSearch"
-        :pageNum="pageNum"
+        v-model:page-num="pageNum"
         @refresh="getData"
         :total="total"
         @headerchange="handleHeader"
@@ -26,7 +26,7 @@
             </div>
             <template v-if="row.thumbNumChange>0">
 
-              <div class="thumb_num_change" style="color: green">
+              <div class="thumb_num_change" style="color: green;margin-top: -6px;padding-left: 6px;">
                 <el-icon>
                   <arrow-up color="green"/>
                 </el-icon>
@@ -34,7 +34,7 @@
               </div>
             </template>
             <template v-if="row.thumbNumChange<0">
-              <div class="thumb_num_change" style="color: red">
+              <div class="thumb_num_change" style="color: red;padding: 6px 0 0 6px">
                 <el-icon>
                   <arrow-down color="red"/>
                 </el-icon>
@@ -52,7 +52,7 @@
             </div>
             <template v-if="row.playNumChange>0">
 
-              <div class="thumb_num_change" style="color: green">
+              <div class="thumb_num_change" style="color: green;margin-top: -6px;padding-left: 6px;">
                 <el-icon>
                   <arrow-up color="green"/>
                 </el-icon>
@@ -60,7 +60,7 @@
               </div>
             </template>
             <template v-if="row.playNumChange<0">
-              <div class="thumb_num_change" style="color: red">
+              <div class="thumb_num_change" style="color: red;padding: 6px 0 0 6px">
                 <el-icon>
                   <arrow-down color="red"/>
                 </el-icon>
@@ -102,7 +102,7 @@
             :data="shareLinkTable"
             :option="shareLinkTableOption"
             @search="handleShareLinkTaskSearch"
-            :pageNum="shareLinkPageNum"
+            v-model:page-num="shareLinkPageNum"
             @refresh="getShareLinkTask"
             :total="shareLinkTotal"
             @headerchange="handleShareLinkTaskHeader"
@@ -482,7 +482,6 @@ const getData = async () => {
 // 搜索处理
 const handleSearch = (searchParams) => {
   queryParams.value = searchParams
-  pageNum.value = 1
   getData()
 }
 
@@ -759,16 +758,8 @@ const option = reactive({
       prop: "shareLink",
       default: null,
       placeholder: "请输入分享链接",
-      max: 5000
+      max: 15000
     },
-    // {
-    //   type: "select",
-    //   label: "同步状态",
-    //   prop: "syncWorkStatus",
-    //   default: null,
-    //   filterable: true,
-    //   dicData: syncWorkStatusDict
-    // },
   ],
   /** 表格顶部左侧 button 配置项 */
   headerBtn: [
@@ -804,6 +795,16 @@ const option = reactive({
   /** 表格字段配置项 */
   tableItem: [
     {
+      type: 'tag',
+      label: '平台',
+      prop: 'platformId',
+      width: 100,
+      fixed: false,
+      sortable: false,
+      isShow: true,
+      dicData: platformDict
+    },
+    {
       type: 'text',
       label: '描述',
       prop: 'description',
@@ -816,7 +817,7 @@ const option = reactive({
       type: 'tag',
       label: '昵称',
       prop: 'accountId',
-      width: 120,
+      width: 130,
       fixed: false,
       sortable: false,
       isShow: true,
@@ -824,50 +825,13 @@ const option = reactive({
     },
     {
       type: 'tag',
-      label: '员工',
-      prop: 'userId',
-      width: 180,
-      fixed: false,
-      sortable: false,
-      isShow: true,
-      dicData: userDict
-    },
-    {
-      type: 'tag',
-      label: '平台',
-      prop: 'platformId',
-      width: 100,
-      fixed: false,
-      sortable: false,
-      isShow: true,
-      dicData: platformDict
-    }, {
-      type: 'tag',
-      label: '账号类型',
-      prop: 'accountType',
-      width: 100,
-      fixed: false,
-      sortable: false,
-      isShow: true,
-      dicData: socialMediaAccountTypeDict
-    }, {
-      type: 'tag',
       label: '业务类型',
       prop: 'customType',
-      width: 100,
+      width: 110,
       fixed: false,
       sortable: false,
       isShow: true,
       dicData: socialMediaCustomTypeDict
-    }, {
-      type: 'tag',
-      label: '作品类型',
-      prop: 'type',
-      width: 120,
-      fixed: false,
-      sortable: false,
-      isShow: true,
-      dicData: typeDict
     },
     {
       type: 'text',
@@ -879,16 +843,7 @@ const option = reactive({
       isShow: true,
       noFilter: true
     },
-    {
-      type: 'text',
-      label: '发布时间',
-      prop: 'postTime',
-      width: 160,
-      fixed: false,
-      sortable: true,
-      isShow: true,
-      noFilter: true
-    },
+
 
     {
       type: 'text',
@@ -903,7 +858,7 @@ const option = reactive({
       type: 'custom',
       label: '点赞增长量',
       prop: 'thumbNumUp',
-      width: 100,
+      width: 120,
       fixed: false,
       sortable: true,
       isShow: true,
@@ -921,7 +876,7 @@ const option = reactive({
       type: 'custom',
       label: '播放增长量',
       prop: 'playNumUp',
-      width: 100,
+      width: 120,
       fixed: false,
       sortable: true,
       isShow: true,
@@ -962,13 +917,49 @@ const option = reactive({
       type: 'tag',
       label: '作品状态',
       prop: 'state',
-      width: 80,
+      width: 100,
       fixed: false,
       sortable: false,
       isShow: true,
       dicData: workStateDict
+    }, {
+      type: 'text',
+      label: '发布时间',
+      prop: 'postTime',
+      width: 160,
+      fixed: false,
+      sortable: true,
+      isShow: true,
+      noFilter: true
+    },{
+      type: 'tag',
+      label: '作品类型',
+      prop: 'type',
+      width: 120,
+      fixed: false,
+      sortable: false,
+      isShow: true,
+      dicData: typeDict
+    }, {
+      type: 'tag',
+      label: '账号类型',
+      prop: 'accountType',
+      width: 100,
+      fixed: false,
+      sortable: false,
+      isShow: true,
+      dicData: socialMediaAccountTypeDict
     },
-
+    {
+      type: 'tag',
+      label: '员工',
+      prop: 'userId',
+      width: 100,
+      fixed: false,
+      sortable: false,
+      isShow: true,
+      dicData: userDict
+    },
     // {
     //   type: 'tag',
     //   label: '作品同步状态',
@@ -983,20 +974,10 @@ const option = reactive({
   /** 操作菜单配置项 */
   menu: {
     isShow: true,
-    width: 140,
+    width: 180,
     fixed: 'right'
   },
-  menuItemBtn: [
-    {
-      type: 'primary',
-      isShow: true,
-      icon: 'View',
-      label: '同步作品',
-      judge: (row) => {
-        return row.syncWorkStatus !== '1'
-      },
-      value: 'syncWork'
-    },
+  moreItem: [
     {
       type: 'primary',
       isShow: true,
@@ -1018,6 +999,19 @@ const option = reactive({
       label: '删除',
       value: 'delete'
     },
+  ],
+  menuItemBtn: [
+    {
+      type: 'success',
+      isShow: true,
+      icon: 'Refresh',
+      label: '同步作品',
+      judge: (row) => {
+        return row.syncWorkStatus !== '1'
+      },
+      value: 'syncWork'
+    },
+    {type: 'more', isShow: true, hasPermi: []},
   ],
   /** page 分页配置项 */
   isShowPage: true
@@ -1386,7 +1380,7 @@ const shareLinkTableOption = ref({
       type: 'text',
       label: '创建时间',
       prop: 'createTime',
-      width: 100,
+      width: 120,
       fixed: false,
       sortable: false,
       isShow: true,
@@ -1396,7 +1390,7 @@ const shareLinkTableOption = ref({
   /** 操作菜单配置项 */
   menu: {
     isShow: true,
-    width: 140,
+    width: 180,
     fixed: 'right'
   },
   menuItemBtn: [
@@ -1463,12 +1457,12 @@ init()
 <style scoped>
 /* 自定义样式 */
 .thumb_num_box {
+  height: 32px;
   display: flex;
   justify-content: center;
 }
 
 .thumb_num_change {
-  padding: 6px 0 0 6px;
   font-size: 11px;
   display: flex;
   align-items: center;

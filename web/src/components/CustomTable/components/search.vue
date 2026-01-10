@@ -168,7 +168,7 @@ const props = defineProps({
 /**
  * 回传事件
  */
-const emits = defineEmits(['search'])
+const emits = defineEmits(['search', 'reset'])
 // 远程检索控件参数
 const MultipleProp = ref([]);
 const loading = ref(false);
@@ -245,7 +245,8 @@ const orderBy = (prop, order)=>{
 
 // 重置事件
 const resetChange = () => {
-	queryParams.value = {}
+  emits('reset');
+  queryParams.value = {}
 	changeParams();
 	searchChange();
 }
@@ -308,7 +309,7 @@ const handleColumnChange = (filters) => {
  * 监听设备
  */
 watch(() => appStore.device, (news) => {
-	isShow.value = news == 'desktop' ? false : true;
+	isShow.value =  true;
 }, { deep: true, immediate: true })
 
 const handleKeyDown = (e) => {

@@ -7,7 +7,7 @@
         :data="tableData"
         :option="option"
         @search="handleSearch"
-        :pageNum="pageNum"
+        v-model:page-num="pageNum"
         @refresh="getData"
         :total="total"
         @headerchange="handleHeader"
@@ -194,9 +194,13 @@ const handleAutoSyncChange = async (value) => {
 // 搜索处理
 const handleSearch = (searchParams) => {
   queryParams.value = searchParams
-  pageNum.value = 1
   getData()
 }
+
+const reset = () => {
+  pageNum.value = 1
+}
+
 
 // 分页处理
 const handleChange = (page) => {
@@ -425,15 +429,6 @@ const option = reactive({
       fixed: false,
       sortable: false,
       isShow: true
-    }, {
-      type: 'tag',
-      label: '员工',
-      prop: 'userId',
-      width: 180,
-      fixed: false,
-      sortable: false,
-      isShow: true,
-      dicData: userDict
     },
     {
       type: 'text',
@@ -448,7 +443,7 @@ const option = reactive({
       type: 'tag',
       label: '账号类型',
       prop: 'type',
-      width: 120,
+      width: 80,
       fixed: false,
       sortable: false,
       isShow: true,
@@ -473,12 +468,21 @@ const option = reactive({
       sortable: false,
       isShow: true,
       dicData: autoSyncDict
+    }, {
+      type: 'tag',
+      label: '员工',
+      prop: 'userId',
+      width: 80,
+      fixed: false,
+      sortable: false,
+      isShow: true,
+      dicData: userDict
     },
     {
       type: 'text',
       label: '创建时间',
       prop: 'createTime',
-      width: 180,
+      width: 120,
       fixed: false,
       sortable: false,
       isShow: true,
@@ -494,7 +498,7 @@ const option = reactive({
     width: 180,
     fixed: 'right'
   },
-  menuItemBtn: [
+  moreItem: [
     {
       type: 'primary',
       isShow: true,
@@ -515,6 +519,8 @@ const option = reactive({
         return row.syncWorkStatus !== '1'
       },
     },
+  ],
+  menuItemBtn: [
     // {
     //   type: 'primary',
     //   isShow: true,
@@ -531,7 +537,8 @@ const option = reactive({
       icon: 'Edit',
       label: '交接账号',
       value: 'transferAccount'
-    }
+    },
+    {type: 'more', isShow: true, hasPermi: []},
   ],
   /** page 分页配置项 */
   isShowPage: true

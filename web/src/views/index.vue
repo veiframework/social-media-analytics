@@ -8,7 +8,7 @@
         :data="tableData"
         :option="option"
         @search="handleSearch"
-        :pageNum="pageNum"
+        v-model:page-num="pageNum"
         @refresh="getData"
         :total="total"
         @headerchange="handleHeader"
@@ -307,7 +307,6 @@ const getData = async () => {
 // 搜索
 const handleSearch = (searchParams) => {
   queryParams.value = searchParams
-  pageNum.value = 1
   getData()
 }
 

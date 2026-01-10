@@ -2,7 +2,7 @@
     <div class="box">
         <!-- 搜索栏 -->
         <search ref="searchRef" :showSearch="option.showSearch" :searchLabelWidth="option.searchLabelWidth"
-            :searchItem="option.searchItem" @search="handleSearch" :option="option">
+            :searchItem="option.searchItem" @search="handleSearch" :option="option" @reset="reset">
             <template #custom-item="{ prop, queryParams }">
                 <slot name='custom-item' :prop="prop" :queryParams="queryParams"></slot>
             </template>
@@ -49,7 +49,7 @@ const page = reactive({
     layout: "total, sizes, prev, pager, next, jumper",
 })
 const emits = defineEmits([
-    'search', 'refresh', 'selectAllChange', 'selectChange', 'sortChange', 'menuChange', 'currentChange', 'headerchange', 'operationChange', 'selectData'
+  'update:pageNum', 'search', 'refresh', 'selectAllChange', 'selectChange', 'sortChange', 'menuChange', 'currentChange', 'headerchange', 'operationChange', 'selectData'
 ])
 // 基础配置项
 const option = reactive(props.option);
@@ -63,7 +63,7 @@ const showSearch = (val) => option.showSearch = val;
  * 搜索事件
  */
 const handleSearch = (val) => {
-    page.pageNum = 1;
+    // page.pageNum = 1;
     let paramsData = val;
     // 特殊处理多个字段合并为一个表单项查询场景
     for (let key in val) {
@@ -83,6 +83,7 @@ const handleSearch = (val) => {
 
 
 const columnFilterChange = (filters) => {
+  reset()
   searchRef.value.handleColumnChange(filters)
 }
 
@@ -104,6 +105,7 @@ const select = (val) => emits('selectChange', val);
  * 排序功能
  */
 const sort = (val) => {
+  reset()
   let order = val.order;
   let column = val.column;
   let label = column.label;
@@ -111,6 +113,12 @@ const sort = (val) => {
   searchRef.value.orderBy(prop, order)
   tableRef.value.orderBy(prop, order)
 };
+
+const reset = () => {
+  page.pageNum = 1;
+  emits('update:pageNum',1);
+};
+
 /**
  * 操作选中
  */
