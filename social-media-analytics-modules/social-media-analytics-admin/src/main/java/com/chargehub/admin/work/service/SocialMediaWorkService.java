@@ -141,7 +141,6 @@ public class SocialMediaWorkService extends AbstractZ9CrudServiceImpl<SocialMedi
 
     public List<SocialMediaWork> getLatestWork(String accountId, Set<String> userIds, boolean isLogin) {
         LocalDateTime now = LocalDateTime.now();
-        LocalDate[] period = SocialMediaWorkService.getValidDatePeriod(now);
         Map<String, Object> cacheMap = redisService.getCacheMap(CacheConstants.WORK_NEXT_CRAWL_TIME);
         if (MapUtil.isEmpty(cacheMap)) {
             return new ArrayList<>();
@@ -165,8 +164,6 @@ public class SocialMediaWorkService extends AbstractZ9CrudServiceImpl<SocialMedi
                 .ne(SocialMediaWork::getState, WorkStateEnum.DELETED.getDesc())
                 .inSql(isLogin, SocialMediaWork::getAccountId, "SELECT id FROM social_media_account WHERE storage_state IS NOT NULL")
                 .inSql(!isLogin, SocialMediaWork::getAccountId, "SELECT id FROM social_media_account WHERE storage_state IS NULL")
-                .ge(SocialMediaWork::getCreateTime, period[0])
-                .lt(SocialMediaWork::getCreateTime, period[1])
                 .in(SocialMediaWork::getId, batch)
                 .in(SocialMediaWork::getPriority, WorkPriorityEnum.IMPORTANT.getCode(), WorkPriorityEnum.ACTIVE.getCode(), WorkPriorityEnum.NORMAL.getCode())
                 .list().stream()).collect(Collectors.toList());
