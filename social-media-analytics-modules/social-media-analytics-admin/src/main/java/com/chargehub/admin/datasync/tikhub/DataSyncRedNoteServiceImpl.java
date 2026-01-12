@@ -27,8 +27,10 @@ import com.chargehub.common.security.utils.DictUtils;
 import com.chargehub.common.security.utils.JacksonUtil;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.MissingNode;
-import com.microsoft.playwright.*;
-import com.microsoft.playwright.options.BoundingBox;
+import com.microsoft.playwright.APIResponse;
+import com.microsoft.playwright.BrowserContext;
+import com.microsoft.playwright.Page;
+import com.microsoft.playwright.Response;
 import com.microsoft.playwright.options.WaitUntilState;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.MapUtils;
@@ -327,20 +329,14 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
             int playNum = (thumbNum + collectNum + shareNum + commentNum) * 10;
             String uid = "";
             if (!dataSyncParamContext.isScheduler()) {
-                page.waitForSelector(".icon-btn-wrapper.close-button");
-                page.click("div.icon-btn-wrapper.close-button");
-                Page popupPage = page.waitForPopup(() -> {
-                    ElementHandle element = page.querySelector(".outer-link-container #noteContainer .interaction-container .author-container .author-wrapper .info .username");
-                    BoundingBox box = element.boundingBox();
-                    double x = box.x + box.width / 2;
-                    double y = box.y + box.height / 2;
-                    page.mouse().move(x, y);
-                    page.mouse().click(x, y);
-                });
-                popupPage.waitForLoadState();
-                // 在弹窗页面执行 JS
-                uid = String.valueOf(popupPage.evaluate("__INITIAL_STATE__.user.userPageData._rawValue.basicInfo.redId"));
-                Assert.hasText(uid, "小红书号获取失败" + shareLink);
+                String uidUrl = RED_NOTE_UID_URL + secUid;
+                uid = dataSyncMessageQueue.retryWithExponentialBackoff(() -> {
+                    try (Page newPage = playwrightBrowser.getBrowserContext().newPage()) {
+                        Response response = newPage.navigate(uidUrl, new Page.NavigateOptions().setTimeout(BrowserConfig.LOAD_PAGE_TIMEOUT).setWaitUntil(WaitUntilState.COMMIT));
+                        InputStream uidStream = new ByteArrayInputStream(response.body());
+                        return JsoupUtil.findContent(uidStream, "小红书号：");
+                    }
+                }, RED_NOTE_RETRY, uidUrl);
             }
             SocialMediaWork socialMediaWork = new SocialMediaWork();
             socialMediaWork.setUrl(shareUrl);

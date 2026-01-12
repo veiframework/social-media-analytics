@@ -152,7 +152,7 @@ public abstract class AbstractWorkScheduler {
         String accountId = socialMediaAccountVo.getId();
         String platformId = socialMediaAccountVo.getPlatformId();
         String secUid = socialMediaAccountVo.getSecUid();
-        List<SocialMediaWork> latestWork = this.socialMediaWorkService.getLatestWork(accountId);
+        List<SocialMediaWork> latestWork = this.socialMediaWorkService.getLatestWork(accountId, false);
         if (CollectionUtils.isEmpty(latestWork)) {
             return;
         }

@@ -43,7 +43,7 @@ public class DataSyncWorkSchedulerV5 {
             if (existKey) {
                 ThreadUtil.safeSleep(1000);
             } else {
-                List<SocialMediaWork> latestWork = socialMediaWorkService.getLatestWork(null);
+                List<SocialMediaWork> latestWork = socialMediaWorkService.getLatestWork(null, false);
                 if (CollectionUtils.isNotEmpty(latestWork)) {
                     Date now = new Date();
                     Integer updateMinutes = hubProperties.getUpdateMinutes();

@@ -42,7 +42,7 @@ public class WechatVideoWorkScheduler extends AbstractWorkScheduler {
         String accountType = socialMediaAccountVo.getType();
         String userId = socialMediaAccountVo.getUserId();
         String tenantId = socialMediaAccountVo.getTenantId();
-        List<SocialMediaWork> latestWork = this.socialMediaWorkService.getLatestWork(accountId);
+        List<SocialMediaWork> latestWork = this.socialMediaWorkService.getLatestWork(accountId, false);
         this.socialMediaAccountService.updateSyncWorkStatus(accountId, SyncWorkStatusEnum.SYNCING);
         Map<String, SocialMediaWork> workMap = new HashMap<>();
         for (SocialMediaWork socialMediaWork : latestWork) {

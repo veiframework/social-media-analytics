@@ -130,22 +130,20 @@ public class SocialMediaWorkService extends AbstractZ9CrudServiceImpl<SocialMedi
         return this.baseMapper.lambdaQuery().in(SocialMediaWork::getId, ids).list();
     }
 
-    public List<SocialMediaWork> getLatestWorkByUserIds(Set<String> userIds) {
-        return this.getLatestWork(null, userIds);
+
+    public List<SocialMediaWork> getLatestWork(String accountId, boolean isLogin) {
+        return this.getLatestWork(accountId, null, isLogin);
     }
 
 
-    public List<SocialMediaWork> getLatestWork(String accountId) {
-        return this.getLatestWork(accountId, null);
-    }
-
-
-    public List<SocialMediaWork> getLatestWork(String accountId, Set<String> userIds) {
+    public List<SocialMediaWork> getLatestWork(String accountId, Set<String> userIds, boolean isLogin) {
         LocalDate[] period = SocialMediaWorkService.getValidDatePeriod(LocalDateTime.now());
         return this.baseMapper.lambdaQuery()
                 .eq(StringUtils.isNotBlank(accountId), SocialMediaWork::getAccountId, accountId)
                 .in(CollectionUtils.isNotEmpty(userIds), SocialMediaWork::getUserId, userIds)
                 .ne(SocialMediaWork::getState, WorkStateEnum.DELETED.getDesc())
+                .inSql(isLogin, SocialMediaWork::getAccountId, "SELECT id FROM social_media_account WHERE storage_state IS NOT NULL")
+                .inSql(!isLogin, SocialMediaWork::getAccountId, "SELECT id FROM social_media_account WHERE storage_state IS NULL")
                 .ge(SocialMediaWork::getCreateTime, period[0])
                 .lt(SocialMediaWork::getCreateTime, period[1])
                 .list();
@@ -217,7 +215,7 @@ public class SocialMediaWorkService extends AbstractZ9CrudServiceImpl<SocialMedi
         return this.baseMapper.lambdaQuery().eq(SocialMediaWork::getAccountId, accountId).count();
     }
 
-    public String getAndSave(SocialMediaWork socialMediaWork) {
+    public synchronized String getAndSave(SocialMediaWork socialMediaWork) {
         String workId;
         SocialMediaWork exist = this.baseMapper.lambdaQuery().eq(SocialMediaWork::getWorkUid, socialMediaWork.getWorkUid()).one();
         if (exist == null) {

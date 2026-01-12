@@ -1,5 +1,8 @@
 package com.chargehub.admin.scheduler;
 
+import cn.hutool.core.date.DateTime;
+import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.date.StopWatch;
 import com.chargehub.admin.account.domain.SocialMediaAccount;
 import com.chargehub.admin.account.service.SocialMediaAccountService;
 import com.chargehub.admin.api.domain.SysUser;
@@ -24,8 +27,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author zhanghaowei
@@ -53,6 +61,11 @@ public class CreateWorkScheduler {
     @Autowired
     private DataSyncManager dataSyncManager;
 
+    public static final String CREATE_WORK_LOCK = "social_media_work_create_lock";
+
+    public static final ExecutorService CREATE_WORK_POOL = Executors.newFixedThreadPool(5);
+
+
     @SuppressWarnings("unchecked")
     public void execute() {
         Boolean hasKey = redisService.hasKey(CacheConstants.SYNCING_WORK_LOCK);
@@ -62,8 +75,23 @@ public class CreateWorkScheduler {
         SocialMediaWorkCreateQueryDto queryDto = new SocialMediaWorkCreateQueryDto();
         queryDto.setRetryCount(0);
         List<SocialMediaWorkCreateVo> all = (List<SocialMediaWorkCreateVo>) socialMediaWorkCreateService.getAll(queryDto);
+        List<CompletableFuture<Void>> allFutures = new ArrayList<>();
         for (SocialMediaWorkCreateVo socialMediaWorkCreateVo : all) {
-            this.create(socialMediaWorkCreateVo);
+            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> this.create(socialMediaWorkCreateVo), CREATE_WORK_POOL);
+            allFutures.add(future);
+        }
+        DateTime now = DateUtil.date();
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+        log.info("作品创建任务开始 {}", now);
+        try {
+            CompletableFuture.allOf(allFutures.toArray(new CompletableFuture[0])).get(30, TimeUnit.MINUTES);
+        } catch (Exception e) {
+            log.error("作品创建任务异常 {}", e.getMessage());
+            Thread.currentThread().interrupt();
+        } finally {
+            stopWatch.stop();
+            log.info("作品创建任务结束 {}秒", stopWatch.getTotalTimeSeconds());
         }
     }
 
@@ -101,20 +129,24 @@ public class CreateWorkScheduler {
         SocialMediaWork socialMediaWork = socialMediaWorkDetail.getWork();
         Assert.isTrue(!"-1".equals(socialMediaWork.getWorkUid()), "作品已经下架,无法添加");
         SocialMediaUserInfo socialMediaUserInfo = socialMediaWorkDetail.getSocialMediaUserInfo();
-        SocialMediaAccount socialMediaAccount = socialMediaAccountService.getAndSave(socialMediaUserInfo, userId, accountType, platformEnum.getPlatformEnum(), tenantId);
-        socialMediaWork.setUserId(socialMediaAccount.getUserId());
-        socialMediaWork.setAccountId(socialMediaAccount.getId());
-        socialMediaWork.setTenantId(socialMediaAccount.getTenantId());
-        socialMediaWork.setAccountType(socialMediaAccount.getType());
-        socialMediaWork.setShareLink(shareLink);
-        socialMediaWork.setTenantId(tenantId);
-        socialMediaWork.setCustomType(customType);
-        socialMediaWork.setSyncWorkDate(new Date());
-        String workId = socialMediaWorkService.getAndSave(socialMediaWork);
-        String dbUserId = socialMediaAccount.getUserId();
-        boolean equals = dbUserId.equals(userId);
-        String errorMsg = equals ? null : "注意!该作品归属于员工" + dbUserId + ",如您不是组长无权限查看作品";
-        this.socialMediaWorkCreateService.updateStatusNoRetry(id, WorkCreateStatusEnum.SUCCESS, errorMsg, workId);
+        redisService.lock(CREATE_WORK_LOCK, locked -> {
+            Assert.isTrue(locked, "创建作品获取锁失败");
+            SocialMediaAccount socialMediaAccount = socialMediaAccountService.getAndSave(socialMediaUserInfo, userId, accountType, platformEnum.getPlatformEnum(), tenantId);
+            socialMediaWork.setUserId(socialMediaAccount.getUserId());
+            socialMediaWork.setAccountId(socialMediaAccount.getId());
+            socialMediaWork.setTenantId(socialMediaAccount.getTenantId());
+            socialMediaWork.setAccountType(socialMediaAccount.getType());
+            socialMediaWork.setShareLink(shareLink);
+            socialMediaWork.setTenantId(tenantId);
+            socialMediaWork.setCustomType(customType);
+            socialMediaWork.setSyncWorkDate(new Date());
+            String workId = socialMediaWorkService.getAndSave(socialMediaWork);
+            String dbUserId = socialMediaAccount.getUserId();
+            boolean equals = dbUserId.equals(userId);
+            String errorMsg = equals ? null : "注意!该作品归属于员工" + dbUserId + ",如您不是组长无权限查看作品";
+            this.socialMediaWorkCreateService.updateStatusNoRetry(id, WorkCreateStatusEnum.SUCCESS, errorMsg, workId);
+            return null;
+        }, 120);
     }
 
 
