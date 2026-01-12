@@ -1,12 +1,10 @@
 package com.chargehub.admin.scheduler;
 
-import cn.hutool.core.thread.ThreadUtil;
 import com.chargehub.admin.enums.SocialMediaPlatformEnum;
 import com.chargehub.admin.work.domain.SocialMediaWork;
 import com.chargehub.admin.work.service.SocialMediaWorkService;
 import com.chargehub.admin.work.service.SocialMediaWorkTaskService;
 import com.chargehub.common.core.properties.HubProperties;
-import com.chargehub.common.redis.service.RedisService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,27 +31,16 @@ public class DataSyncWorkSchedulerV5 {
     @Autowired
     private HubProperties hubProperties;
 
-    @Autowired
-    private RedisService redisService;
-
 
     public void execute() {
-        for (int i = 0; i < 60; i++) {
-            boolean existKey = redisService.existKey(SocialMediaWorkTaskService.BATCH_ADD_TASK_LOCK + "*");
-            if (existKey) {
-                ThreadUtil.safeSleep(1000);
-            } else {
-                List<SocialMediaWork> latestWork = socialMediaWorkService.getLatestWork(null, false);
-                if (CollectionUtils.isNotEmpty(latestWork)) {
-                    Date now = new Date();
-                    Integer updateMinutes = hubProperties.getUpdateMinutes();
-                    latestWork.removeIf(e -> !e.computeSyncDuration(now, updateMinutes) || e.getPlatformId().equals(SocialMediaPlatformEnum.WECHAT_VIDEO.getDomain()));
-                }
-                socialMediaWorkTaskService.batchAddTask(latestWork, true);
-                return;
-            }
+        List<SocialMediaWork> latestWork = socialMediaWorkService.getLatestWork(null, false);
+        if (CollectionUtils.isNotEmpty(latestWork)) {
+            Date now = new Date();
+            Integer updateMinutes = hubProperties.getUpdateMinutes();
+            //TODO 将来微信视频号也要纳入这个定时任务
+            latestWork.removeIf(e -> !e.computeSyncDuration(now, updateMinutes) || e.getPlatformId().equals(SocialMediaPlatformEnum.WECHAT_VIDEO.getDomain()));
         }
-        log.error("自动同步作品时锁被占用");
+        socialMediaWorkTaskService.batchAddTask(latestWork, false);
     }
 
 

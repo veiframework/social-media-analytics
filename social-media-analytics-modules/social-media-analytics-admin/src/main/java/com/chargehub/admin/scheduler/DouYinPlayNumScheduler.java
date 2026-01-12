@@ -45,15 +45,14 @@ public class DouYinPlayNumScheduler {
 
     private static final String DOUYIN_PLAY_NUM_TASK = "douyin_play_num_task";
 
-    public void execute() {
-        List<SocialMediaWork> latestWork = socialMediaWorkService.getDouYinLatestWork();
-        if (CollectionUtils.isEmpty(latestWork)) {
+    public void execute(Integer limit) {
+        Set<String> workIds = redisService.getCacheSet(DOUYIN_PLAY_NUM_TASK, limit);
+        if (CollectionUtils.isEmpty(workIds)) {
             return;
         }
-        Set<String> workIds = redisService.getCacheSet(DOUYIN_PLAY_NUM_TASK);
-        List<SocialMediaWork> workTasks = socialMediaWorkService.getWorkByIds(workIds);
-        if (CollectionUtils.isNotEmpty(workTasks)) {
-            latestWork.addAll(workTasks);
+        List<SocialMediaWork> latestWork = socialMediaWorkService.getWorkByIds(workIds);
+        if (CollectionUtils.isEmpty(latestWork)) {
+            return;
         }
         HubProperties.SocialMediaDataApi socialMediaDataApi = hubProperties.getSocialMediaDataApi().get("tikhub");
         String token = socialMediaDataApi.getToken();

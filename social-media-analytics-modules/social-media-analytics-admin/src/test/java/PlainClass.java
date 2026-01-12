@@ -1,4 +1,3 @@
-import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpUtil;
@@ -8,6 +7,7 @@ import com.chargehub.admin.playwright.PlaywrightBrowser;
 import com.chargehub.admin.scheduler.DouYinSyncWorkScheduler;
 import com.chargehub.common.core.utils.JsoupUtil;
 import com.microsoft.playwright.Page;
+import com.microsoft.playwright.Response;
 import com.microsoft.playwright.options.WaitUntilState;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
@@ -38,7 +38,7 @@ public class PlainClass {
             DouYinSyncWorkScheduler.navigateToDouYinUserPage(playwrightBrowser);
             Object object = playwrightBrowser.getPage().evaluate(DataSyncDouYinServiceImpl.DOUYIN_FETCH_WORK_JS, "7581889286216207616");
             System.out.println(object);
-            ThreadUtil.safeSleep(600_00000);
+            playwrightBrowser.getPage().waitForTimeout(600_00000);
         }
     }
 
@@ -68,6 +68,16 @@ public class PlainClass {
                 .headerMap(BrowserConfig.BROWSER_HEADERS, true);
         try (HttpResponse response = httpRequest.execute()) {
             System.out.println(response.body());
+        }
+    }
+
+    @Test
+    public void testKuaishou2() {
+        try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(PlaywrightBrowser.buildProxy())) {
+            Page page = playwrightBrowser.newPage();
+            Response navigate = page.navigate("https://v.kuaishou.com/KZbr8k8A", new Page.NavigateOptions().setTimeout(BrowserConfig.LOAD_PAGE_TIMEOUT));
+            System.out.println(navigate.text());
+            playwrightBrowser.getPage().waitForTimeout(600_00000);
         }
     }
 

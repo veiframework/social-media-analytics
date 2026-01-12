@@ -10,7 +10,6 @@ import com.chargehub.admin.datasync.domain.SocialMediaWorkResult;
 import com.chargehub.admin.enums.WorkStateEnum;
 import com.chargehub.admin.playwright.PlaywrightBrowser;
 import com.chargehub.admin.work.domain.SocialMediaWork;
-import com.chargehub.admin.work.domain.SocialMediaWorkTask;
 import com.chargehub.admin.work.service.SocialMediaWorkCreateService;
 import com.chargehub.admin.work.service.SocialMediaWorkService;
 import com.chargehub.admin.work.service.SocialMediaWorkTaskService;
@@ -23,12 +22,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 
 import java.net.Proxy;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.*;
-import java.util.stream.Collectors;
 
 /**
  * @author zhanghaowei
@@ -85,16 +80,17 @@ public abstract class AbstractSyncWorkScheduler {
             log.error("正在创建作品, {}作品同步不执行", taskName);
             return;
         }
-        List<SocialMediaWorkTask> tasks = socialMediaWorkTaskService.getAllByPlatformId(taskName, limit);
-        if (CollectionUtils.isEmpty(tasks)) {
+        Set<String> ids = redisService.getCacheSet(SocialMediaWorkTaskService.DEFAULT_SYNC_WORK_TASK + taskName, limit);
+        if (CollectionUtils.isEmpty(ids)) {
             return;
         }
         DateTime now = DateUtil.date();
         List<String> completeIds = new CopyOnWriteArrayList<>();
         List<CompletableFuture<Void>> allFutures = new ArrayList<>();
         com.microsoft.playwright.options.Proxy browserProxy = PlaywrightBrowser.buildProxy();
-        List<List<SocialMediaWorkTask>> partition = Lists.partition(tasks, 5);
-        for (List<SocialMediaWorkTask> list : partition) {
+        List<String> idList = new ArrayList<>(ids);
+        List<List<String>> partition = Lists.partition(idList, 5);
+        for (List<String> list : partition) {
             CompletableFuture<Void> future = CompletableFuture.runAsync(() -> this.fetchWorks(list, completeIds, null, browserProxy), fixedThreadPool);
             allFutures.add(future);
         }
@@ -115,12 +111,11 @@ public abstract class AbstractSyncWorkScheduler {
     }
 
 
-    public void fetchWorks(List<SocialMediaWorkTask> tasks, List<String> completeIds, Proxy proxy, com.microsoft.playwright.options.Proxy browserProxy) {
-        List<String> ids = tasks.stream().map(SocialMediaWorkTask::getWorkId).collect(Collectors.toList());
+    public void fetchWorks(List<String> ids, List<String> completeIds, Proxy proxy, com.microsoft.playwright.options.Proxy browserProxy) {
         try (PlaywrightBrowser playwrightBrowser = getPlaywrightBrowser(browserProxy)) {
             List<SocialMediaWork> list = this.socialMediaWorkService.getWorkByIds(ids);
             if (CollectionUtils.isEmpty(list)) {
-                this.socialMediaWorkTaskService.deleteTaskByIds(ids);
+                redisService.deleteCacheSet(SocialMediaWorkTaskService.DEFAULT_SYNC_WORK_TASK + taskName, ids);
                 return;
             }
             Map<String, SocialMediaWork> workMap = new HashMap<>();
@@ -155,7 +150,7 @@ public abstract class AbstractSyncWorkScheduler {
                 }
             }
             this.socialMediaWorkService.updateBatchById(updateList);
-            this.socialMediaWorkTaskService.deleteTaskByIds(ids);
+            redisService.deleteCacheSet(SocialMediaWorkTaskService.DEFAULT_SYNC_WORK_TASK + taskName, ids);
             completeIds.addAll(ids);
         } catch (Exception e) {
             log.error("{} 同步任务异常,作品: {}", taskName, String.join(StringPool.COMMA, ids), e);

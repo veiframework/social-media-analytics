@@ -21,6 +21,7 @@ import com.chargehub.common.core.constant.CacheConstants;
 import com.chargehub.common.core.utils.ExceptionUtil;
 import com.chargehub.common.redis.service.RedisService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -75,6 +76,9 @@ public class CreateWorkScheduler {
         SocialMediaWorkCreateQueryDto queryDto = new SocialMediaWorkCreateQueryDto();
         queryDto.setRetryCount(0);
         List<SocialMediaWorkCreateVo> all = (List<SocialMediaWorkCreateVo>) socialMediaWorkCreateService.getAll(queryDto);
+        if (CollectionUtils.isEmpty(all)) {
+            return;
+        }
         List<CompletableFuture<Void>> allFutures = new ArrayList<>();
         for (SocialMediaWorkCreateVo socialMediaWorkCreateVo : all) {
             CompletableFuture<Void> future = CompletableFuture.runAsync(() -> this.create(socialMediaWorkCreateVo), CREATE_WORK_POOL);

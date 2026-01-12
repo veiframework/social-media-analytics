@@ -170,8 +170,11 @@ public class RedisService implements ApplicationContextAware {
      * @param key
      * @return
      */
-    public <T> Set<T> getCacheSet(final String key) {
-        return redisTemplate.opsForSet().members(key);
+    public <T> Set<T> getCacheSet(final String key, Integer limit) {
+        if (limit == null) {
+            return redisTemplate.opsForSet().members(key);
+        }
+        return redisTemplate.opsForSet().distinctRandomMembers(key, limit);
     }
 
     /**
