@@ -1,5 +1,6 @@
 package com.chargehub.admin.scheduler;
 
+import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.StopWatch;
@@ -11,6 +12,7 @@ import com.chargehub.admin.datasync.domain.SocialMediaUserInfo;
 import com.chargehub.admin.datasync.domain.SocialMediaWorkDetail;
 import com.chargehub.admin.enums.SocialMediaPlatformEnum;
 import com.chargehub.admin.enums.WorkCreateStatusEnum;
+import com.chargehub.admin.enums.WorkPriorityEnum;
 import com.chargehub.admin.work.domain.SocialMediaWork;
 import com.chargehub.admin.work.dto.SocialMediaWorkCreateQueryDto;
 import com.chargehub.admin.work.service.SocialMediaWorkCreateService;
@@ -28,8 +30,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -135,6 +137,7 @@ public class CreateWorkScheduler {
         SocialMediaUserInfo socialMediaUserInfo = socialMediaWorkDetail.getSocialMediaUserInfo();
         redisService.lock(CREATE_WORK_LOCK, locked -> {
             Assert.isTrue(locked, "创建作品获取锁失败");
+            LocalDateTime now = LocalDateTime.now();
             SocialMediaAccount socialMediaAccount = socialMediaAccountService.getAndSave(socialMediaUserInfo, userId, accountType, platformEnum.getPlatformEnum(), tenantId);
             socialMediaWork.setUserId(socialMediaAccount.getUserId());
             socialMediaWork.setAccountId(socialMediaAccount.getId());
@@ -143,12 +146,14 @@ public class CreateWorkScheduler {
             socialMediaWork.setShareLink(shareLink);
             socialMediaWork.setTenantId(tenantId);
             socialMediaWork.setCustomType(customType);
-            socialMediaWork.setSyncWorkDate(new Date());
+            socialMediaWork.setSyncWorkDate(DateUtil.date(now));
+            socialMediaWork.setPriority(WorkPriorityEnum.IMPORTANT.getCode());
             String workId = socialMediaWorkService.getAndSave(socialMediaWork);
             String dbUserId = socialMediaAccount.getUserId();
             boolean equals = dbUserId.equals(userId);
             String errorMsg = equals ? null : "注意!该作品归属于员工" + dbUserId + ",如您不是组长无权限查看作品";
             this.socialMediaWorkCreateService.updateStatusNoRetry(id, WorkCreateStatusEnum.SUCCESS, errorMsg, workId);
+            redisService.setCacheMapValue(CacheConstants.WORK_NEXT_CRAWL_TIME, id, now.plusSeconds(30).format(DatePattern.NORM_DATETIME_FORMATTER));
             return null;
         }, 120);
     }

@@ -129,6 +129,9 @@ public class SocialMediaWork implements Serializable, Z9CrudEntity {
     @ApiModelProperty("话题")
     private String topics;
 
+    @ApiModelProperty("优先级")
+    private Integer priority;
+
     @Override
     public String getUniqueId() {
         return this.id;

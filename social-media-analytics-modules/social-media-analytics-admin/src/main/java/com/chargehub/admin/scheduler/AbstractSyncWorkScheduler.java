@@ -1,16 +1,18 @@
 package com.chargehub.admin.scheduler;
 
-import cn.hutool.core.date.DateTime;
-import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.StopWatch;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.chargehub.admin.datasync.DataSyncManager;
 import com.chargehub.admin.datasync.domain.DataSyncWorksParams;
 import com.chargehub.admin.datasync.domain.SocialMediaWorkResult;
+import com.chargehub.admin.enums.WorkPriorityEnum;
 import com.chargehub.admin.enums.WorkStateEnum;
 import com.chargehub.admin.playwright.PlaywrightBrowser;
 import com.chargehub.admin.work.domain.SocialMediaWork;
+import com.chargehub.admin.work.domain.SocialMediaWorkPriority;
 import com.chargehub.admin.work.service.SocialMediaWorkCreateService;
+import com.chargehub.admin.work.service.SocialMediaWorkPriorityService;
 import com.chargehub.admin.work.service.SocialMediaWorkService;
 import com.chargehub.admin.work.service.SocialMediaWorkTaskService;
 import com.chargehub.common.core.constant.CacheConstants;
@@ -20,8 +22,11 @@ import com.google.common.collect.Lists;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.net.Proxy;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -50,6 +55,9 @@ public abstract class AbstractSyncWorkScheduler {
     public final HubProperties hubProperties;
 
     public ThreadPoolExecutor fixedThreadPool;
+
+    @Autowired
+    private SocialMediaWorkPriorityService socialMediaWorkPriorityService;
 
     @Setter
     public String taskName;
@@ -84,20 +92,21 @@ public abstract class AbstractSyncWorkScheduler {
         if (CollectionUtils.isEmpty(ids)) {
             return;
         }
-        DateTime now = DateUtil.date();
-        List<String> completeIds = new CopyOnWriteArrayList<>();
+        Map<Integer, SocialMediaWorkPriority> allPriority = socialMediaWorkPriorityService.getAllPriority();
+        LocalDateTime now = LocalDateTime.now();
         List<CompletableFuture<Void>> allFutures = new ArrayList<>();
         com.microsoft.playwright.options.Proxy browserProxy = PlaywrightBrowser.buildProxy();
         List<String> idList = new ArrayList<>(ids);
         List<List<String>> partition = Lists.partition(idList, 5);
         for (List<String> list : partition) {
-            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> this.fetchWorks(list, completeIds, null, browserProxy), fixedThreadPool);
+            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> this.fetchWorks(now, list, null, browserProxy, allPriority), fixedThreadPool);
             allFutures.add(future);
         }
         StopWatch stopWatch = new StopWatch(taskName);
         stopWatch.start();
-        log.info("{}开始同步作品 {}", taskName, now);
-        redisService.setHashEx(CacheConstants.SYNCING_WORK_LOCK, taskName, now.toString(), 2, TimeUnit.HOURS);
+        String formatDate = now.format(DatePattern.NORM_DATETIME_FORMATTER);
+        log.info("{}开始同步作品 {}", taskName, formatDate);
+        redisService.setHashEx(CacheConstants.SYNCING_WORK_LOCK, taskName, formatDate, 2, TimeUnit.HOURS);
         try {
             CompletableFuture.allOf(allFutures.toArray(new CompletableFuture[0])).get(2, TimeUnit.HOURS);
         } catch (Exception e) {
@@ -111,7 +120,8 @@ public abstract class AbstractSyncWorkScheduler {
     }
 
 
-    public void fetchWorks(List<String> ids, List<String> completeIds, Proxy proxy, com.microsoft.playwright.options.Proxy browserProxy) {
+    public void fetchWorks(LocalDateTime now, List<String> ids, Proxy proxy, com.microsoft.playwright.options.Proxy browserProxy, Map<Integer, SocialMediaWorkPriority> allPriority) {
+        Map<String, String> nextCrawTimeCache = new HashMap<>();
         try (PlaywrightBrowser playwrightBrowser = getPlaywrightBrowser(browserProxy)) {
             List<SocialMediaWork> list = this.socialMediaWorkService.getWorkByIds(ids);
             if (CollectionUtils.isEmpty(list)) {
@@ -129,6 +139,7 @@ public abstract class AbstractSyncWorkScheduler {
             SocialMediaWorkResult<SocialMediaWork> result = this.dataSyncManager.fetchWorks(this.taskName, dataSyncWorksParams);
             List<SocialMediaWork> newWorks = result.getWorks();
             if (CollectionUtils.isEmpty(newWorks)) {
+                redisService.deleteCacheSet(SocialMediaWorkTaskService.DEFAULT_SYNC_WORK_TASK + taskName, ids);
                 return;
             }
             List<SocialMediaWork> updateList = new ArrayList<>();
@@ -137,21 +148,42 @@ public abstract class AbstractSyncWorkScheduler {
                 if ("-1".equals(workUid)) {
                     String shareLink = newWork.getShareLink();
                     log.error("删除作品分享链接: {}", shareLink);
-                    this.socialMediaWorkService.updateStateByShareLink(shareLink, WorkStateEnum.DELETED);
+                    String workId = this.socialMediaWorkService.updateStateByShareLink(shareLink, WorkStateEnum.DELETED);
+                    if (StringUtils.isNotBlank(workId)) {
+                        redisService.deleteCacheMapValue(CacheConstants.WORK_NEXT_CRAWL_TIME, workId);
+                    }
                 } else {
                     SocialMediaWork existWork = workMap.get(workUid);
                     if (existWork == null) {
                         continue;
                     }
+                    String id = existWork.getId();
+                    Date updateTime = existWork.getUpdateTime();
                     SocialMediaWork updateWork = existWork.computeMd5(newWork);
-                    if (updateWork != null) {
+                    Integer priority;
+                    boolean isChanged = updateWork != null;
+                    if (isChanged) {
+                        SocialMediaWorkPriorityService.computePriority(now, updateTime, updateWork, allPriority);
                         updateList.add(updateWork);
+                        priority = updateWork.getPriority();
+                    } else {
+                        priority = existWork.getPriority();
+                    }
+                    if (priority == WorkPriorityEnum.DOCUMENT.getCode()) {
+                        //归档类型暂时先删除
+                        redisService.deleteCacheMapValue(CacheConstants.WORK_NEXT_CRAWL_TIME, id);
+                    } else {
+                        SocialMediaWorkPriority currentPriority = allPriority.get(priority);
+                        Integer interval = isChanged ? currentPriority.getBacklogInterval() : currentPriority.getNormalInterval();
+                        String nextCrawlTime = now.plusSeconds(interval).format(DatePattern.NORM_DATETIME_FORMATTER);
+                        nextCrawTimeCache.put(id, nextCrawlTime);
                     }
                 }
             }
             this.socialMediaWorkService.updateBatchById(updateList);
+            //更新下次采集时间
+            redisService.setCacheMap(CacheConstants.WORK_NEXT_CRAWL_TIME, nextCrawTimeCache);
             redisService.deleteCacheSet(SocialMediaWorkTaskService.DEFAULT_SYNC_WORK_TASK + taskName, ids);
-            completeIds.addAll(ids);
         } catch (Exception e) {
             log.error("{} 同步任务异常,作品: {}", taskName, String.join(StringPool.COMMA, ids), e);
         }

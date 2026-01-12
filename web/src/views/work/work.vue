@@ -579,7 +579,6 @@ const handleSyncWork2 = async (workId) => {
     const response = await syncWork(workId)
     if (response.code === 200) {
       ElMessage.success('同步作品需要时间，请稍后前往《作品管理》查看~')
-      await getData()
     } else {
 
     }

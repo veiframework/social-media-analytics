@@ -35,6 +35,10 @@ public class SocialMediaWorkVo implements Serializable, Z9CrudVo {
     @ApiModelProperty("标题")
     private String title;
 
+    @Excel(name = "优先级", width = 15, dict = "work_priority", addressList = true)
+    @ApiModelProperty("优先级")
+    private String priority;
+
     @Excel(name = "描述", width = 15)
     @ApiModelProperty("描述")
     private String description;

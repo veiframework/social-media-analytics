@@ -244,6 +244,13 @@ public class RedisService implements ApplicationContextAware {
         return redisTemplate.opsForHash().delete(key, hKey) > 0;
     }
 
+    public void deleteCacheMapValue(String hashKey, Set<String> keys) {
+        if (CollectionUtils.isEmpty(keys)) {
+            return;
+        }
+        redisTemplate.opsForHash().delete(hashKey, keys.toArray());
+    }
+
     public <T> void deleteCacheSet(final String key, Collection<T> items) {
         if (CollectionUtils.isEmpty(items)) {
             return;

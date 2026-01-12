@@ -2,11 +2,13 @@ package com.chargehub.admin.work.service;
 
 import cn.afterturn.easypoi.handler.inter.IExcelDictHandler;
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.date.DatePattern;
+import cn.hutool.core.map.MapUtil;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.toolkit.Db;
 import com.chargehub.admin.account.dto.SocialMediaTransferAccountDto;
-import com.chargehub.admin.enums.SocialMediaPlatformEnum;
+import com.chargehub.admin.enums.WorkPriorityEnum;
 import com.chargehub.admin.enums.WorkStateEnum;
 import com.chargehub.admin.work.domain.SocialMediaWork;
 import com.chargehub.admin.work.domain.SocialMediaWorkCreate;
@@ -23,6 +25,7 @@ import com.chargehub.common.security.template.dto.Z9CrudQueryDto;
 import com.chargehub.common.security.template.event.Z9BeforeCreateEvent;
 import com.chargehub.common.security.template.event.Z9CreateEvent;
 import com.chargehub.common.security.template.service.AbstractZ9CrudServiceImpl;
+import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -137,8 +140,26 @@ public class SocialMediaWorkService extends AbstractZ9CrudServiceImpl<SocialMedi
 
 
     public List<SocialMediaWork> getLatestWork(String accountId, Set<String> userIds, boolean isLogin) {
-        LocalDate[] period = SocialMediaWorkService.getValidDatePeriod(LocalDateTime.now());
-        return this.baseMapper.lambdaQuery()
+        LocalDateTime now = LocalDateTime.now();
+        LocalDate[] period = SocialMediaWorkService.getValidDatePeriod(now);
+        Map<String, Object> cacheMap = redisService.getCacheMap(CacheConstants.WORK_NEXT_CRAWL_TIME);
+        if (MapUtil.isEmpty(cacheMap)) {
+            return new ArrayList<>();
+        }
+        List<String> ids = new ArrayList<>();
+        cacheMap.forEach((k, v) -> {
+            if (v == null) {
+                return;
+            }
+            // 下一次抓取时间小于当前时间
+            LocalDateTime nextCrawlTime = LocalDateTime.parse(String.valueOf(v), DatePattern.NORM_DATETIME_FORMATTER);
+            if (nextCrawlTime.isAfter(now)) {
+                return;
+            }
+            ids.add(k);
+        });
+        List<List<String>> partition = Lists.partition(ids, 500);
+        return partition.stream().flatMap(batch -> this.baseMapper.lambdaQuery()
                 .eq(StringUtils.isNotBlank(accountId), SocialMediaWork::getAccountId, accountId)
                 .in(CollectionUtils.isNotEmpty(userIds), SocialMediaWork::getUserId, userIds)
                 .ne(SocialMediaWork::getState, WorkStateEnum.DELETED.getDesc())
@@ -146,17 +167,25 @@ public class SocialMediaWorkService extends AbstractZ9CrudServiceImpl<SocialMedi
                 .inSql(!isLogin, SocialMediaWork::getAccountId, "SELECT id FROM social_media_account WHERE storage_state IS NULL")
                 .ge(SocialMediaWork::getCreateTime, period[0])
                 .lt(SocialMediaWork::getCreateTime, period[1])
-                .list();
+                .in(SocialMediaWork::getId, batch)
+                .in(SocialMediaWork::getPriority, WorkPriorityEnum.IMPORTANT.getCode(), WorkPriorityEnum.ACTIVE.getCode(), WorkPriorityEnum.NORMAL.getCode())
+                .list().stream()).collect(Collectors.toList());
     }
 
-    @SuppressWarnings("unchecked")
-    public List<SocialMediaWork> getDouYinLatestWork() {
+    /**
+     * 刷缓存
+     *
+     * @param accountId
+     * @param isLogin
+     * @return
+     */
+    public List<SocialMediaWork> getLatestWork0(String accountId, boolean isLogin) {
         LocalDate[] period = SocialMediaWorkService.getValidDatePeriod(LocalDateTime.now());
         return this.baseMapper.lambdaQuery()
-                .select(SocialMediaWork::getId, SocialMediaWork::getPlayFixed, SocialMediaWork::getPlayNum, SocialMediaWork::getPlayNumChange, SocialMediaWork::getPlayNumUp, SocialMediaWork::getWorkUid)
-                .eq(SocialMediaWork::getPlatformId, SocialMediaPlatformEnum.DOU_YIN.getDomain())
-                .inSql(SocialMediaWork::getAccountId, "SELECT id FROM social_media_account WHERE auto_sync = 'enable'")
+                .eq(StringUtils.isNotBlank(accountId), SocialMediaWork::getAccountId, accountId)
                 .ne(SocialMediaWork::getState, WorkStateEnum.DELETED.getDesc())
+                .inSql(isLogin, SocialMediaWork::getAccountId, "SELECT id FROM social_media_account WHERE storage_state IS NOT NULL")
+                .inSql(!isLogin, SocialMediaWork::getAccountId, "SELECT id FROM social_media_account WHERE storage_state IS NULL")
                 .ge(SocialMediaWork::getCreateTime, period[0])
                 .lt(SocialMediaWork::getCreateTime, period[1])
                 .list();
@@ -200,11 +229,17 @@ public class SocialMediaWorkService extends AbstractZ9CrudServiceImpl<SocialMedi
                 .update();
     }
 
-    public void updateStateByShareLink(String shareLink, WorkStateEnum workStateEnum) {
+    @SuppressWarnings("unchecked")
+    public String updateStateByShareLink(String shareLink, WorkStateEnum workStateEnum) {
         this.baseMapper.lambdaUpdate()
                 .eq(SocialMediaWork::getShareLink, shareLink)
                 .set(SocialMediaWork::getState, workStateEnum.getDesc())
                 .update();
+        SocialMediaWork work = this.baseMapper.lambdaQuery().select(SocialMediaWork::getId).eq(SocialMediaWork::getShareLink, shareLink).one();
+        if (work != null) {
+            return work.getId();
+        }
+        return null;
     }
 
     public IPage<SocialMediaWorkVo> getPurviewPage(SocialMediaWorkQueryDto queryDto) {
