@@ -163,11 +163,18 @@ public abstract class AbstractSyncWorkScheduler {
                     Integer priority;
                     boolean isChanged = updateWork != null;
                     if (isChanged) {
-                        SocialMediaWorkPriorityService.computePriority(now, updateTime, updateWork, allPriority);
+                        priority = SocialMediaWorkPriorityService.computePriority(now, updateTime, updateWork, allPriority);
+                        updateWork.setPriority(priority);
                         updateList.add(updateWork);
-                        priority = updateWork.getPriority();
                     } else {
-                        priority = existWork.getPriority();
+                        priority = SocialMediaWorkPriorityService.computePriority(now, updateTime, existWork, allPriority);
+                        if (!existWork.getPriority().equals(priority)) {
+                            //优先级变化了才更新
+                            SocialMediaWork work = new SocialMediaWork();
+                            work.setId(id);
+                            work.setPriority(priority);
+                            updateList.add(work);
+                        }
                     }
                     if (priority == WorkPriorityEnum.DOCUMENT.getCode()) {
                         //归档类型暂时先删除

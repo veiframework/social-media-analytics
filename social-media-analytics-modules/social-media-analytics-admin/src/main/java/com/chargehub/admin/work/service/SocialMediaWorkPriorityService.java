@@ -19,7 +19,6 @@ import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.Assert;
 
 import java.time.LocalDateTime;
 import java.util.Date;
@@ -68,9 +67,9 @@ public class SocialMediaWorkPriorityService extends AbstractZ9CrudServiceImpl<So
         return map;
     }
 
-    public static void computePriority(LocalDateTime localDateTime, Date updateTime, SocialMediaWork socialMediaWork, Map<Integer, SocialMediaWorkPriority> allPriority) {
+    public static Integer computePriority(LocalDateTime localDateTime, Date updateTime, SocialMediaWork socialMediaWork, Map<Integer, SocialMediaWorkPriority> allPriority) {
         if (localDateTime.getHour() == 8) {
-            return;
+            return socialMediaWork.getPriority();
         }
         DateTime now = DateUtil.date(localDateTime);
         for (SocialMediaWorkPriority priority : allPriority.values()) {
@@ -81,11 +80,10 @@ public class SocialMediaWorkPriorityService extends AbstractZ9CrudServiceImpl<So
             StandardEvaluationContext evaluationContext = WorkAlarmIntervalScheduler.createEvaluationContext(map);
             Boolean evalResult = PARSER.parseExpression(expression).getValue(evaluationContext, Boolean.class);
             if (BooleanUtils.isTrue(evalResult)) {
-                socialMediaWork.setPriority(priority.getPriority());
-                return;
+                return priority.getPriority();
             }
         }
-        Assert.notNull(socialMediaWork.getPriority(), "作品优先级未定义!");
+        throw new IllegalArgumentException("未找匹配的作品优先级!");
     }
 
     @Override
