@@ -1,9 +1,6 @@
 package com.chargehub.admin.scheduler;
 
-import cn.hutool.core.date.DatePattern;
-import cn.hutool.core.date.DateTime;
-import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.date.StopWatch;
+import cn.hutool.core.date.*;
 import com.chargehub.admin.account.domain.SocialMediaAccount;
 import com.chargehub.admin.account.service.SocialMediaAccountService;
 import com.chargehub.admin.api.domain.SysUser;
@@ -153,7 +150,8 @@ public class CreateWorkScheduler {
             boolean equals = dbUserId.equals(userId);
             String errorMsg = equals ? null : "注意!该作品归属于员工" + dbUserId + ",如您不是组长无权限查看作品";
             this.socialMediaWorkCreateService.updateStatusNoRetry(id, WorkCreateStatusEnum.SUCCESS, errorMsg, workId);
-            redisService.setCacheMapValue(CacheConstants.WORK_NEXT_CRAWL_TIME, id, now.plusSeconds(30).format(DatePattern.NORM_DATETIME_FORMATTER));
+            long nextCrawlTime = Long.parseLong(now.plusSeconds(30).format(DatePattern.PURE_DATETIME_FORMATTER));
+            redisService.addZSetMembers(CacheConstants.WORK_NEXT_CRAWL_TIME, id, nextCrawlTime);
             return null;
         }, 120);
     }

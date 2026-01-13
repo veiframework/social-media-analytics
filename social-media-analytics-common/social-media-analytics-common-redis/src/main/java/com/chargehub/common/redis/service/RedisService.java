@@ -5,6 +5,7 @@ import cn.hutool.core.thread.ThreadUtil;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +19,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * spring redis 工具类
@@ -250,6 +252,62 @@ public class RedisService implements ApplicationContextAware {
         }
         redisTemplate.opsForHash().delete(hashKey, keys.toArray());
     }
+
+
+    public void addZSetMembers(String key, String member, double value) {
+        Map<String, Double> map = MapUtil.of(member, value);
+        addZSetMembers(key, map);
+    }
+
+    public void addZSetMembers(String key, Map<String, Double> members) {
+        if (MapUtil.isEmpty(members)) {
+            return;
+        }
+        Set<ZSetOperations.TypedTuple<String>> fields = members.entrySet().stream()
+                .map(entry -> new DefaultTypedTuple<>(entry.getKey(), entry.getValue()))
+                .collect(Collectors.toSet());
+        ZSetOperations<String, String> zSetOps = redisTemplate.opsForZSet();
+        zSetOps.add(key, fields);
+    }
+
+    public void deleteZSet(String key, String fieldKey) {
+        if (StringUtils.isBlank(fieldKey)) {
+            return;
+        }
+        ZSetOperations<String, String> zSetOps = redisTemplate.opsForZSet();
+        zSetOps.remove(key, fieldKey);
+    }
+
+    public Set<String> getZSetMembers(String key, boolean lessEqual, double timestamp) {
+        ZSetOperations<String, String> zSetOps = redisTemplate.opsForZSet();
+        if (lessEqual) {
+            // score <= timestamp
+            return zSetOps.rangeByScore(key, Double.NEGATIVE_INFINITY, timestamp);
+        } else {
+            // score >= timestamp
+            return zSetOps.rangeByScore(key, timestamp, Double.POSITIVE_INFINITY);
+        }
+    }
+
+    public Set<Map<String, Double>> getZSetMembersWithScore(String key, long limit) {
+        ZSetOperations<String, String> zSetOps = redisTemplate.opsForZSet();
+        Set<ZSetOperations.TypedTuple<String>> typedTuples = zSetOps.distinctRandomMembersWithScore(key, limit);
+        if (CollectionUtils.isEmpty(typedTuples)) {
+            return new HashSet<>();
+        }
+        return typedTuples.stream()
+                .map(typedTuple -> MapUtil.of(typedTuple.getValue(), typedTuple.getScore()))
+                .collect(Collectors.toSet());
+    }
+
+    public void deleteZSet(String key, Collection<String> fieldKeys) {
+        if (CollectionUtils.isEmpty(fieldKeys)) {
+            return;
+        }
+        ZSetOperations<String, String> zSetOps = redisTemplate.opsForZSet();
+        zSetOps.remove(key, fieldKeys.toArray());
+    }
+
 
     public <T> void deleteCacheSet(final String key, Collection<T> items) {
         if (CollectionUtils.isEmpty(items)) {

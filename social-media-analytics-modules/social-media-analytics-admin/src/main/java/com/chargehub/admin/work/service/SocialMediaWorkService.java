@@ -3,7 +3,6 @@ package com.chargehub.admin.work.service;
 import cn.afterturn.easypoi.handler.inter.IExcelDictHandler;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.date.DatePattern;
-import cn.hutool.core.map.MapUtil;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.toolkit.Db;
@@ -140,23 +139,12 @@ public class SocialMediaWorkService extends AbstractZ9CrudServiceImpl<SocialMedi
 
 
     public List<SocialMediaWork> getLatestWork(String accountId, Set<String> userIds, boolean isLogin) {
-        LocalDateTime now = LocalDateTime.now();
-        Map<String, Object> cacheMap = redisService.getCacheMap(CacheConstants.WORK_NEXT_CRAWL_TIME);
-        if (MapUtil.isEmpty(cacheMap)) {
+        long timestamp = Long.parseLong(LocalDateTime.now().format(DatePattern.PURE_DATETIME_FORMATTER));
+        Set<String> members = redisService.getZSetMembers(CacheConstants.WORK_NEXT_CRAWL_TIME, true, timestamp);
+        if (CollectionUtils.isEmpty(members)) {
             return new ArrayList<>();
         }
-        List<String> ids = new ArrayList<>();
-        cacheMap.forEach((k, v) -> {
-            if (v == null) {
-                return;
-            }
-            // 下一次抓取时间小于当前时间
-            LocalDateTime nextCrawlTime = LocalDateTime.parse(String.valueOf(v), DatePattern.NORM_DATETIME_FORMATTER);
-            if (nextCrawlTime.isAfter(now)) {
-                return;
-            }
-            ids.add(k);
-        });
+        List<String> ids = new ArrayList<>(members);
         List<List<String>> partition = Lists.partition(ids, 500);
         return partition.stream().flatMap(batch -> this.baseMapper.lambdaQuery()
                 .eq(StringUtils.isNotBlank(accountId), SocialMediaWork::getAccountId, accountId)
@@ -226,17 +214,11 @@ public class SocialMediaWorkService extends AbstractZ9CrudServiceImpl<SocialMedi
                 .update();
     }
 
-    @SuppressWarnings("unchecked")
-    public String updateStateByShareLink(String shareLink, WorkStateEnum workStateEnum) {
+    public void updateStateByShareLink(String shareLink, WorkStateEnum workStateEnum) {
         this.baseMapper.lambdaUpdate()
                 .eq(SocialMediaWork::getShareLink, shareLink)
                 .set(SocialMediaWork::getState, workStateEnum.getDesc())
                 .update();
-        SocialMediaWork work = this.baseMapper.lambdaQuery().select(SocialMediaWork::getId).eq(SocialMediaWork::getShareLink, shareLink).one();
-        if (work != null) {
-            return work.getId();
-        }
-        return null;
     }
 
     public IPage<SocialMediaWorkVo> getPurviewPage(SocialMediaWorkQueryDto queryDto) {

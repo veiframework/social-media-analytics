@@ -28,7 +28,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.net.Proxy;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author zhanghaowei
@@ -121,7 +124,7 @@ public abstract class AbstractSyncWorkScheduler {
 
 
     public void fetchWorks(LocalDateTime now, List<String> ids, Proxy proxy, com.microsoft.playwright.options.Proxy browserProxy, Map<Integer, SocialMediaWorkPriority> allPriority) {
-        Map<String, String> nextCrawTimeCache = new HashMap<>();
+        Map<String, Double> nextCrawTimeCache = new HashMap<>();
         try (PlaywrightBrowser playwrightBrowser = getPlaywrightBrowser(browserProxy)) {
             List<SocialMediaWork> list = this.socialMediaWorkService.getWorkByIds(ids);
             if (CollectionUtils.isEmpty(list)) {
@@ -129,8 +132,10 @@ public abstract class AbstractSyncWorkScheduler {
                 return;
             }
             Map<String, SocialMediaWork> workMap = new HashMap<>();
+            Map<String, String> workLinkIdMap = new HashMap<>();
             for (SocialMediaWork socialMediaWork : list) {
                 workMap.put(socialMediaWork.getWorkUid(), socialMediaWork);
+                workLinkIdMap.put(socialMediaWork.getShareLink(), socialMediaWork.getId());
             }
             DataSyncWorksParams dataSyncWorksParams = new DataSyncWorksParams();
             dataSyncWorksParams.setWorkMap(workMap);
@@ -148,9 +153,12 @@ public abstract class AbstractSyncWorkScheduler {
                 if ("-1".equals(workUid)) {
                     String shareLink = newWork.getShareLink();
                     log.error("删除作品分享链接: {}", shareLink);
-                    String workId = this.socialMediaWorkService.updateStateByShareLink(shareLink, WorkStateEnum.DELETED);
+                    this.socialMediaWorkService.updateStateByShareLink(shareLink, WorkStateEnum.DELETED);
+                    String workId = workLinkIdMap.get(shareLink);
                     if (StringUtils.isNotBlank(workId)) {
-                        redisService.deleteCacheMapValue(CacheConstants.WORK_NEXT_CRAWL_TIME, workId);
+                        redisService.deleteZSet(CacheConstants.WORK_NEXT_CRAWL_TIME, workId);
+                    } else {
+                        log.error("从缓存中删除分享链接未找到: {}", shareLink);
                     }
                 } else {
                     SocialMediaWork existWork = workMap.get(workUid);
@@ -178,18 +186,18 @@ public abstract class AbstractSyncWorkScheduler {
                     }
                     if (priority == WorkPriorityEnum.DOCUMENT.getCode()) {
                         //归档类型暂时先删除
-                        redisService.deleteCacheMapValue(CacheConstants.WORK_NEXT_CRAWL_TIME, id);
+                        redisService.deleteZSet(CacheConstants.WORK_NEXT_CRAWL_TIME, id);
                     } else {
                         SocialMediaWorkPriority currentPriority = allPriority.get(priority);
                         Integer interval = isChanged ? currentPriority.getBacklogInterval() : currentPriority.getNormalInterval();
-                        String nextCrawlTime = now.plusSeconds(interval).format(DatePattern.NORM_DATETIME_FORMATTER);
+                        double nextCrawlTime = Long.parseLong(now.plusSeconds(interval).format(DatePattern.PURE_DATETIME_FORMATTER));
                         nextCrawTimeCache.put(id, nextCrawlTime);
                     }
                 }
             }
             this.socialMediaWorkService.updateBatchById(updateList);
             //更新下次采集时间
-            redisService.setCacheMap(CacheConstants.WORK_NEXT_CRAWL_TIME, nextCrawTimeCache);
+            redisService.addZSetMembers(CacheConstants.WORK_NEXT_CRAWL_TIME, nextCrawTimeCache);
             redisService.deleteCacheSet(SocialMediaWorkTaskService.DEFAULT_SYNC_WORK_TASK + taskName, ids);
         } catch (Exception e) {
             log.error("{} 同步任务异常,作品: {}", taskName, String.join(StringPool.COMMA, ids), e);

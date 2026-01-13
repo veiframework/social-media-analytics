@@ -1,4 +1,7 @@
 import cn.hutool.core.date.DatePattern;
+import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.date.LocalDateTimeUtil;
+import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import com.chargehub.admin.AdminApplication;
 import com.chargehub.admin.work.domain.SocialMediaWork;
@@ -15,7 +18,10 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -71,6 +77,43 @@ public class TestAdmin {
             redisService.setCacheMapValue(CacheConstants.WORK_NEXT_CRAWL_TIME, id, now.plusSeconds(30).format(DatePattern.NORM_DATETIME_FORMATTER));
         }
 
+    }
+
+    @Test
+    public void testZSet() {
+        LocalDateTime now = LocalDateTime.now();
+        long timeMillis = LocalDateTimeUtil.toEpochMilli(now);
+        Map<String, Double> build = MapUtil.builder(new HashMap<String, Double>())
+                .put("2", -2000d + timeMillis)
+                .put("0", 0d + timeMillis)
+                .put("4", 4000d + timeMillis)
+                .put("3", 3000d + timeMillis)
+                .put("5", 5000d + timeMillis)
+                .build();
+        redisService.addZSetMembers("test", build);
+        Set<String> filteredMembers = redisService.getZSetMembers("test", true, timeMillis);
+        for (String member : filteredMembers) {
+            System.out.println(member);
+            redisService.deleteZSet("test", member);
+        }
+    }
+
+    @Test
+    public void testGetZSet() {
+        Set<Map<String, Double>> members = redisService.getZSetMembersWithScore(CacheConstants.WORK_NEXT_CRAWL_TIME, 99999);
+        for (Map<String, Double> member : members) {
+            member.forEach((k, v) -> System.out.println(k + ":" + DateUtil.date(Math.round(v))));
+        }
+    }
+
+    @Test
+    public void testGetZSet2() {
+        long timestamp = Long.parseLong(LocalDateTime.now().format(DatePattern.PURE_DATETIME_FORMATTER));
+        System.out.println(timestamp);
+        Set<String> members = redisService.getZSetMembers(CacheConstants.WORK_NEXT_CRAWL_TIME, true, timestamp);
+        for (String member : members) {
+            System.out.println(member);
+        }
     }
 
 }

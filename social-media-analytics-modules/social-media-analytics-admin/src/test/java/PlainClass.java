@@ -1,3 +1,5 @@
+import cn.hutool.core.date.DatePattern;
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpUtil;
@@ -5,14 +7,26 @@ import com.chargehub.admin.datasync.tikhub.DataSyncDouYinServiceImpl;
 import com.chargehub.admin.playwright.BrowserConfig;
 import com.chargehub.admin.playwright.PlaywrightBrowser;
 import com.chargehub.admin.scheduler.DouYinSyncWorkScheduler;
+import com.chargehub.common.core.constant.CacheConstants;
 import com.chargehub.common.core.utils.JsoupUtil;
+import com.chargehub.common.security.utils.JacksonUtil;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Response;
 import com.microsoft.playwright.options.WaitUntilState;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
+import org.redisson.Redisson;
+import org.redisson.api.RMap;
+import org.redisson.api.RScoredSortedSet;
+import org.redisson.api.RedissonClient;
+import org.redisson.client.protocol.ScoredEntry;
+import org.redisson.codec.JsonJacksonCodec;
+import org.redisson.config.Config;
 
 import java.io.InputStream;
+import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.Map;
 
 /**
  * @author Zhanghaowei
@@ -80,5 +94,52 @@ public class PlainClass {
             playwrightBrowser.getPage().waitForTimeout(600_00000);
         }
     }
+
+
+    public static String redisHost = "redis://39.106.154.254:36379";
+    public static String redisPass = "lumeng@8888";
+
+    @Test
+    public void getProductionCrawTime() {
+        String key = CacheConstants.WORK_NEXT_CRAWL_TIME;
+        int limit = 99999;
+        Config config = new Config();
+        config.setCodec(new JsonJacksonCodec(JacksonUtil.getMapper()));
+        config.useSingleServer().setAddress(redisHost).setPassword(redisPass);
+        RedissonClient redissonClient = Redisson.create(config);
+        // 获取 RScoredSortedSet（ZSet）
+        RScoredSortedSet<String> zset = redissonClient.getScoredSortedSet(key);
+        // 获取前 limit 个元素（按 score 升序）
+        Collection<ScoredEntry<String>> entries = zset.entryRange(0, limit - 1);
+        // 遍历并打印
+        for (ScoredEntry<String> entry : entries) {
+            Double score = entry.getScore();
+            String member = entry.getValue();
+            long timestampMillis = score.longValue();
+
+            String formattedTime = DateUtil.parse(timestampMillis + "").toString(DatePattern.NORM_DATETIME_FORMAT);
+            System.out.println(member + ": " + formattedTime);
+        }
+    }
+
+    @Test
+    public void migrationCrawlTime() {
+        String key = "WORK_NEXT_CRAWL_TIME";
+        Config config = new Config();
+        config.setCodec(new JsonJacksonCodec(JacksonUtil.getMapper()));
+        config.useSingleServer().setAddress(redisHost).setPassword(redisPass);
+        RedissonClient redissonClient = Redisson.create(config);
+        RScoredSortedSet<String> scoredSortedSet = redissonClient.getScoredSortedSet(CacheConstants.WORK_NEXT_CRAWL_TIME);
+        RMap<Long, String> map = redissonClient.getMap(key);
+
+        for (Map.Entry<Long, String> entry : map.entrySet()) {
+            Long k = entry.getKey();
+            String v = entry.getValue();
+            long time = Long.parseLong(LocalDateTime.parse(v, DatePattern.NORM_DATETIME_FORMATTER).format(DatePattern.PURE_DATETIME_FORMATTER));
+            System.out.println(k + ": " + time);
+            scoredSortedSet.add(time, String.valueOf(k));
+        }
+    }
+
 
 }

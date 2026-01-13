@@ -173,5 +173,5 @@ public class CacheConstants {
 
     public static final String SYNCING_WORK_LOCK = "SYNCING_WORK_LOCK";
 
-    public static final String WORK_NEXT_CRAWL_TIME = "WORK_NEXT_CRAWL_TIME";
+    public static final String WORK_NEXT_CRAWL_TIME = "WORK_NEXT_CRAWL_TIMESTAMP";
 }
