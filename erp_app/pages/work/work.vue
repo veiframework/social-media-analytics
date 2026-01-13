@@ -1,17 +1,16 @@
 <template>
   <view class="work-container">
-    <Watermark  text="仅供分析不得传播©lumengshop.com" />
+    <Watermark text="仅供分析不得传播©lumengshop.com"/>
 
     <!-- 筛选栏 -->
     <view class="filter-bar">
       <!-- 时间范围筛选 -->
       <view class="filter-item">
-        <text class="filter-label">发布时间：</text>
+        <text class="filter-label">创建时间：</text>
         <picker class="filter-picker" @change="handleTimeRangeChange" :range="timeRangeOptions" :range-key="'label'">
           <view class="picker-text">{{ selectedTimeRange.label }}</view>
         </picker>
       </view>
-
 
 
       <!-- 其他筛选条件（默认隐藏） -->
@@ -59,7 +58,7 @@
     <scroll-view class="work-list" @scrolltolower="handleLoadMore" scroll-y="true" refresher-enabled="true"
                  :refresher-triggered="refreshing" @refresherrefresh="onRefresh" lower-threshold="60"
                  refresher-background="#f5f5f5">
-      <view class="work-item" v-for="item in workList" :key="item.id" >
+      <view class="work-item" v-for="item in workList" :key="item.id">
         <view @click="navigateToDetail(item.id)">
           <view class="work-header">
             <text class="work-title">{{ item.description }}</text>
@@ -70,7 +69,8 @@
             <text class="stat-item">点赞数：{{ item.thumbNum || 0 }}</text>
             <text class="stat-item">评论数：{{ item.commentNum || 0 }}</text>
             <text class="stat-item">点赞增长量：{{ item.thumbNumUp || 0 }}
-              <text class="trend" :class="{ 'trend-up': item.thumbNumChange > 0, 'trend-down': item.thumbNumChange < 0 }">
+              <text class="trend"
+                    :class="{ 'trend-up': item.thumbNumChange > 0, 'trend-down': item.thumbNumChange < 0 }">
                 <text v-if="item.thumbNumChange > 0">↑{{ Math.abs(item.thumbNumChange) || 0 }}</text>
                 <text v-else-if="item.thumbNumChange < 0">↓{{ Math.abs(item.thumbNumChange) || 0 }}</text>
               </text>
@@ -83,8 +83,10 @@
             </text>
           </view>
           <view class="work-info">
-            <text class="info-item">作者：{{ item.accountId_dictText }}</text>
-            <text class="info-item">发布时间：{{ item.postTime }}</text>
+            <text class="info-item">优先级：
+              <text :style="priorityStyle(item.priority)">{{ priorityText(item.priority) }}</text>
+            </text>
+            <text class="info-item">创建时间：{{ item.createTime }}</text>
           </view>
         </view>
         <view class="account-actions">
@@ -112,7 +114,7 @@
     <ModalMask :visible="showAddWorkModal" :title="'添加作品'" @close="handleCloseAddWorkModal">
       <AddWorkForm @close="handleCloseAddWorkModal" @success="handleAddWorkSuccess"/>
     </ModalMask>
-    
+
     <!-- 自定义tabbar -->
     <bottom-bar></bottom-bar>
   </view>
@@ -120,7 +122,7 @@
 
 <script>
 import {ref, onMounted} from 'vue'
-import {getWorkListApi,syncWork} from '../../api/work.js'
+import {getWorkListApi, syncWork} from '../../api/work.js'
 import ModalMask from '../../components/ModalMask.vue'
 import AddWorkForm from '../../components/AddWorkForm.vue'
 import Watermark from '../../components/Watermark.vue'
@@ -176,7 +178,7 @@ export default {
 
     // 排序字段选项 - 包含升序和降序
     const sortFieldOptions = ref([
-
+      {label: '优先级-升序', value: 'priority', order: 'asc'},
       {label: '创建时间-升序', value: 'createTime', order: 'asc'},
       {label: '创建时间-降序', value: 'createTime', order: 'desc'},
       {label: '发布时间-升序', value: 'postTime', order: 'asc'},
@@ -198,7 +200,7 @@ export default {
     ])
 
     // 选中的排序字段
-    const selectedSortField = ref(sortFieldOptions.value[1]) // 默认选择创建时间降序
+    const selectedSortField = ref(sortFieldOptions.value[0]) // 默认选择创建时间降序
 
     // 社交平台选项
     const platformOptions = ref([
@@ -221,7 +223,24 @@ export default {
       }
       return 'color:' + platformColors[platformId]
     }
-
+    const priorityStyle = (e) => {
+      let colors = {
+        '1': '#e71426',
+        '2': '#74e135',
+        '3': '#cea156',
+        '4': '#b7b3ac',
+      }
+      return 'color:' + colors[e]
+    }
+    const priorityText = (e) => {
+      let text = {
+        '1': '重要',
+        '2': '活跃',
+        '3': '一般',
+        '4': '归档',
+      }
+      return text[e]
+    }
     // 选中的社交平台
     const selectedPlatform = ref(platformOptions.value[0])
 
@@ -332,8 +351,8 @@ export default {
 
         // 仅当时间范围不是"全部"时，才添加时间参数
         if (dateRange.startDate && dateRange.endDate) {
-          params.startPostTime = startDate.value
-          params.endPostTime = endDate.value
+          params.startCreateTime = startDate.value
+          params.endCreateTime = endDate.value
         }
         if (selectedSortField.value) {
           if (selectedSortField.value.order === 'desc') {
@@ -342,7 +361,9 @@ export default {
             params.ascFields = selectedSortField.value.value
           }
         }
-
+        if (!params.descFields) {
+          params.descFields = 'updateTime'
+        }
         // 调用API获取作品列表
         const res = await getWorkListApi(params)
 
@@ -487,7 +508,9 @@ export default {
       handleCloseAddWorkModal,
       handleAddWorkSuccess,
       computeButton,
-      handleSync
+      handleSync,
+      priorityText,
+      priorityStyle
     }
   }
 }
@@ -721,10 +744,12 @@ export default {
 .account-actions {
   margin-top: 20rpx;
 }
+
 .action-btn {
   font-size: 18rpx;
   border-radius: 35rpx;
 }
+
 .sync-btn {
   background-color: #cea156;
   color: #fff;

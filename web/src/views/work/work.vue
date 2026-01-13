@@ -197,6 +197,7 @@ const platformDict = ref([])
 const statusDict = ref([])
 const userDict = ref([])
 const syncWorkStatusDict = ref([])
+const priorityDict = ref([])
 
 const workStateDict = ref([])
 const socialMediaAccountTypeDict = ref([])
@@ -380,7 +381,7 @@ const showDetailByLink = async (row) => {
 // 获取字典数据
 const getDict = async () => {
   try {
-    const [typeRes, mediaTypeRes, platformRes, statusRes, socialMediaAccountTypeRes, socialMediaCustomTypeRes, syncDictRes, workStateDictRes] = await Promise.all([
+    const [typeRes, mediaTypeRes, platformRes, statusRes, socialMediaAccountTypeRes, socialMediaCustomTypeRes, syncDictRes, workStateDictRes, priorityRes] = await Promise.all([
       getDicts('work_type'),
       getDicts('media_type'),
       getDicts('social_media_platform'),
@@ -388,7 +389,8 @@ const getDict = async () => {
       getDicts("social_media_account_type"),
       getDicts("social_media_custom_type"),
       getDicts('sync_work_status'),
-      getDicts('work_state')
+      getDicts('work_state'),
+      getDicts('work_priority')
     ])
 
     typeDict.value = typeRes.data.map(i => ({label: i.dictLabel, value: i.dictValue, elTagType: i.listClass})) || []
@@ -419,6 +421,11 @@ const getDict = async () => {
       elTagType: i.listClass
     })) || []
     workStateDict.value = workStateDictRes.data.map(i => ({
+      label: i.dictLabel,
+      value: i.dictValue,
+      elTagType: i.listClass
+    })) || []
+    priorityDict.value = priorityRes.data.map(i => ({
       label: i.dictLabel,
       value: i.dictValue,
       elTagType: i.listClass
@@ -659,6 +666,7 @@ const extractUrlFromText = (text) => {
 const option = reactive({
   showSearch: true,
   searchLabelWidth: 90,
+  ascFields: new Set(["priority"]),
   descFields: new Set(["updateTime"]),
   /** 搜索字段配置项 */
   searchItem: [
@@ -758,6 +766,13 @@ const option = reactive({
       default: null,
       placeholder: "请输入分享链接",
       max: 15000
+    }, {
+      type: "select",
+      label: "优先级",
+      prop: "priority",
+      default: null,
+      placeholder: "请选择优先级",
+      dicData: priorityDict
     },
   ],
   /** 表格顶部左侧 button 配置项 */
@@ -833,14 +848,15 @@ const option = reactive({
       dicData: socialMediaCustomTypeDict
     },
     {
-      type: 'text',
-      label: '数据变化时间',
-      prop: 'updateTime',
-      width: 160,
+      type: 'tag',
+      label: '优先级',
+      prop: 'priority',
+      width: 100,
       fixed: false,
       sortable: true,
       isShow: true,
-      noFilter: true
+      noFilter: true,
+      dicData: priorityDict
     },
 
 
@@ -923,14 +939,14 @@ const option = reactive({
       dicData: workStateDict
     }, {
       type: 'text',
-      label: '发布时间',
-      prop: 'postTime',
+      label: '创建时间',
+      prop: 'createTime',
       width: 160,
       fixed: false,
       sortable: true,
       isShow: true,
       noFilter: true
-    },{
+    }, {
       type: 'tag',
       label: '作品类型',
       prop: 'type',
@@ -1046,6 +1062,12 @@ const optionInfo = reactive({
           prop: 'mediaType',
           isShow: true,
           dicData: mediaTypeDict
+        }, {
+          type: 'tag',
+          label: '优先级',
+          prop: 'priority',
+          isShow: true,
+          dicData: priorityDict
         },
         {
           type: 'tag',
@@ -1466,7 +1488,8 @@ init()
   display: flex;
   align-items: center;
 }
-.thumb_num_box_text{
+
+.thumb_num_box_text {
   display: flex;
   justify-content: center;
   align-items: center;

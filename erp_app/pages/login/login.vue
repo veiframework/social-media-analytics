@@ -1,23 +1,25 @@
 <template>
   <view class="login-container">
-    <view class="login-form" v-if="!logged">
+    <view class="login-form" v-if="!logged" :style="{marginTop: formMarginTop}">
       <view class="title">欢迎登录</view>
 
       <view class="input-group">
         <view class="input-label">账号</view>
-        <input class="input" type="text" v-model="loginForm.username" placeholder="请输入账号"/>
+        <input class="input" type="text" v-model="loginForm.username" placeholder="请输入账号"
+               @focus="onInputFocus('username')"/>
       </view>
 
       <view class="input-group">
         <view class="input-label">密码</view>
         <input class="input" password v-model="loginForm.password" placeholder="请输入密码"
-               @confirm="handleLogin"/>
+               @confirm="handleLogin" @focus="onInputFocus('password')"/>
       </view>
 
       <view class="input-group" v-if="captchaEnabled">
         <view class="input-label">验证码</view>
         <view class="code-container">
-          <input class="input code-input" type="text" v-model="loginForm.code" placeholder="请输入验证码"/>
+          <input class="input code-input" type="text" v-model="loginForm.code" placeholder="请输入验证码"
+                 @focus="onInputFocus('code')" @blur="onInputBlur"/>
           <image class="code-image" :src="codeUrl" @tap="getCode" mode="aspectFit"></image>
         </view>
       </view>
@@ -45,6 +47,8 @@ export default {
     const rememberMe = ref(true)
     const captchaEnabled = ref(true)
     const codeUrl = ref('')
+    // 控制表单的margin-top样式
+    const formMarginTop = ref('200rpx')
 
     const logged = computed(() => {
       return !!store.getToken()
@@ -117,8 +121,21 @@ export default {
     }
 
 
-    onMounted(() => {
+    // 输入框聚焦事件
+    const onInputFocus = (field) => {
+      // 当聚焦验证码输入框时，去掉margin-top
+      if (field === 'code') {
+        formMarginTop.value = '0rpx'
+      }
+    }
 
+    // 输入框失焦事件
+    const onInputBlur = () => {
+      // 恢复表单的margin-top
+      formMarginTop.value = '200rpx'
+    }
+
+    onMounted(() => {
       getCode()
     })
 
@@ -128,6 +145,9 @@ export default {
       rememberMe,
       captchaEnabled,
       codeUrl,
+      onInputFocus,
+      onInputBlur,
+      formMarginTop,
       handleLogin,
       getCode,
     }
@@ -139,13 +159,13 @@ export default {
 .login-container {
   display: flex;
   justify-content: center;
-  align-items: center;
   height: 100vh;
   background-color: #f5f5f5;
 }
 
 .login-form {
   width: 85%;
+  height: 700rpx;
   max-width: 400px;
   background-color: #fff;
   padding: 30rpx;

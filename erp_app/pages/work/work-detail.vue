@@ -1,6 +1,6 @@
 <template>
   <view class="detail-container">
-    <Watermark  text="仅供分析不得传播©lumengshop.com" />
+    <Watermark text="仅供分析不得传播©lumengshop.com"/>
 
     <!-- 加载中提示 -->
     <view class="loading" v-if="loading">
@@ -45,17 +45,19 @@
             </view>
             <view class="stat-item">
               <text class="stat-label">点赞趋势</text>
-              <text class="stat-value" :class="{ 'trend-up': workDetail.thumbNumChange > 0, 'trend-down': workDetail.thumbNumChange < 0 }">
-                <text v-if="workDetail.thumbNumChange > 0">↑ </text>
-                <text v-else-if="workDetail.thumbNumChange < 0">↓ </text>
+              <text class="stat-value"
+                    :class="{ 'trend-up': workDetail.thumbNumChange > 0, 'trend-down': workDetail.thumbNumChange < 0 }">
+                <text v-if="workDetail.thumbNumChange > 0">↑</text>
+                <text v-else-if="workDetail.thumbNumChange < 0">↓</text>
                 {{ Math.abs(workDetail.thumbNumChange) || 0 }}
               </text>
             </view>
             <view class="stat-item">
               <text class="stat-label">播放趋势</text>
-              <text class="stat-value" :class="{ 'trend-up': workDetail.playNumChange > 0, 'trend-down': workDetail.playNumChange < 0 }">
-                <text v-if="workDetail.playNumChange > 0">↑ </text>
-                <text v-else-if="workDetail.playNumChange < 0">↓ </text>
+              <text class="stat-value"
+                    :class="{ 'trend-up': workDetail.playNumChange > 0, 'trend-down': workDetail.playNumChange < 0 }">
+                <text v-if="workDetail.playNumChange > 0">↑</text>
+                <text v-else-if="workDetail.playNumChange < 0">↓</text>
                 {{ Math.abs(workDetail.playNumChange) || 0 }}
               </text>
             </view>
@@ -66,15 +68,28 @@
         <view class="info-grid">
           <view class="info-item">
             <text class="info-label">平台</text>
-            <text class="info-value platform-tag" :style="platformStyle(workDetail.platformId)">{{ workDetail.platformId_dictText }}</text>
+            <text class="info-value platform-tag" :style="platformStyle(workDetail.platformId)">
+              {{ workDetail.platformId_dictText }}
+            </text>
+          </view>
+          <view class="info-item">
+            <text class="info-label">优先级</text>
+            <text class="info-value platform-tag" :style="priorityStyle(workDetail.priority)">{{
+                priorityText(workDetail.priority)
+              }}
+            </text>
           </view>
           <view class="info-item">
             <text class="info-label">作品类型</text>
             <text class="info-value">{{ workDetail.type_dictText }}</text>
           </view>
           <view class="info-item">
-            <text class="info-label">媒体类型</text>
-            <text class="info-value">{{ workDetail.mediaType_dictText }}</text>
+            <text class="info-label">业务类型</text>
+            <text class="info-value">{{ workDetail.customType_dictText }}</text>
+          </view>
+          <view class="info-item">
+            <text class="info-label">业务类型</text>
+            <text class="info-value">{{ workDetail.customType_dictText }}</text>
           </view>
           <view class="info-item">
             <text class="info-label">作品状态</text>
@@ -101,7 +116,9 @@
         <view class="content-block">
           <text class="info-label">话题</text>
           <view class="content-text-topic-box">
-            <view class="content-text-topic"  v-if="workDetail.topics" :key="topic" v-for="topic in workDetail.topics.split(',')">{{ topic || '暂无描述' }}</view>
+            <view class="content-text-topic" v-if="workDetail.topics" :key="topic"
+                  v-for="topic in workDetail.topics.split(',')">{{ topic || '暂无描述' }}
+            </view>
           </view>
         </view>
         <view class="content-block">
@@ -121,7 +138,6 @@
           <view class="content-text">{{ workDetail.workUid || '暂无' }}</view>
         </view>
       </view>
-
 
 
       <!-- 时间信息 -->
@@ -147,8 +163,8 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue'
-import { getWorkApi } from '../../api/work.js'
+import {ref, onMounted} from 'vue'
+import {getWorkApi} from '../../api/work.js'
 import Watermark from "../../components/Watermark.vue";
 
 export default {
@@ -177,6 +193,24 @@ export default {
         loading.value = false
       }
     }
+    const priorityStyle = (e) => {
+      let colors = {
+        '1': '#e71426',
+        '2': '#74e135',
+        '3': '#cea156',
+        '4': '#b7b3ac',
+      }
+      return 'color:' + colors[e]
+    }
+    const priorityText = (e) => {
+      let text = {
+        '1': '重要',
+        '2': '活跃',
+        '3': '一般',
+        '4': '归档',
+      }
+      return text[e]
+    }
     const platformStyle = (platformId) => {
       let platformColors = {
         'douyin': '#FF7A45', // 抖音
@@ -194,7 +228,7 @@ export default {
       const pages = getCurrentPages()
       const currentPage = pages[pages.length - 1]
       id.value = currentPage.options.id
-      
+
       // 获取详情数据
       getWorkDetail()
     })
@@ -202,7 +236,9 @@ export default {
     return {
       workDetail,
       loading,
-      platformStyle
+      platformStyle,
+      priorityStyle,
+      priorityText
     }
   }
 }
@@ -292,13 +328,13 @@ export default {
   user-select: text;
 }
 
-.content-text-topic-box{
+.content-text-topic-box {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
 }
 
-.content-text-topic{
+.content-text-topic {
   font-size: 28rpx;
   color: #007aff;
   line-height: 44rpx;

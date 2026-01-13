@@ -1,6 +1,6 @@
 <template>
   <div class="work_rank_box">
-    <Watermark  text="仅供分析不得传播©lumengshop.com" />
+    <Watermark text="仅供分析不得传播©lumengshop.com"/>
 
     <search :showSearch="option.showSearch" :searchLabelWidth="option.searchLabelWidth"
             :searchItem="option.searchItem" @search="handleSearch" :option="option">
@@ -79,6 +79,7 @@ const xiaohongshuChart = ref({})
 const wechatvideoChart = ref({})
 const kuaishouChart = ref({})
 
+const priorityDict = ref([])
 
 const getUserList = async () => {
   const res = await groupUserApi().getUserQuerySelector()
@@ -99,7 +100,7 @@ const getAccountList = async () => {
 // 获取字典数据
 const getDict = async () => {
   try {
-    const [typeRes, mediaTypeRes, platformRes, statusRes, socialMediaAccountTypeRes, socialMediaCustomTypeRes, syncDictRes, workStateDictRes] = await Promise.all([
+    const [typeRes, mediaTypeRes, platformRes, statusRes, socialMediaAccountTypeRes, socialMediaCustomTypeRes, syncDictRes, workStateDictRes, priorityRes] = await Promise.all([
       getDicts('work_type'),
       getDicts('media_type'),
       getDicts('social_media_platform'),
@@ -107,7 +108,8 @@ const getDict = async () => {
       getDicts("social_media_account_type"),
       getDicts("social_media_custom_type"),
       getDicts('sync_work_status'),
-      getDicts('work_state')
+      getDicts('work_state'),
+      getDicts('work_priority')
     ])
 
     typeDict.value = typeRes.data.map(i => ({label: i.dictLabel, value: i.dictValue, elTagType: i.listClass})) || []
@@ -138,6 +140,11 @@ const getDict = async () => {
       elTagType: i.listClass
     })) || []
     workStateDict.value = workStateDictRes.data.map(i => ({
+      label: i.dictLabel,
+      value: i.dictValue,
+      elTagType: i.listClass
+    })) || []
+    priorityDict.value = priorityRes.data.map(i => ({
       label: i.dictLabel,
       value: i.dictValue,
       elTagType: i.listClass
@@ -642,6 +649,12 @@ const optionInfo = reactive({
           prop: 'mediaType',
           isShow: true,
           dicData: mediaTypeDict
+        }, {
+          type: 'tag',
+          label: '优先级',
+          prop: 'priority',
+          isShow: true,
+          dicData: priorityDict
         },
         {
           type: 'tag',
