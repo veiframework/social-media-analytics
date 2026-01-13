@@ -151,7 +151,7 @@ public class CreateWorkScheduler {
             String errorMsg = equals ? null : "注意!该作品归属于员工" + dbUserId + ",如您不是组长无权限查看作品";
             this.socialMediaWorkCreateService.updateStatusNoRetry(id, WorkCreateStatusEnum.SUCCESS, errorMsg, workId);
             long nextCrawlTime = Long.parseLong(now.plusSeconds(30).format(DatePattern.PURE_DATETIME_FORMATTER));
-            redisService.addZSetMembers(CacheConstants.WORK_NEXT_CRAWL_TIME, id, nextCrawlTime);
+            redisService.addZSetMembers(CacheConstants.WORK_NEXT_CRAWL_TIME, workId, nextCrawlTime);
             return null;
         }, 120);
     }

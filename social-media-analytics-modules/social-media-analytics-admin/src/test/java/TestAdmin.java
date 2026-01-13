@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * @author Zhanghaowei
@@ -92,10 +93,7 @@ public class TestAdmin {
                 .build();
         redisService.addZSetMembers("test", build);
         Set<String> filteredMembers = redisService.getZSetMembers("test", true, timeMillis);
-        for (String member : filteredMembers) {
-            System.out.println(member);
-            redisService.deleteZSet("test", member);
-        }
+        redisService.deleteZSet("test", filteredMembers);
     }
 
     @Test
@@ -114,6 +112,27 @@ public class TestAdmin {
         for (String member : members) {
             System.out.println(member);
         }
+    }
+
+
+    @Test
+    public void testSyncWorks() {
+        List<SocialMediaWork> list = socialMediaWorkService.getBaseMapper().lambdaQuery().in(SocialMediaWork::getPlatformId, "douyin", "xiaohongshu").in(SocialMediaWork::getPriority, 1, 2, 3).list();
+        LocalDateTime now = LocalDateTime.now();
+        Map<String, Double> collect = list.stream().collect(Collectors.toMap(SocialMediaWork::getId, v -> {
+            Integer priority = v.getPriority();
+            if (priority == 1) {
+                return Double.parseDouble(now.plusSeconds(30).format(DatePattern.PURE_DATETIME_FORMATTER));
+            }
+            if (priority == 2) {
+                return Double.parseDouble(now.plusMinutes(30).format(DatePattern.PURE_DATETIME_FORMATTER));
+            }
+            if (priority == 3) {
+                return Double.parseDouble(now.plusHours(24).format(DatePattern.PURE_DATETIME_FORMATTER));
+            }
+            throw new IllegalArgumentException("can not be here");
+        }));
+        redisService.addZSetMembers(CacheConstants.WORK_NEXT_CRAWL_TIME, collect);
     }
 
 }

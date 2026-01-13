@@ -148,6 +148,7 @@ public abstract class AbstractSyncWorkScheduler {
                 return;
             }
             List<SocialMediaWork> updateList = new ArrayList<>();
+            Set<String> deleteCacheIds = new HashSet<>();
             for (SocialMediaWork newWork : newWorks) {
                 String workUid = newWork.getWorkUid();
                 if ("-1".equals(workUid)) {
@@ -156,7 +157,12 @@ public abstract class AbstractSyncWorkScheduler {
                     this.socialMediaWorkService.updateStateByShareLink(shareLink, WorkStateEnum.DELETED);
                     String workId = workLinkIdMap.get(shareLink);
                     if (StringUtils.isNotBlank(workId)) {
-                        redisService.deleteZSet(CacheConstants.WORK_NEXT_CRAWL_TIME, workId);
+                        SocialMediaWork work = new SocialMediaWork();
+                        work.setId(workId);
+                        work.setPriority(WorkPriorityEnum.DOCUMENT.getCode());
+                        updateList.add(work);
+                        //下架作品直接删除缓存
+                        deleteCacheIds.add(workId);
                     } else {
                         log.error("从缓存中删除分享链接未找到: {}", shareLink);
                     }
@@ -186,7 +192,7 @@ public abstract class AbstractSyncWorkScheduler {
                     }
                     if (priority == WorkPriorityEnum.DOCUMENT.getCode()) {
                         //归档类型暂时先删除
-                        redisService.deleteZSet(CacheConstants.WORK_NEXT_CRAWL_TIME, id);
+                        deleteCacheIds.add(id);
                     } else {
                         SocialMediaWorkPriority currentPriority = allPriority.get(priority);
                         Integer interval = isChanged ? currentPriority.getBacklogInterval() : currentPriority.getNormalInterval();
@@ -199,6 +205,7 @@ public abstract class AbstractSyncWorkScheduler {
             //更新下次采集时间
             redisService.addZSetMembers(CacheConstants.WORK_NEXT_CRAWL_TIME, nextCrawTimeCache);
             redisService.deleteCacheSet(SocialMediaWorkTaskService.DEFAULT_SYNC_WORK_TASK + taskName, ids);
+            redisService.deleteZSet(CacheConstants.WORK_NEXT_CRAWL_TIME, deleteCacheIds);
         } catch (Exception e) {
             log.error("{} 同步任务异常,作品: {}", taskName, String.join(StringPool.COMMA, ids), e);
         }
