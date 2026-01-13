@@ -100,7 +100,7 @@ public abstract class AbstractSyncWorkScheduler {
         List<CompletableFuture<Void>> allFutures = new ArrayList<>();
         com.microsoft.playwright.options.Proxy browserProxy = PlaywrightBrowser.buildProxy();
         List<String> idList = new ArrayList<>(ids);
-        List<List<String>> partition = Lists.partition(idList, 5);
+        List<List<String>> partition = Lists.partition(idList, 10);
         for (List<String> list : partition) {
             CompletableFuture<Void> future = CompletableFuture.runAsync(() -> this.fetchWorks(now, list, null, browserProxy, allPriority), fixedThreadPool);
             allFutures.add(future);
