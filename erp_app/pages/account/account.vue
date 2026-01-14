@@ -29,12 +29,11 @@
         </view>
         <view class="account-info">
           <text class="info-item">账号类型：{{ item.type_dictText }}</text>
-          <view class="info-item">员工：{{ item.userId_dictText }}</view>
-
+          <view class="info-item">UID：{{ item.uid }}</view>
         </view>
         <view class="account-info">
           <view class="info-item">员工：{{ item.userId_dictText }}</view>
-          <view class="info-item">社交平台ID：{{ item.uid }}</view>
+          <text class="info-item">创建时间：{{ item.createTime }}</text>
         </view>
 
       </view>
@@ -371,6 +370,9 @@ export default {
   font-weight: bold;
   color: #333;
   width: 74%;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
 }
 
 .account-type {
@@ -388,11 +390,12 @@ export default {
 }
 
 .info-item {
-  width: 340rpx;
+  width: 300rpx;
   font-size: 26rpx;
   color: #666;
   text-overflow: ellipsis;
   overflow: hidden;
+  white-space: nowrap;
 }
 
 .account-actions {
