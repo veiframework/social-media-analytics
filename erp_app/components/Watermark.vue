@@ -3,7 +3,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import {computed} from 'vue'
 
 // 定义props
 const props = defineProps({
@@ -22,9 +22,9 @@ const props = defineProps({
 // 计算水印样式
 const watermarkStyle = computed(() => {
   // 创建SVG背景
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200" opacity="0.15"><text x="50%" y="50%" font-family="Arial" font-size="14" fill="black" text-anchor="middle" transform="rotate(-15, 100, 100)">${props.text}</text></svg>`
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200" opacity="0.10"><text x="50%" y="50%" font-family="Arial" font-size="14" fill="black" text-anchor="middle" transform="rotate(-15, 100, 100)">${props.text}</text></svg>`
   const svgData = `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`
-  
+
   return {
     backgroundImage: `url('${svgData}')`,
     backgroundSize: '400px 200px'

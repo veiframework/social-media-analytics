@@ -1,6 +1,5 @@
 <template>
   <view class="account-detail-container">
-    <Watermark text="仅供分析不得传播©lumengshop.com"/>
 
 
     <!-- 账号统计信息 -->
@@ -96,14 +95,14 @@ export default {
       const currentPage = pages[pages.length - 1]
       accountId.value = currentPage.options.id || ''
       accountNickname.value = decodeURIComponent(currentPage.options.nickname || '')
-      
+
       // 设置导航栏标题为账号昵称
       if (accountNickname.value) {
         uni.setNavigationBarTitle({
           title: accountNickname.value
         })
       }
-      
+
       // 获取账号详情
       if (accountId.value) {
         getAccountDetail()
