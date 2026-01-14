@@ -75,6 +75,8 @@ public class WorkAlarmIntervalScheduler {
     @Autowired
     private ObjectMapper objectMapper;
 
+    public static final long CACHE_TIMEOUT = 7;
+
     @SuppressWarnings("unchecked")
     public void execute(String taskId) {
         SocialMediaWorkAlarm socialMediaWorkAlarm = socialMediaWorkAlarmService.getBaseMapper().doGetDetailById(taskId);
@@ -122,7 +124,7 @@ public class WorkAlarmIntervalScheduler {
         WorkAlarmRecordValue lastRecordValue = redisService.getCacheObject(workAlarmRecordKey);
         Integer startInterval = socialMediaWorkAlarm.getStartInterval();
         if (lastRecordValue == null) {
-            redisService.setCacheObject(workAlarmRecordKey, new WorkAlarmRecordValue(currentFieldValue, 0), 65L, TimeUnit.DAYS);
+            redisService.setCacheObject(workAlarmRecordKey, new WorkAlarmRecordValue(currentFieldValue, 0), CACHE_TIMEOUT, TimeUnit.DAYS);
             return;
         }
         int count = lastRecordValue.getCount() + 1;
@@ -159,7 +161,7 @@ public class WorkAlarmIntervalScheduler {
                 alarmNotificationConfig.setMsgTemplate(msgTemplate);
             }
             alarmNotificationManager.send(leadershipWebhook);
-            redisService.setCacheObject(workAlarmRecordKey, new WorkAlarmRecordValue(currentFieldValue, count), 65L, TimeUnit.DAYS);
+            redisService.setCacheObject(workAlarmRecordKey, new WorkAlarmRecordValue(currentFieldValue, count), CACHE_TIMEOUT, TimeUnit.DAYS);
         }
     }
 
