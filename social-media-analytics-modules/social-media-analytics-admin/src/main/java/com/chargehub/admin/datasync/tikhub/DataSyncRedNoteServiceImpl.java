@@ -321,7 +321,7 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
             int playNum = (thumbNum + collectNum + shareNum + commentNum) * 10;
             String uid = "";
             if (!dataSyncParamContext.isScheduler()) {
-                String uidUrl = RED_NOTE_UID_URL + secUid;
+                String uidUrl = RED_NOTE_UID_URL + secUid + "?xsec_token=" + userNode.get("xsecToken").asText() + "&xsec_source=pc_note";
                 uid = dataSyncMessageQueue.retryWithExponentialBackoff(() -> {
                     try (Page newPage = playwrightBrowser.getBrowserContext().newPage()) {
                         Response response = newPage.navigate(uidUrl, new Page.NavigateOptions().setTimeout(BrowserConfig.LOAD_PAGE_TIMEOUT).setWaitUntil(WaitUntilState.COMMIT));
@@ -329,6 +329,7 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
                         return JsoupUtil.findContent(uidStream, "小红书号：");
                     }
                 }, RED_NOTE_RETRY, uidUrl);
+                Assert.hasText(uid, "获取小红书号失败");
             }
             SocialMediaWork socialMediaWork = new SocialMediaWork();
             socialMediaWork.setUrl(shareUrl);
