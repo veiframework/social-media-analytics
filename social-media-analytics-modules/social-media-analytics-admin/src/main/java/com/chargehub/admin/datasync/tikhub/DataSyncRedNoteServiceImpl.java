@@ -27,7 +27,6 @@ import com.chargehub.common.security.utils.DictUtils;
 import com.chargehub.common.security.utils.JacksonUtil;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.MissingNode;
-import com.microsoft.playwright.APIResponse;
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Response;
@@ -36,10 +35,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.parser.Parser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -173,9 +168,6 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
     @Override
     @SuppressWarnings("unchecked")
     public <T> SocialMediaWorkDetail<T> getWork(DataSyncParamContext dataSyncParamContext) {
-        if (TEST_DETAIL) {
-            return this.getWork0(dataSyncParamContext);
-        }
         HubProperties.SocialMediaDataApi socialMediaDataApi = hubProperties.getSocialMediaDataApi().get("tikhub");
         String token = socialMediaDataApi.getToken();
         String host = socialMediaDataApi.getHost();
@@ -363,91 +355,6 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
         }
     }
 
-
-    @SuppressWarnings("unchecked")
-    public <T> SocialMediaWorkDetail<T> getWork0(DataSyncParamContext dataSyncParamContext) {
-        BrowserContext browserContext = dataSyncParamContext.getBrowserContext();
-        String shareLink = dataSyncParamContext.getShareLink();
-        try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(browserContext)) {
-            Page page = playwrightBrowser.getPage();
-            APIResponse apiResponse = page.request().get(shareLink);
-            String html = apiResponse.text();
-            Document doc = Jsoup.parse(html, "", Parser.htmlParser());
-            Element script = doc.select("script").stream().filter(i -> i.html(new StringBuilder()).toString().contains("window.__INITIAL_STATE__="))
-                    .findFirst().orElse(null);
-            if (script == null) {
-                return null;
-            }
-            String globalJson = script.html().replace("window.__INITIAL_STATE__=", "").replace("undefined", "null");
-            JsonNode jsonNode = JacksonUtil.toObj(globalJson).at("/note/noteDetailMap");
-
-            JsonNode detailNode = jsonNode.get(jsonNode.fieldNames().next());
-            JsonNode noteNode = detailNode.get("note");
-            if (noteNode.isEmpty()) {
-                log.error("小红书笔记不存在" + shareLink);
-                SocialMediaWork socialMediaWork = new SocialMediaWork();
-                socialMediaWork.setShareLink(shareLink);
-                socialMediaWork.setWorkUid("-1");
-                return (SocialMediaWorkDetail<T>) new SocialMediaWorkDetail<>(socialMediaWork, null);
-            }
-            JsonNode userNode = noteNode.get("user");
-            String nickname = userNode.get("nickname").asText();
-            String secUid = userNode.get("userId").asText();
-            String workUid = noteNode.get("noteId").asText();
-            String desc = noteNode.get("desc").asText("");
-            String title = noteNode.get("title").asText();
-            String topics = MessageFormatUtils.extractHashtagsStr(desc);
-            String customType = "";
-            Map<String, String> socialMediaCustomType = DictUtils.getDictLabelMap("social_media_custom_type");
-            for (Map.Entry<String, String> entry : socialMediaCustomType.entrySet()) {
-                String k = entry.getKey();
-                String v = entry.getValue();
-                if (desc.contains(k)) {
-                    customType = v;
-                }
-            }
-            Date postTime = DateUtil.date(noteNode.get("time").asLong(0));
-            //内容类型 （normal=图文笔记，video=视频笔记）
-            String workType = "normal".equals(noteNode.get("type").asText()) ? WorkTypeEnum.RICH_TEXT.getType() : WorkTypeEnum.NORMAL_VIDEO.getType();
-            //媒体类型 (2=图片, 4=视频)
-            String mediaType = workType.equals(WorkTypeEnum.RICH_TEXT.getType()) ? MediaTypeEnum.PICTURE.getType() : MediaTypeEnum.VIDEO.getType();
-            String shareUrl = "https://www.xiaohongshu.com/explore/" + workUid + "?xsec_token=" + noteNode.get("xsecToken").asText();
-            JsonNode interactInfo = noteNode.get("interactInfo");
-
-            int thumbNum = BrowserConfig.clearWord(interactInfo.get("likedCount").asText());
-            int collectNum = BrowserConfig.clearWord(interactInfo.get("collectedCount").asText());
-            int shareNum = BrowserConfig.clearWord(interactInfo.get("shareCount").asText());
-            int commentNum = BrowserConfig.clearWord(interactInfo.get("commentCount").asText());
-
-
-            // 基于3.3%互动率估算,目前无法从 view_count获取浏览量
-            int playNum = (thumbNum + collectNum + shareNum + commentNum) * 10;
-
-            SocialMediaWork socialMediaWork = new SocialMediaWork();
-            socialMediaWork.setUrl(shareUrl);
-            socialMediaWork.setPlatformId(SocialMediaPlatformEnum.RED_NOTE.getDomain());
-            socialMediaWork.setDescription(desc);
-            socialMediaWork.setTitle(StringUtils.isNotBlank(title) ? title : MessageFormatUtils.cleanDescription(desc));
-            socialMediaWork.setTopics(topics);
-            socialMediaWork.setWorkUid(workUid);
-            socialMediaWork.setPostTime(postTime);
-            socialMediaWork.setMediaType(mediaType);
-            socialMediaWork.setType(workType);
-            socialMediaWork.setThumbNum(thumbNum);
-            socialMediaWork.setCollectNum(collectNum);
-            socialMediaWork.setShareNum(shareNum);
-            socialMediaWork.setCommentNum(commentNum);
-            socialMediaWork.setLikeNum(thumbNum);
-            socialMediaWork.setPlayNum(playNum);
-            socialMediaWork.setCustomType(customType);
-            socialMediaWork.setStatisticMd5(socialMediaWork.generateStatisticMd5());
-            SocialMediaUserInfo socialMediaUserInfo = new SocialMediaUserInfo();
-            socialMediaUserInfo.setSecUid(secUid);
-            socialMediaUserInfo.setNickname(nickname);
-            socialMediaUserInfo.setUid("");
-            return (SocialMediaWorkDetail<T>) new SocialMediaWorkDetail<>(socialMediaWork, socialMediaUserInfo);
-        }
-    }
 
     @SuppressWarnings("unchecked")
     @Override

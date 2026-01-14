@@ -17,21 +17,15 @@ import com.chargehub.admin.work.domain.SocialMediaWork;
 import com.chargehub.common.core.properties.HubProperties;
 import com.chargehub.common.core.utils.JsoupUtil;
 import com.chargehub.common.core.utils.MessageFormatUtils;
-import com.chargehub.common.security.utils.DictUtils;
 import com.chargehub.common.security.utils.JacksonUtil;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.microsoft.playwright.BrowserContext;
-import com.microsoft.playwright.ElementHandle;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Response;
-import com.microsoft.playwright.options.BoundingBox;
 import com.microsoft.playwright.options.WaitUntilState;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.parser.Parser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -100,193 +94,10 @@ public class KuaiShouSyncServiceImpl implements DataSyncService {
         return (SocialMediaWorkResult<T>) socialMediaWorkResult;
     }
 
-    @SuppressWarnings("unchecked")
+
     @Override
     public <T> SocialMediaWorkDetail<T> getWork(DataSyncParamContext dataSyncParamContext) {
-        boolean isScheduler = dataSyncParamContext.isScheduler();
-        BrowserContext browserContext = dataSyncParamContext.getBrowserContext();
-        String shareLink = dataSyncParamContext.getShareLink();
-        try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(browserContext)) {
-            Page page = playwrightBrowser.getPage();
-            AtomicInteger atomicInteger = new AtomicInteger(-1);
-            page.onResponse(response -> {
-                boolean graphql = response.url().contains("graphql");
-                if (!graphql) {
-                    return;
-                }
-                String postData = response.request().postData();
-                if (!postData.contains("commentListQuery")) {
-                    return;
-                }
-                byte[] body = response.body();
-                Integer commentCountV2 = JacksonUtil.readField(body, "commentCountV2", Integer.class);
-                if (commentCountV2 == null) {
-                    return;
-                }
-                atomicInteger.set(commentCountV2);
-            });
-            page.navigate(shareLink, new Page.NavigateOptions().setTimeout(90_000));
-            String currentUrl = page.url();
-            int commentNum = 0;
-            int collectNum = 0;
-            int thumbNum = 0;
-            int shareNum = 0;
-            int playNum = 0;
-            String nickname = "";
-            String uid = "";
-            String desc = "";
-            String title;
-            String topics;
-            String customType;
-            String workUid = "";
-            Date postTime = null;
-            String mediaType = "";
-            String workType = "";
-            String secUid = "";
-            if (currentUrl.contains("short-video")) {
-                if (page.isVisible("text=立即登录")) {
-                    log.error("快手需要重新登陆");
-                    return null;
-                }
-                if (page.isVisible("text=作品已失效")) {
-                    log.error("快手检测到对方已删除此作品! {}", dataSyncParamContext.getShareLink());
-                    SocialMediaWork socialMediaWork = new SocialMediaWork();
-                    socialMediaWork.setShareLink(dataSyncParamContext.getShareLink());
-                    socialMediaWork.setWorkUid("-1");
-                    return (SocialMediaWorkDetail<T>) new SocialMediaWorkDetail<>(socialMediaWork, null);
-                }
-                for (int i = 0; i < 60; i++) {
-                    int integer = atomicInteger.get();
-                    if (integer != -1) {
-                        commentNum = integer;
-                        break;
-                    }
-                    page.waitForTimeout(1000);
-                }
-                String html = page.content();
-                Document doc = Jsoup.parse(html, "", Parser.htmlParser());
-                Element script = doc.select("script").stream().filter(i -> i.html(new StringBuilder()).toString().contains("__APOLLO_STATE__"))
-                        .findFirst().orElse(null);
-                if (script == null) {
-                    log.error("快手内容没解析到" + shareLink);
-                    return null;
-                }
-                String json = script.html().replace("window.__APOLLO_STATE__ = ", "");
-                JsonNode jsonNode = JacksonUtil.toObj(json);
-                JsonNode defaultClient = jsonNode.get("defaultClient");
-                Iterator<Map.Entry<String, JsonNode>> fields = defaultClient.fields();
-                while (fields.hasNext()) {
-                    Map.Entry<String, JsonNode> entry = fields.next();
-                    String key = entry.getKey();
-                    JsonNode value = entry.getValue();
-                    if (key.startsWith("VisionVideoDetailPhoto")) {
-                        workUid = value.get("id").asText();
-                        thumbNum = value.get("realLikeCount").asInt();
-                        playNum = BrowserConfig.clearWord(value.get("viewCount").asText());
-                        shareNum = 0;
-                        collectNum = 0;
-                        desc = value.get("caption").asText();
-                        postTime = DateUtil.date(value.get("timestamp").asLong(0));
-                        mediaType = MediaTypeEnum.VIDEO.getType();
-                        workType = WorkTypeEnum.NORMAL_VIDEO.getType();
-                    }
-                    if (key.contains("VisionVideoDetailAuthor")) {
-                        nickname = value.get("name").asText();
-                        secUid = value.get("id").asText();
-                        if (!isScheduler) {
-                            Page popupPage = page.waitForPopup(() -> {
-                                ElementHandle element = page.querySelector("span[class*='profile-user-name-title']");
-                                BoundingBox box = element.boundingBox();
-                                double x = box.x + box.width / 2;
-                                double y = box.y + box.height / 2;
-                                page.mouse().move(x, y);
-                                page.mouse().click(x, y);
-                            });
-                            String fullText = popupPage.textContent(":text-matches(' 快手号：.*')");
-                            uid = fullText.replace(" 快手号：", "");
-                        }
-                    }
-                }
-            } else {
-                if (page.isVisible("text=作品不存在，可能已经被删除。")) {
-                    log.error("快手检测到对方已删除此作品! {}", dataSyncParamContext.getShareLink());
-                    SocialMediaWork socialMediaWork = new SocialMediaWork();
-                    socialMediaWork.setShareLink(dataSyncParamContext.getShareLink());
-                    socialMediaWork.setWorkUid("-1");
-                    return (SocialMediaWorkDetail<T>) new SocialMediaWorkDetail<>(socialMediaWork, null);
-                }
-                String html = page.content();
-                Document doc = Jsoup.parse(html, "", Parser.htmlParser());
-                Element script = doc.select("script").stream().filter(i -> i.html(new StringBuilder()).toString().contains("window.INIT_STATE"))
-                        .findFirst().orElse(null);
-                if (script == null) {
-                    log.error("快手内容没解析到" + shareLink);
-                    return null;
-                }
-                String json = script.html().replace("window.INIT_STATE = ", "");
-                JsonNode obj = JacksonUtil.toObj(json);
-                JsonNode jsonNode = null;
-                for (JsonNode node : obj) {
-                    if (node.has("photo")) {
-                        jsonNode = node;
-                        break;
-                    }
-                }
-                Assert.notNull(jsonNode, "快手获取作品失败" + shareLink);
-                JsonNode countsNode = jsonNode.get("counts");
-                collectNum = countsNode.get("collectionCount").asInt(0);
-                JsonNode photoNode = jsonNode.get("photo");
-                thumbNum = photoNode.get("likeCount").asInt(0);
-                shareNum = photoNode.path("shareCount").asInt(0);
-                commentNum = photoNode.get("commentCount").asInt(0);
-                playNum = photoNode.get("viewCount").asInt(0);
-                nickname = photoNode.get("userName").asText();
-                uid = photoNode.get("userId").asText();
-                secUid = photoNode.get("userEid").asText();
-                desc = photoNode.get("caption").asText();
-                postTime = DateUtil.date(photoNode.get("timestamp").asLong(0));
-                String shareInfo = photoNode.get("share_info").asText();
-                Map<String, String> paramMap = HttpUtil.decodeParamMap(shareInfo, StandardCharsets.UTF_8);
-                workUid = paramMap.get("photoId");
-                mediaType = MediaTypeEnum.PICTURE.getType();
-                workType = WorkTypeEnum.RICH_TEXT.getType();
-            }
-            title = MessageFormatUtils.cleanDescription(desc);
-            topics = MessageFormatUtils.extractHashtagsStr(desc);
-            customType = "";
-            Map<String, String> socialMediaCustomType = DictUtils.getDictLabelMap("social_media_custom_type");
-            for (Map.Entry<String, String> entry : socialMediaCustomType.entrySet()) {
-                String k = entry.getKey();
-                String v = entry.getValue();
-                if (desc.contains(k)) {
-                    customType = v;
-                }
-            }
-            SocialMediaWork socialMediaWork = new SocialMediaWork();
-            socialMediaWork.setUrl(currentUrl);
-            socialMediaWork.setShareLink(shareLink);
-            socialMediaWork.setPlatformId(SocialMediaPlatformEnum.KUAI_SHOU.getDomain());
-            socialMediaWork.setDescription(desc);
-            socialMediaWork.setWorkUid(workUid);
-            socialMediaWork.setPostTime(postTime);
-            socialMediaWork.setMediaType(mediaType);
-            socialMediaWork.setType(workType);
-            socialMediaWork.setThumbNum(thumbNum);
-            socialMediaWork.setCollectNum(collectNum);
-            socialMediaWork.setShareNum(shareNum);
-            socialMediaWork.setCommentNum(commentNum);
-            socialMediaWork.setLikeNum(0);
-            socialMediaWork.setPlayNum(playNum);
-            socialMediaWork.setTitle(title);
-            socialMediaWork.setTopics(topics);
-            socialMediaWork.setCustomType(customType);
-            socialMediaWork.setStatisticMd5(socialMediaWork.generateStatisticMd5());
-            SocialMediaUserInfo socialMediaUserInfo = new SocialMediaUserInfo();
-            socialMediaUserInfo.setSecUid(secUid);
-            socialMediaUserInfo.setNickname(nickname);
-            socialMediaUserInfo.setUid(uid);
-            return (SocialMediaWorkDetail<T>) new SocialMediaWorkDetail<>(socialMediaWork, socialMediaUserInfo);
-        }
+        return null;
     }
 
     @Override

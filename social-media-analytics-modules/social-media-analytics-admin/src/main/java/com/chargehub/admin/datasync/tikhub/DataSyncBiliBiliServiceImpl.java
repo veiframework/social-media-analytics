@@ -17,7 +17,6 @@ import com.chargehub.common.core.properties.HubProperties;
 import com.chargehub.common.security.utils.DictUtils;
 import com.chargehub.common.security.utils.JacksonUtil;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Page;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.MapUtils;
@@ -133,10 +132,9 @@ public class DataSyncBiliBiliServiceImpl implements DataSyncService {
     @SuppressWarnings("unchecked")
     @Override
     public <T> SocialMediaWorkDetail<T> getWork(DataSyncParamContext dataSyncParamContext) {
-        BrowserContext browserContext = dataSyncParamContext.getBrowserContext();
         String shareLink = dataSyncParamContext.getShareLink();
-        try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(browserContext)) {
-            Page page = playwrightBrowser.getPage();
+        PlaywrightBrowser playwrightBrowser = dataSyncParamContext.getPlaywrightBrowser();
+        try (Page page = playwrightBrowser.newPage()) {
             page.navigate(shareLink, new Page.NavigateOptions().setTimeout(60_000));
             playwrightBrowser.randomMove();
             String string;

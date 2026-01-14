@@ -45,45 +45,27 @@ public class PlaywrightBrowser implements AutoCloseable {
 
     private Proxy proxy;
 
-    private static volatile boolean headless;
+    private boolean headless;
 
     private BrowserConfig browserConfig;
 
-    public PlaywrightBrowser(String username, String password, String storageState) {
-        this(storageState);
-        this.username = username;
-        this.password = password;
-    }
 
     public PlaywrightBrowser(Proxy proxy) {
-        this(proxy, null);
+        this(proxy, true);
     }
 
-    public PlaywrightBrowser(Proxy proxy, Internet.UserAgent browserType) {
+    public PlaywrightBrowser(Proxy proxy, boolean headless) {
+        this(proxy, null, headless);
+    }
+
+    public PlaywrightBrowser(Proxy proxy, Internet.UserAgent browserType, boolean headless) {
         this.proxy = proxy;
         this.playwright = Playwright.create();
         this.browserConfig = new BrowserConfig(this.playwright, browserType);
-        this.browserContext = PlaywrightBrowser.buildBrowserContext(this.browserConfig, null, proxy);
+        this.headless = headless;
+        this.browserContext = buildBrowserContext(this.browserConfig, null, proxy);
     }
 
-    public PlaywrightBrowser(String storageState) {
-        String loginState = null;
-        if (StringUtils.isNotBlank(storageState)) {
-            loginState = storageState;
-        }
-        this.playwright = Playwright.create();
-        this.browserConfig = new BrowserConfig(this.playwright);
-        this.browserContext = PlaywrightBrowser.buildBrowserContext(this.browserConfig, loginState);
-    }
-
-    public PlaywrightBrowser(BrowserContext browserContext) {
-        this.page = browserContext.newPage();
-
-    }
-
-    public static void setHeadless(boolean headless) {
-        PlaywrightBrowser.headless = headless;
-    }
 
     /**
      * 获取代理
@@ -106,13 +88,9 @@ public class PlaywrightBrowser implements AutoCloseable {
         }
     }
 
-    public static BrowserContext buildBrowserContext(BrowserConfig browserConfig, String storageState) {
-        Proxy proxy = buildProxy();
-        return buildBrowserContext(browserConfig, storageState, proxy);
-    }
 
     @SuppressWarnings("all")
-    public static BrowserContext buildBrowserContext(BrowserConfig browserConfig, String storageState, Proxy proxy) {
+    public BrowserContext buildBrowserContext(BrowserConfig browserConfig, String storageState, Proxy proxy) {
         // 随机选择一个浏览器
         BrowserType browserType = browserConfig.getBrowserType();
         log.debug("当前浏览器: {}", browserType.name());
@@ -159,7 +137,7 @@ public class PlaywrightBrowser implements AutoCloseable {
             this.browserContext = null;
         }
         this.browserConfig = new BrowserConfig(this.playwright);
-        this.browserContext = PlaywrightBrowser.buildBrowserContext(this.browserConfig, null, proxy);
+        this.browserContext = buildBrowserContext(this.browserConfig, null, proxy);
         return this.browserContext;
     }
 

@@ -4,7 +4,6 @@ import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.net.url.UrlBuilder;
 import cn.hutool.core.net.url.UrlPath;
-import cn.hutool.core.util.RandomUtil;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpStatus;
 import cn.hutool.http.HttpUtil;
@@ -25,10 +24,6 @@ import com.chargehub.common.core.utils.MessageFormatUtils;
 import com.chargehub.common.security.utils.DictUtils;
 import com.chargehub.common.security.utils.JacksonUtil;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.microsoft.playwright.BrowserContext;
-import com.microsoft.playwright.Page;
-import com.microsoft.playwright.Response;
-import com.microsoft.playwright.Route;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.collections4.CollectionUtils;
@@ -46,7 +41,6 @@ import java.io.IOException;
 import java.net.Proxy;
 import java.text.MessageFormat;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -181,298 +175,15 @@ public class DataSyncDouYinServiceImpl implements DataSyncService {
         return (SocialMediaWorkResult<T>) socialMediaWorkResult;
     }
 
-    @SuppressWarnings("unchecked")
-    public <T> SocialMediaWorkDetail<T> getWorkTikhub(DataSyncParamContext dataSyncParamContext) {
-        String shareLink = dataSyncParamContext.getShareLink();
-        HubProperties.SocialMediaDataApi socialMediaDataApi = hubProperties.getSocialMediaDataApi().get("tikhub");
-        String token = socialMediaDataApi.getToken();
-        String host = socialMediaDataApi.getHost();
-        for (int i = 0; i <= RETRY; i++) {
-            try (HttpResponse execute = HttpUtil.createGet(host + WORK_DETAIL_SHARE_LINK).bearerAuth(token)
-                    .form("share_url", shareLink).execute()) {
-                String body = execute.body();
-                JsonNode jsonNode = JacksonUtil.toObj(body);
-                int code = jsonNode.path("code").asInt(500);
-                Assert.isTrue(code == HttpStatus.HTTP_OK, "获取作品信息失败" + jsonNode);
-                JsonNode node = jsonNode.at("/data/aweme_detail");
-                if (node == null || node.isEmpty()) {
-                    log.error("抖音检测到对方已删除视频作品! {}", dataSyncParamContext.getShareLink());
-                    SocialMediaWork socialMediaWork = new SocialMediaWork();
-                    socialMediaWork.setShareLink(dataSyncParamContext.getShareLink());
-                    socialMediaWork.setWorkUid("-1");
-                    return (SocialMediaWorkDetail<T>) new SocialMediaWorkDetail<>(socialMediaWork, null);
-                }
-                String uniqueId = node.at("/author/unique_id").asText();
-                String nickname = node.at("/author/nickname").asText();
-                String uid = StringUtils.isBlank(uniqueId) ? node.at("/author/short_id").asText() : uniqueId;
-                String workUid = node.get("aweme_id").asText();
-                Date postTime = DateUtil.date(node.get("create_time").asLong(0) * 1000L);
-                //内容类型 (0=普通视频, 68=图文)
-                String workType = node.get("aweme_type").asInt() == 0 ? WorkTypeEnum.NORMAL_VIDEO.getType() : WorkTypeEnum.RICH_TEXT.getType();
-                //媒体类型 (2=图片, 4=视频)
-                String mediaType = node.get("media_type").asInt() == 4 ? MediaTypeEnum.VIDEO.getType() : MediaTypeEnum.PICTURE.getType();
-                int thumbNum = node.at("/statistics/digg_count").asInt(0);
-                int collectNum = node.at("/statistics/collect_count").asInt(0);
-                int shareNum = node.at("/statistics/share_count").asInt(0);
-                int commentNum = node.at("/statistics/comment_count").asInt(0);
-                int likeNum = node.at("/statistics/admire_count").asInt(0);
-                JsonNode textExtra = node.get("text_extra");
-                String customType = "";
-                Map<String, String> socialMediaCustomType = DictUtils.getDictLabelMap("social_media_custom_type");
-                for (JsonNode textNode : textExtra) {
-                    String hashtagName = textNode.at("/hashtag_name").asText("");
-                    String type = socialMediaCustomType.get(hashtagName);
-                    if (StringUtils.isNotBlank(type)) {
-                        customType = type;
-                    }
-                }
-
-                String desc = node.get("desc").asText("");
-                String title = MessageFormatUtils.cleanDescription(desc);
-                String topics = MessageFormatUtils.extractHashtagsStr(desc);
-                String secUid = node.at("/author/sec_uid").asText();
-                String shareUrl = "https://www.douyin.com/user/" + secUid + "?modal_id=" + workUid;
-                SocialMediaWork socialMediaWork = new SocialMediaWork();
-                socialMediaWork.setUrl(shareUrl);
-                socialMediaWork.setPlatformId(this.platform().getDomain());
-                socialMediaWork.setDescription(desc);
-                socialMediaWork.setWorkUid(workUid);
-                socialMediaWork.setPostTime(postTime);
-                socialMediaWork.setMediaType(mediaType);
-                socialMediaWork.setType(workType);
-                socialMediaWork.setThumbNum(thumbNum);
-                socialMediaWork.setCollectNum(collectNum);
-                socialMediaWork.setShareNum(shareNum);
-                socialMediaWork.setCommentNum(commentNum);
-                socialMediaWork.setLikeNum(likeNum);
-                socialMediaWork.setCustomType(customType);
-                socialMediaWork.setTitle(title);
-                socialMediaWork.setTopics(topics);
-                if (!dataSyncParamContext.isScheduler()) {
-                    dataSyncMessageQueue.syncDouyinExecuteSignal(() -> {
-                        try (HttpResponse multiWorksExecute = HttpUtil.createGet(host + GET_ONE_WORK_STATISTIC).bearerAuth(token).form("aweme_ids", workUid).execute()) {
-                            String result = multiWorksExecute.body();
-                            JsonNode multiWorkNode = JacksonUtil.toObj(result);
-                            int code0 = multiWorkNode.path("code").asInt(500);
-                            if (code0 != HttpStatus.HTTP_OK) {
-                                return new DataSyncMessageQueue.AsyncResult(false, result);
-                            }
-                            JsonNode statisticsNodes = multiWorkNode.at("/data/statistics_list");
-                            JsonNode statisticsNode = statisticsNodes.get(0);
-                            int playNum = statisticsNode.get("play_count").asInt(0);
-                            socialMediaWork.setPlayNum(playNum);
-                            return new DataSyncMessageQueue.AsyncResult(true, null);
-                        } catch (Exception e) {
-                            return new DataSyncMessageQueue.AsyncResult(false, workUid + ": " + e.getMessage());
-                        }
-                    }, RETRY);
-                }
-                socialMediaWork.setStatisticMd5(socialMediaWork.generateStatisticMd5());
-                SocialMediaUserInfo socialMediaUserInfo = new SocialMediaUserInfo();
-                socialMediaUserInfo.setNickname(nickname);
-                socialMediaUserInfo.setUid(uid);
-                socialMediaUserInfo.setSecUid(secUid);
-                return (SocialMediaWorkDetail<T>) new SocialMediaWorkDetail<>(socialMediaWork, socialMediaUserInfo);
-            } catch (Exception e) {
-                log.error("获取抖音视频详情失败,重试" + i, e);
-            }
-        }
-        log.error("抖音视频详情重试失败" + shareLink);
+    @Override
+    public <T> SocialMediaWorkResult<T> getWorks(DataSyncWorksParams params) {
         return null;
     }
 
-    @SuppressWarnings("unchecked")
-    @Override
-    public <T> SocialMediaWorkResult<T> getWorks(DataSyncWorksParams params) {
-        Map<String, String> workUids = params.getWorkUids();
-        String secUid = params.getSecUid();
-        SocialMediaAccountVo socialMediaAccountVo = new SocialMediaAccountVo();
-        socialMediaAccountVo.setSecUid(secUid);
-        SocialMediaWorkResult<SocialMediaWork> socialMediaWorkResult = new SocialMediaWorkResult<>();
-        Map<String, SocialMediaWork> socialMediaWorkMap = new HashMap<>();
-        BrowserContext browserContext = params.getBrowserContext();
-        try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(browserContext)) {
-            Page page = playwrightBrowser.getPage();
-            page.route(url -> url.contains(".jpeg") || url.contains(".webp"), Route::abort);
-            AtomicBoolean hasMore = new AtomicBoolean(true);
-            page.onResponse(res -> {
-                if (res.url().contains("/aweme/v1/web/aweme/post/") && res.ok()) {
-                    String body = new String(res.body());
-                    if (StringUtils.isBlank(body)) {
-                        log.error("抖音响应数据空了: " + secUid + "\n" + body);
-                        return;
-                    }
-                    JsonNode jsonNode = JacksonUtil.toObj(body);
-                    int more = jsonNode.get("has_more").asInt();
-                    hasMore.set(more > 0);
-                    JsonNode node = jsonNode.get("aweme_list");
-                    if (node == null || node.isEmpty() || node.isNull()) {
-                        return;
-                    }
-                    for (JsonNode item : node) {
-                        String workUid = item.get("aweme_id").asText("");
-                        if (!workUids.containsKey(workUid)) {
-                            continue;
-                        }
-                        this.buildWork(socialMediaAccountVo, item, socialMediaWorkMap);
-                    }
-                }
-            });
-            String enterUrl = "https://www.douyin.com/user/" + secUid;
-            page.navigate(enterUrl, new Page.NavigateOptions().setTimeout(60_000));
-            if (page.isVisible("text=登陆")) {
-                log.error("抖音需要重新登陆! {}", enterUrl);
-            }
-            for (int i = 0; i < 300; i++) {
-                if (!hasMore.get()) {
-                    break;
-                }
-                page.waitForTimeout(400);
-                int randomInt = RandomUtil.randomInt(600, 800);
-                page.mouse().wheel(0, randomInt);
-                try {
-                    page.evaluate("const container = document.querySelector(\"div[class*='parent-route-container']\"); container.scrollBy(0," + randomInt + ")");
-                } catch (Exception e) {
-                    //nothing to do
-                }
-            }
-            List<SocialMediaWork> socialMediaWorks = socialMediaWorkMap.values().stream().map(i -> {
-                String md5 = i.generateStatisticMd5();
-                i.setStatisticMd5(md5);
-                return i;
-            }).collect(Collectors.toList());
-            socialMediaWorkResult.setWorks(socialMediaWorks);
-            socialMediaWorkResult.setStorageState(page.context().storageState());
-            return (SocialMediaWorkResult<T>) socialMediaWorkResult;
-        }
-    }
 
-
-    @SuppressWarnings("unchecked")
     @Override
     public <T> SocialMediaWorkDetail<T> getWork(DataSyncParamContext dataSyncParamContext) {
-        BrowserContext browserContext = dataSyncParamContext.getBrowserContext();
-        String shareLink = dataSyncParamContext.getShareLink();
-        String redirectUrl = dataSyncParamContext.getRedirectUrl();
-        boolean isNote;
-        if (StringUtils.isBlank(redirectUrl)) {
-            isNote = dataSyncParamContext.getMediaType().equals(MediaTypeEnum.PICTURE.getType());
-        } else {
-            isNote = redirectUrl.contains("note");
-        }
-        if (isNote) {
-            return this.getNoteWork(dataSyncParamContext);
-        }
-        if (TIKHUB) {
-            return this.getWorkTikhub(dataSyncParamContext);
-        }
-        try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(browserContext)) {
-            Page page = playwrightBrowser.getPage();
-            page.route(url -> url.contains(".jpeg") || url.contains(".webp"), Route::abort);
-            String body;
-            try {
-                Response response = page.waitForResponse(res -> res.url().contains("/aweme/detail/"), () -> {
-                    page.navigate(shareLink, new Page.NavigateOptions().setTimeout(90_000));
-                    if (page.isVisible("text=你要观看的视频不存在")) {
-                        throw new IllegalArgumentException("return");
-                    }
-                });
-                body = new String(response.body());
-            } catch (Exception e) {
-                if ("return".equals(e.getMessage())) {
-                    log.error("抖音检测到对方已删除视频作品! {}", dataSyncParamContext.getShareLink());
-                    SocialMediaWork socialMediaWork = new SocialMediaWork();
-                    socialMediaWork.setShareLink(dataSyncParamContext.getShareLink());
-                    socialMediaWork.setWorkUid("-1");
-                    return (SocialMediaWorkDetail<T>) new SocialMediaWorkDetail<>(socialMediaWork, null);
-                }
-                throw e;
-            }
-            if (StringUtils.isBlank(body)) {
-                log.error("抖音获取作品为空" + shareLink);
-                return null;
-            }
-            playwrightBrowser.randomMove();
-            JsonNode jsonNode = JacksonUtil.toObj(body);
-            JsonNode node = jsonNode.get("aweme_detail");
-            if (node.isEmpty()) {
-                log.error("抖音获取作品详情空了" + shareLink);
-                return null;
-            }
-            String secUid = node.at("/author/sec_uid").asText();
-            String nickname = node.at("/author/nickname").asText();
-            String uniqueId = node.at("/author/unique_id").asText();
-            String uid = StringUtils.isBlank(uniqueId) ? node.at("/author/short_id").asText() : uniqueId;
-            String desc = node.get("desc").asText("");
-            String title = MessageFormatUtils.cleanDescription(desc);
-            String topics = MessageFormatUtils.extractHashtagsStr(desc);
-            String workUid = node.get("aweme_id").asText();
-            String shareUrl = "https://www.douyin.com/video/" + workUid;
-            Date postTime = DateUtil.date(node.get("create_time").asLong(0) * 1000L);
-            //内容类型 (0=普通视频, 68=图文)
-            String workType = node.get("aweme_type").asInt() == 0 ? WorkTypeEnum.NORMAL_VIDEO.getType() : WorkTypeEnum.RICH_TEXT.getType();
-            //媒体类型 (2=图片, 4=视频)
-            String mediaType = node.get("media_type").asInt() == 4 ? MediaTypeEnum.VIDEO.getType() : MediaTypeEnum.PICTURE.getType();
-            JsonNode textExtra = node.get("text_extra");
-            String customType = "";
-            Map<String, String> socialMediaCustomType = DictUtils.getDictLabelMap("social_media_custom_type");
-            for (JsonNode textNode : textExtra) {
-                String hashtagName = textNode.at("/hashtag_name").asText("");
-                String type = socialMediaCustomType.get(hashtagName);
-                if (StringUtils.isNotBlank(type)) {
-                    customType = type;
-                }
-            }
-            int thumbNum = node.at("/statistics/digg_count").asInt(0);
-            int collectNum = node.at("/statistics/collect_count").asInt(0);
-            int shareNum = node.at("/statistics/share_count").asInt(0);
-            int commentNum = node.at("/statistics/comment_count").asInt(0);
-            SocialMediaWork socialMediaWork = new SocialMediaWork();
-            socialMediaWork.setUrl(shareUrl);
-            socialMediaWork.setPlatformId(SocialMediaPlatformEnum.DOU_YIN.getDomain());
-            socialMediaWork.setDescription(desc);
-            socialMediaWork.setWorkUid(workUid);
-            socialMediaWork.setPostTime(postTime);
-            socialMediaWork.setMediaType(mediaType);
-            socialMediaWork.setType(workType);
-            socialMediaWork.setThumbNum(thumbNum);
-            socialMediaWork.setCollectNum(collectNum);
-            socialMediaWork.setShareNum(shareNum);
-            socialMediaWork.setCommentNum(commentNum);
-            socialMediaWork.setLikeNum(0);
-            socialMediaWork.setTitle(title);
-            socialMediaWork.setTopics(topics);
-            socialMediaWork.setCustomType(customType);
-            if (!dataSyncParamContext.isScheduler()) {
-                log.debug("抖音开始获取播放量");
-                HubProperties.SocialMediaDataApi socialMediaDataApi = hubProperties.getSocialMediaDataApi().get("tikhub");
-                String token = socialMediaDataApi.getToken();
-                String host = socialMediaDataApi.getHost();
-                dataSyncMessageQueue.syncDouyinExecuteSignal(() -> {
-                    try (HttpResponse multiWorksExecute = HttpUtil.createGet(host + GET_ONE_WORK_STATISTIC).timeout(60_000).bearerAuth(token).form("aweme_ids", workUid).execute()) {
-                        String result = multiWorksExecute.body();
-                        JsonNode multiWorkNode = JacksonUtil.toObj(result);
-                        int code0 = multiWorkNode.path("code").asInt(500);
-                        if (code0 != HttpStatus.HTTP_OK) {
-                            return new DataSyncMessageQueue.AsyncResult(false, result);
-                        }
-                        JsonNode statisticsNodes = multiWorkNode.at("/data/statistics_list");
-                        JsonNode statisticsNode = statisticsNodes.get(0);
-                        int playNum = statisticsNode.get("play_count").asInt(0);
-                        socialMediaWork.setPlayNum(playNum);
-                        return new DataSyncMessageQueue.AsyncResult(true, null);
-                    } catch (Exception e) {
-                        return new DataSyncMessageQueue.AsyncResult(false, workUid + ": " + e.getMessage());
-                    }
-                }, RETRY);
-            }
-            socialMediaWork.setStatisticMd5(socialMediaWork.generateStatisticMd5());
-            SocialMediaUserInfo socialMediaUserInfo = new SocialMediaUserInfo();
-            socialMediaUserInfo.setNickname(nickname);
-            socialMediaUserInfo.setUid(uid);
-            socialMediaUserInfo.setSecUid(secUid);
-            return (SocialMediaWorkDetail<T>) new SocialMediaWorkDetail<>(socialMediaWork, socialMediaUserInfo);
-        }
+        return null;
     }
 
     @SuppressWarnings("unchecked")

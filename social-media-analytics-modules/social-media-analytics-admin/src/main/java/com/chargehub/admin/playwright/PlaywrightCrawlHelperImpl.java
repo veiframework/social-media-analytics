@@ -1,9 +1,7 @@
 package com.chargehub.admin.playwright;
 
-import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.chargehub.admin.account.domain.SocialMediaAccount;
 import com.chargehub.admin.account.mapper.SocialMediaAccountMapper;
-import com.chargehub.common.core.properties.HubProperties;
 import com.chargehub.common.redis.service.RedisService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -28,11 +26,9 @@ public class PlaywrightCrawlHelperImpl implements PlaywrightCrawlHelper {
     @Autowired
     private RedisService redisService;
 
-    public PlaywrightCrawlHelperImpl(HubProperties hubProperties) {
-        boolean headless = hubProperties.isHeadless();
-        PlaywrightBrowser.setHeadless(headless);
+    public PlaywrightCrawlHelperImpl() {
         //项目启动时初始化playwright组件
-        try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(StringPool.EMPTY)) {
+        try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(null)) {
             //nothing to do
         }
     }
