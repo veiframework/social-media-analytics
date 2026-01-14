@@ -172,16 +172,15 @@ public abstract class AbstractSyncWorkScheduler {
                         continue;
                     }
                     String id = existWork.getId();
-                    Date updateTime = existWork.getUpdateTime();
                     SocialMediaWork updateWork = existWork.computeMd5(newWork);
                     Integer priority;
                     boolean isChanged = updateWork != null;
                     if (isChanged) {
-                        priority = SocialMediaWorkPriorityService.computePriority(now, updateTime, updateWork, allPriority);
+                        priority = SocialMediaWorkPriorityService.computePriority(now, existWork, updateWork, allPriority);
                         updateWork.setPriority(priority);
                         updateList.add(updateWork);
                     } else {
-                        priority = SocialMediaWorkPriorityService.computePriority(now, updateTime, existWork, allPriority);
+                        priority = SocialMediaWorkPriorityService.computePriority(now, existWork, existWork, allPriority);
                         if (!existWork.getPriority().equals(priority)) {
                             //优先级变化了才更新
                             SocialMediaWork work = new SocialMediaWork();
