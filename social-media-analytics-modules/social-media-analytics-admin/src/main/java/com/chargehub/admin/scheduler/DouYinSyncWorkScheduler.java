@@ -218,7 +218,7 @@ public class DouYinSyncWorkScheduler extends AbstractSyncWorkScheduler {
 
     public static void reloadCache() {
         com.microsoft.playwright.options.Proxy browserProxy = PlaywrightBrowser.buildProxy();
-        for (Internet.UserAgent browser : BrowserConfig.BROWSERS) {
+        for (Internet.UserAgent browser : BrowserConfig.getBrowserTypes()) {
             for (int i = 0; i < 10; i++) {
                 try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(browserProxy, browser)) {
                     navigateToDouYinUserPage(playwrightBrowser);

@@ -89,8 +89,7 @@ public class PlainClass {
     public void testKuaishou2() {
         try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(PlaywrightBrowser.buildProxy())) {
             Page page = playwrightBrowser.newPage();
-            Response navigate = page.navigate("https://v.kuaishou.com/KZbr8k8A", new Page.NavigateOptions().setTimeout(BrowserConfig.LOAD_PAGE_TIMEOUT));
-            System.out.println(navigate.text());
+            Response navigate = page.navigate("https://v.douyin.com/y0XdbY0Ynmg/", new Page.NavigateOptions().setTimeout(BrowserConfig.LOAD_PAGE_TIMEOUT));
             playwrightBrowser.getPage().waitForTimeout(600_00000);
         }
     }
@@ -141,5 +140,15 @@ public class PlainClass {
         }
     }
 
-
+    @Test
+    public void testFingerprint() {
+        PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(PlaywrightBrowser.buildProxy());
+        for (int i = 0; i < 4; i++) {
+            playwrightBrowser.getBrowserContext().addInitScript("localStorage.clear(); sessionStorage.clear();");
+            Page page = playwrightBrowser.newPage();
+            Response navigate = page.navigate("https://ifconfig.me/all.json");
+            System.out.println(navigate.text());
+            page.close();
+        }
+    }
 }

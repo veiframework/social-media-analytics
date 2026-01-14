@@ -35,7 +35,8 @@ import java.util.regex.Pattern;
 @Data
 public class BrowserConfig {
 
-    public static final List<Internet.UserAgent> BROWSERS = Lists.newArrayList(
+
+    protected static final List<Internet.UserAgent> BROWSERS = Lists.newArrayList(
             Internet.UserAgent.CHROME
             , Internet.UserAgent.FIREFOX
             , Internet.UserAgent.SAFARI
@@ -54,6 +55,17 @@ public class BrowserConfig {
             {1920, 1200},
             {2560, 1440}
     };
+
+    private static final List<String> CHROME_ARGS = Lists.newArrayList(
+            "--no-sandbox"
+            , "--disable-web-security"
+            , "--disable-setuid-sandbox"
+            , "--disable-dev-shm-usage"
+            , "--disable-blink-features=AutomationControlled"
+            , "--disable-component-update",
+            "--allow-running-insecure-content",
+            "--unsafely-treat-insecure-origin-as-secure",
+            "--ignore-certificate-errors");
 
     private static final List<String> WEBKIT_UA = Lists.newArrayList(
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15",
@@ -145,20 +157,7 @@ public class BrowserConfig {
     public void setPlaywright(Playwright playwright) {
         if (this.userAgent == Internet.UserAgent.CHROME) {
             this.randomUa = RandomUtil.randomEle(CHROME_UA);
-            this.args = Lists.newArrayList(
-                    "--no-sandbox"
-                    , "--disable-web-security"
-//                       TODO 屏蔽webgl警告,未来需要截图的话需要开启
-                    , "--disable-gpu"
-                    , "--disable-setuid-sandbox"
-                    , "--disable-dev-shm-usage"
-                    , "--disable-blink-features=AutomationControlled"
-                    , "--MOZ_DISABLE_FIREFOX_SAFEBROWSING=1"
-                    , "--MOZ_DISABLE_TELEMETRY=1"
-                    , "--disable-component-update",
-                    "--allow-running-insecure-content",
-                    "--unsafely-treat-insecure-origin-as-secure",
-                    "--ignore-certificate-errors");
+            this.args = CHROME_ARGS;
             String version = BrowserConfig.extractChromeMajorVersion(randomUa);
             this.extraHeaders = MapUtil.of("Sec-Ch-Ua", "\"Google Chrome\";v=\"" + version + "\", \"Chromium\";v=\"" + version + "\", \"Not A(Brand\";v=\"24\"");
             this.browserType = playwright.chromium();
@@ -231,14 +230,9 @@ public class BrowserConfig {
         }
     }
 
-    public static void main(String[] args) {
-        PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(PlaywrightBrowser.buildProxy());
-        for (int i = 0; i < 4; i++) {
-            playwrightBrowser.getBrowserContext().addInitScript("localStorage.clear(); sessionStorage.clear();");
-            Page page = playwrightBrowser.newPage();
-            Response navigate = page.navigate("https://ifconfig.me/all.json");
-            System.out.println(navigate.text());
-            page.close();
-        }
+    public static List<Internet.UserAgent> getBrowserTypes() {
+        return BROWSERS;
     }
+
+
 }
