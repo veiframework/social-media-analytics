@@ -45,8 +45,6 @@ public class PlaywrightBrowser implements AutoCloseable {
 
     private Proxy proxy;
 
-    private boolean headless;
-
     private BrowserConfig browserConfig;
 
 
@@ -61,8 +59,7 @@ public class PlaywrightBrowser implements AutoCloseable {
     public PlaywrightBrowser(Proxy proxy, Internet.UserAgent browserType, boolean headless) {
         this.proxy = proxy;
         this.playwright = Playwright.create();
-        this.browserConfig = new BrowserConfig(this.playwright, browserType);
-        this.headless = headless;
+        this.browserConfig = new BrowserConfig(this.playwright, browserType, headless);
         this.browserContext = buildBrowserContext(this.browserConfig, null, proxy);
     }
 
@@ -101,6 +98,7 @@ public class PlaywrightBrowser implements AutoCloseable {
         String randomUa = browserConfig.getRandomUa();
         String fingerprint = browserConfig.getFingerprint();
         Path executablePath = browserConfig.getExecutablePath();
+        boolean headless = browserConfig.isHeadless();
         Browser.NewContextOptions newContextOptions = new Browser.NewContextOptions()
                 .setIgnoreHTTPSErrors(true)
                 .setLocale("zh-CN")
@@ -121,7 +119,6 @@ public class PlaywrightBrowser implements AutoCloseable {
     }
 
     public BrowserContext newContext() {
-        this.browserConfig = null;
         if (this.page != null) {
             if (!this.page.isClosed()) {
                 this.page.close();
@@ -136,7 +133,9 @@ public class PlaywrightBrowser implements AutoCloseable {
             }
             this.browserContext = null;
         }
-        this.browserConfig = new BrowserConfig(this.playwright);
+        boolean headless = this.browserConfig.isHeadless();
+        this.browserConfig = null;
+        this.browserConfig = new BrowserConfig(this.playwright, headless);
         this.browserContext = buildBrowserContext(this.browserConfig, null, proxy);
         return this.browserContext;
     }

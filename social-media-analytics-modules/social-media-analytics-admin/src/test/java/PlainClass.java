@@ -38,7 +38,7 @@ public class PlainClass {
     @SneakyThrows
     public static void main(String[] args) {
         DouYinSyncWorkScheduler.loadLocalCache();
-        try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(PlaywrightBrowser.buildProxy())) {
+        try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(PlaywrightBrowser.buildProxy(), false)) {
             Page page = playwrightBrowser.newPage();
             page.navigate("https://v.douyin.com/74d1AS59dVc/", new Page.NavigateOptions().setWaitUntil(WaitUntilState.COMMIT));
             System.out.println(page.url());
@@ -48,7 +48,7 @@ public class PlainClass {
     @Test
     public void testDouYin() {
         DouYinSyncWorkScheduler.loadLocalCache();
-        try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(PlaywrightBrowser.buildProxy())) {
+        try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(PlaywrightBrowser.buildProxy(), false)) {
             DouYinSyncWorkScheduler.navigateToDouYinUserPage(playwrightBrowser);
             Object object = playwrightBrowser.getPage().evaluate(DataSyncDouYinServiceImpl.DOUYIN_FETCH_WORK_JS, "7581889286216207616");
             System.out.println(object);
@@ -87,10 +87,11 @@ public class PlainClass {
 
     @Test
     public void testKuaishou2() {
-        try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(PlaywrightBrowser.buildProxy())) {
+        try (PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(PlaywrightBrowser.buildProxy(), false)) {
             Page page = playwrightBrowser.newPage();
-            Response navigate = page.navigate("https://v.douyin.com/y0XdbY0Ynmg/", new Page.NavigateOptions().setTimeout(BrowserConfig.LOAD_PAGE_TIMEOUT));
-            playwrightBrowser.getPage().waitForTimeout(600_00000);
+            Response navigate = page.navigate("https://v.kuaishou.com/KZbr8k8A", new Page.NavigateOptions().setWaitUntil(WaitUntilState.DOMCONTENTLOADED).setTimeout(BrowserConfig.LOAD_PAGE_TIMEOUT));
+            System.out.println(navigate.text());
+            page.waitForTimeout(600_00000);
         }
     }
 
@@ -142,7 +143,7 @@ public class PlainClass {
 
     @Test
     public void testFingerprint() {
-        PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(PlaywrightBrowser.buildProxy());
+        PlaywrightBrowser playwrightBrowser = new PlaywrightBrowser(PlaywrightBrowser.buildProxy(), false);
         for (int i = 0; i < 4; i++) {
             playwrightBrowser.getBrowserContext().addInitScript("localStorage.clear(); sessionStorage.clear();");
             Page page = playwrightBrowser.newPage();

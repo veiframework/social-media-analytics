@@ -9,6 +9,7 @@ import com.google.common.collect.Sets;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.ViewportSize;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import net.datafaker.providers.base.Internet;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.core.io.Resource;
@@ -32,6 +33,7 @@ import java.util.regex.Pattern;
  * @author Zhanghaowei
  * @since 2025-11-29 21:47
  */
+@Slf4j
 @Data
 public class BrowserConfig {
 
@@ -44,16 +46,16 @@ public class BrowserConfig {
 
     protected static final int[][] RESOLUTIONS = {
             {1920, 1080},
-            {1366, 768},
-            {1440, 900},
-            {1536, 864},
-            {1600, 900},
             {1680, 1050},
-            {1280, 720},
             {1280, 1024},
-            {1600, 1200},
             {1920, 1200},
             {2560, 1440}
+    };
+
+    protected static final int[][] MAC_RESOLUTIONS = {
+            {1440, 900},
+            {1152, 720},
+            {1680, 1050},
     };
 
     private static final List<String> CHROME_ARGS = Lists.newArrayList(
@@ -117,6 +119,13 @@ public class BrowserConfig {
 
     public static final Set<String> RESOURCE_TYPES = Sets.newHashSet("fetch", "websocket", ".svg", ".mp3", ".mp4", "wasm", "vnd.microsoft.icon", "xhr", "png", "media", "avif", "webp", "gif", "svg+xml", "font", "stylesheet");
 
+
+    public static final String CHROME_FINGERPRINT_JS = loadBrowserFingerprintJs("BrowserFingerprint.js");
+
+    public static final String FIREFOX_FINGERPRINT_JS = loadBrowserFingerprintJs("FirefoxFingerprint.js");
+
+    public static final String WEBKIT_FINGERPRINT_JS = loadBrowserFingerprintJs("WebkitFingerprint.js");
+
     public static final Integer LOAD_PAGE_RETRY = 10;
 
     public static final Integer LOAD_PAGE_TIMEOUT = 60000;
@@ -142,14 +151,17 @@ public class BrowserConfig {
      */
     private Path executablePath;
 
-    public BrowserConfig(Playwright playwright) {
-        this(playwright, null);
+    private boolean headless;
+
+    public BrowserConfig(Playwright playwright, boolean headless) {
+        this(playwright, null, headless);
     }
 
-    public BrowserConfig(Playwright playwright, Internet.UserAgent browserType) {
-        ViewportSize randomViewport = this.getRandomViewport();
+    public BrowserConfig(Playwright playwright, Internet.UserAgent browserType, boolean headless) {
+        ViewportSize randomViewport = this.getRandomViewport(browserType);
         this.width = randomViewport.width;
         this.height = randomViewport.height;
+        this.headless = headless;
         this.userAgent = browserType == null ? RandomUtil.randomEle(BROWSERS) : browserType;
         this.setPlaywright(playwright);
     }
@@ -161,15 +173,15 @@ public class BrowserConfig {
             String version = BrowserConfig.extractChromeMajorVersion(randomUa);
             this.extraHeaders = MapUtil.of("Sec-Ch-Ua", "\"Google Chrome\";v=\"" + version + "\", \"Chromium\";v=\"" + version + "\", \"Not A(Brand\";v=\"24\"");
             this.browserType = playwright.chromium();
-            this.fingerprint = this.loadBrowserFingerprintJs("BrowserFingerprint.js");
+            this.fingerprint = CHROME_FINGERPRINT_JS;
         } else if (userAgent == Internet.UserAgent.SAFARI) {
             this.browserType = playwright.webkit();
             this.randomUa = RandomUtil.randomEle(WEBKIT_UA);
-            this.fingerprint = this.loadBrowserFingerprintJs("WebkitFingerprint.js");
+            this.fingerprint = WEBKIT_FINGERPRINT_JS;
         } else {
             this.browserType = playwright.firefox();
             this.randomUa = RandomUtil.randomEle(FIREFOX_UA);
-            this.fingerprint = this.loadBrowserFingerprintJs("FirefoxFingerprint.js");
+            this.fingerprint = FIREFOX_FINGERPRINT_JS;
         }
 
     }
@@ -214,13 +226,18 @@ public class BrowserConfig {
         return Integer.parseInt(text.replace("+", ""));
     }
 
-    public ViewportSize getRandomViewport() {
-        int index = RandomUtil.randomInt(RESOLUTIONS.length);
-        int[] resolution = RESOLUTIONS[index];
+    public ViewportSize getRandomViewport(Internet.UserAgent userAgent) {
+        int[][] tempArr = RESOLUTIONS;
+        if (userAgent == Internet.UserAgent.SAFARI) {
+            tempArr = MAC_RESOLUTIONS;
+        }
+        int index = RandomUtil.randomInt(tempArr.length);
+        int[] resolution = tempArr[index];
         return new ViewportSize(resolution[0], resolution[1]);
     }
 
-    public String loadBrowserFingerprintJs(String fileName) {
+    public static String loadBrowserFingerprintJs(String fileName) {
+        log.debug("load fingerprint {}", fileName);
         ResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
         Resource resource = resolver.getResource(MessageFormat.format("classpath:{0}", fileName));
         try {
