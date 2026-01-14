@@ -21,6 +21,12 @@
             <if test="tenantId!=null">
                 AND tenant_id = #{tenantId}
             </if>
+            <if test="accountIds!=null">
+                AND account_id in
+                <foreach item="item" index="index" collection="accountIds" separator="," open="(" close=")">
+                    #{item}
+                </foreach>
+            </if>
         </where>
         GROUP BY account_id
         ) t
@@ -54,7 +60,7 @@
         FROM social_media_work
         <where>
             <if test='userIds!=null'>
-               AND user_id in
+                AND user_id in
                 <foreach item="item" index="index" collection="userIds" separator="," open="(" close=")">
                     #{item}
                 </foreach>

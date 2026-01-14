@@ -136,7 +136,14 @@ export default {
     AddWorkForm,
     Watermark,
   },
-  setup() {
+  props: {
+    // 账号ID，用于筛选特定账号的作品
+    accountId: {
+      type: String,
+      default: ''
+    }
+  },
+  setup(props) {
     // 作品列表数据
     const workList = ref([])
     // 当前页码
@@ -335,6 +342,11 @@ export default {
         const params = {
           pageNum: currentPage.value,
           pageSize: pageSize.value
+        }
+        
+        // 如果有accountId参数，添加到请求中
+        if (props.accountId) {
+          params.accountId = props.accountId
         }
 
         // 添加作品描述模糊搜索参数

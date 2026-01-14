@@ -19,11 +19,13 @@ import java.util.Set;
 @Mapper
 public interface SocialMediaWorkMapper extends Z9MpCrudMapper<SocialMediaWork> {
 
-    default IPage<SocialMediaWork> groupByAccountId(Page<SocialMediaWork> page, Collection<String> userIds, Set<String> ascFields, Set<String> descFields, String tenantId) {
+    default IPage<SocialMediaWork> groupByAccountId(Page<SocialMediaWork> page, Collection<String> userIds,
+                                                    Set<String> ascFields, Set<String> descFields,
+                                                    String tenantId, Collection<String> accountIds) {
         if (userIds != null && userIds.isEmpty()) {
             return new Page<>();
         }
-        return this.groupByAccountId0(page, userIds, ascFields, descFields, tenantId);
+        return this.groupByAccountId0(page, userIds, ascFields, descFields, tenantId, accountIds);
     }
 
     default List<SocialMediaWork> groupByUserIdAndPlatform(@Param("userIds") Collection<String> userIds, @Param("tenantId") String tenantId) {
@@ -37,7 +39,8 @@ public interface SocialMediaWorkMapper extends Z9MpCrudMapper<SocialMediaWork> {
                                              @Param("userIds") Collection<String> userIds,
                                              @Param("ascFields") Set<String> ascFields,
                                              @Param("descFields") Set<String> descFields,
-                                             @Param("tenantId") String tenantId);
+                                             @Param("tenantId") String tenantId,
+                                             @Param("accountIds") Collection<String> accountIds);
 
 
     List<SocialMediaWork> groupByUserIdAndPlatform0(@Param("userIds") Collection<String> userIds,

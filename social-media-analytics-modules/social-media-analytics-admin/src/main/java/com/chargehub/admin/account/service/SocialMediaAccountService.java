@@ -185,7 +185,7 @@ public class SocialMediaAccountService extends AbstractZ9CrudServiceImpl<SocialM
     public IPage<SocialMediaAccountStatisticVo> getAccountStatistic(SocialMediaAccountQueryDto queryDto) {
         Set<String> userId = queryDto.getUserId();
         Page<SocialMediaWork> pagination = new Page<>(queryDto.getPageNum(), queryDto.getPageSize());
-        IPage<SocialMediaWork> socialMediaWorksPage = socialMediaWorkService.groupByAccountId(pagination, userId, queryDto.getAscFields(), queryDto.getDescFields(), queryDto.getTenantId());
+        IPage<SocialMediaWork> socialMediaWorksPage = socialMediaWorkService.groupByAccountId(pagination, userId, queryDto.getAscFields(), queryDto.getDescFields(), queryDto.getTenantId(), queryDto.getId());
         if (CollectionUtils.isEmpty(socialMediaWorksPage.getRecords())) {
             return new Page<>();
         }

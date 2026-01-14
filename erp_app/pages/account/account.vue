@@ -1,6 +1,6 @@
 <template>
   <view class="account-container">
-    <Watermark  text="仅供分析不得传播©lumengshop.com" />
+    <Watermark text="仅供分析不得传播©lumengshop.com"/>
 
     <!-- 搜索栏 -->
     <view class="search-bar">
@@ -22,23 +22,19 @@
         refresher-background="#f5f5f5"
         @refresherpulling="onPulling"
     >
-      <view class="account-item" v-for="item in accountList" :key="item.id">
+      <view class="account-item" v-for="item in accountList" :key="item.id" @tap="navigateToAccountDetail(item.id, item.nickname)">
         <view class="account-header">
           <text class="account-name">{{ item.nickname }}</text>
           <text class="account-type" :style="platformStyle(item.platformId)">{{ item.platformId_dictText }}</text>
         </view>
         <view class="account-info">
           <text class="info-item">账号类型：{{ item.type_dictText }}</text>
-          <text class="info-item">同步状态：
-            <text :style="computeStatus(item)">{{ item.syncWorkStatus_dictText }}</text>
-          </text>
+          <view class="info-item">员工：{{ item.userId_dictText }}</view>
+
         </view>
         <view class="account-info">
           <view class="info-item">员工：{{ item.userId_dictText }}</view>
-          <view class="info-item">
-            <view class="account-number-left">社交平台ID：</view>
-            <view class="account-number">{{ item.uid }}</view>
-          </view>
+          <view class="info-item">社交平台ID：{{ item.uid }}</view>
         </view>
 
       </view>
@@ -58,7 +54,7 @@
         <text>已加载全部数据</text>
       </view>
     </scroll-view>
-    
+
     <!-- 自定义tabbar -->
     <bottom-bar></bottom-bar>
   </view>
@@ -76,7 +72,7 @@ export default {
     BottomBar
 
   },
-  
+
   setup() {
     // 账号列表数据
     const accountList = ref([])
@@ -252,6 +248,13 @@ export default {
       return 'color:' + platformColors[platformId]
     }
 
+    // 跳转到账号详情页
+    const navigateToAccountDetail = (id, nickname) => {
+      uni.navigateTo({
+        url: `/pages/account/account-detail?id=${id}&nickname=${encodeURIComponent(nickname)}`
+      })
+    }
+
     // 页面加载时获取数据
     onMounted(() => {
       getAccountList()
@@ -276,7 +279,8 @@ export default {
       handleToggleAutoSync,
       computeStatus,
       computeButton,
-      platformStyle
+      platformStyle,
+      navigateToAccountDetail
     }
   }
 }
@@ -384,9 +388,11 @@ export default {
 }
 
 .info-item {
+  width: 340rpx;
   font-size: 26rpx;
   color: #666;
-
+  text-overflow: ellipsis;
+  overflow: hidden;
 }
 
 .account-actions {

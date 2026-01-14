@@ -33,6 +33,12 @@
 			}
 		},
 		{
+			"path": "pages/account/account-detail",
+			"style": {
+				"navigationBarTitleText": "账号详情"
+			}
+		},
+		{
 			"path": "pages/work/work-detail",
 			"style": {
 				"navigationBarTitleText": "作品详情"

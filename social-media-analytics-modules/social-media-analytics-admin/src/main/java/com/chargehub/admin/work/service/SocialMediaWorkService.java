@@ -101,8 +101,8 @@ public class SocialMediaWorkService extends AbstractZ9CrudServiceImpl<SocialMedi
     }
 
 
-    public IPage<SocialMediaWork> groupByAccountId(Page<SocialMediaWork> page, Collection<String> userIds, Set<String> ascFields, Set<String> descFields, String tenantId) {
-        return this.baseMapper.groupByAccountId(page, userIds, ascFields, descFields, tenantId);
+    public IPage<SocialMediaWork> groupByAccountId(Page<SocialMediaWork> page, Collection<String> userIds, Set<String> ascFields, Set<String> descFields, String tenantId, Collection<String> accountIds) {
+        return this.baseMapper.groupByAccountId(page, userIds, ascFields, descFields, tenantId, accountIds);
     }
 
     public SocialMediaWorkVo getWorkDetail(String id, Set<String> roles, String userId) {
