@@ -993,14 +993,14 @@ const option = reactive({
     fixed: 'right'
   },
   moreItem: [
-    {
-      type: 'primary',
-      isShow: true,
-      icon: 'View',
-      label: '修正播放数',
-      value: 'viewEdit',
-      judge: (row) => row.platformId === 'xiaohongshu' || row.platformId === 'wechatvideo'
-    },
+    // {
+    //   type: 'primary',
+    //   isShow: true,
+    //   icon: 'View',
+    //   label: '修正播放数',
+    //   value: 'viewEdit',
+    //   judge: (row) => row.platformId === 'xiaohongshu' || row.platformId === 'wechatvideo'
+    // },
     {
       type: 'primary',
       isShow: true,
