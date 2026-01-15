@@ -87,7 +87,6 @@ const platformLoading = ref(false)
 
 const checkPermission = (target) => {
   let routes = usePermissionStore().routes
-  console.log(routes)
   if (routes && routes.length > 0) {
     for (let route of routes) {
       let result = route.children?.some(i => i.path === target);
@@ -456,12 +455,14 @@ const getPlatformStats = async () => {
  * 初始化数据
  */
 const init = () => {
-  getDict().then(() => {
-    // 等字典数据获取完成后再获取平台统计数据
-    getPlatformStats()
-  })
-  getUserList2()
-  getAccountList()
+  if (checkPermission('socialMediaIndex')) {
+    getDict().then(() => {
+      // 等字典数据获取完成后再获取平台统计数据
+      getPlatformStats()
+    })
+    getUserList2()
+    getAccountList()
+  }
 }
 
 // 初始化
