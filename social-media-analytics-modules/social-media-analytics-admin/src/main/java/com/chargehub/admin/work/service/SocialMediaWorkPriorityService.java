@@ -68,9 +68,6 @@ public class SocialMediaWorkPriorityService extends AbstractZ9CrudServiceImpl<So
     }
 
     public static Integer computePriority(LocalDateTime localDateTime, SocialMediaWork existWork, SocialMediaWork socialMediaWork, Map<Integer, SocialMediaWorkPriority> allPriority) {
-        if (localDateTime.getHour() == 8) {
-            return existWork.getPriority();
-        }
         Date updateTime = existWork.getUpdateTime();
         DateTime now = DateUtil.date(localDateTime);
         for (SocialMediaWorkPriority priority : allPriority.values()) {

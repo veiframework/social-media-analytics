@@ -176,7 +176,7 @@ public abstract class AbstractSyncWorkScheduler {
                     Integer priority;
                     boolean isChanged = updateWork != null;
                     if (isChanged) {
-                        priority = SocialMediaWorkPriorityService.computePriority(now, existWork, updateWork, allPriority);
+                        priority = now.getHour() == 8 ? existWork.getPriority() : SocialMediaWorkPriorityService.computePriority(now, existWork, updateWork, allPriority);
                         updateWork.setPriority(priority);
                         updateList.add(updateWork);
                     } else {
