@@ -324,7 +324,7 @@ public class DataSyncRedNoteServiceImpl implements DataSyncService {
                 String uidUrl = RED_NOTE_UID_URL + secUid + "?xsec_token=" + userNode.get("xsecToken").asText() + "&xsec_source=pc_note";
                 uid = dataSyncMessageQueue.retryWithExponentialBackoff(() -> {
                     try (Page newPage = playwrightBrowser.getBrowserContext().newPage()) {
-                        Response response = newPage.navigate(uidUrl, new Page.NavigateOptions().setTimeout(BrowserConfig.LOAD_PAGE_TIMEOUT).setWaitUntil(WaitUntilState.COMMIT));
+                        Response response = newPage.navigate(uidUrl, new Page.NavigateOptions().setTimeout(BrowserConfig.LOAD_PAGE_TIMEOUT).setWaitUntil(WaitUntilState.DOMCONTENTLOADED));
                         InputStream uidStream = new ByteArrayInputStream(response.body());
                         return JsoupUtil.findContent(uidStream, "小红书号：");
                     }

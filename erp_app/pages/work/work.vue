@@ -116,7 +116,7 @@
     </ModalMask>
 
     <!-- 自定义tabbar -->
-    <bottom-bar></bottom-bar>
+    <bottom-bar v-if="!accountId"></bottom-bar>
   </view>
 </template>
 
@@ -343,7 +343,7 @@ export default {
           pageNum: currentPage.value,
           pageSize: pageSize.value
         }
-        
+
         // 如果有accountId参数，添加到请求中
         if (props.accountId) {
           params.accountId = props.accountId

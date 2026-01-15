@@ -59,10 +59,8 @@ public class WechatVideoWorkScheduler extends AbstractWorkScheduler {
             return;
         }
         List<SocialMediaWork> updateList = new ArrayList<>();
-        Set<String> newWorkUids = new HashSet<>();
         for (SocialMediaWork newWork : newWorks) {
             String workUid = newWork.getWorkUid();
-            newWorkUids.add(workUid);
             SocialMediaWork existWork = workMap.get(workUid);
             if (existWork == null) {
                 newWork.setUserId(userId);
@@ -78,11 +76,6 @@ public class WechatVideoWorkScheduler extends AbstractWorkScheduler {
                 }
             }
         }
-        workMap.forEach((workUid, existWork) -> {
-            if (!newWorkUids.contains(workUid)) {
-                this.socialMediaWorkService.deletedWechatVideo(existWork.getId());
-            }
-        });
         this.socialMediaWorkService.saveOrUpdateBatch(updateList);
     }
 }

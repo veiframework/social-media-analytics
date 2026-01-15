@@ -1,32 +1,52 @@
 <template>
   <div class="dashboard-container">
 
-    <Watermark text="仅供分析不得传播©lumengshop.com"/>
+    <template v-if="checkPermission('socialMediaIndex')">
+      <Watermark text="仅供分析不得传播©lumengshop.com"/>
 
-    <!-- 平台数据统计卡片 -->
-    <el-card class="dashboard-top-echart">
-      <ECharts :height="chartHeight(0.2)" :option="cardChart" :hideSearch="true"/>
-    </el-card>
-    <!-- 社交媒体账号统计表格 -->
-    <CustomTable
-        :data="tableData"
-        :option="option"
-        @search="handleSearch"
-        v-model:page-num="pageNum"
-        @refresh="getData"
-        :total="total"
-        @headerchange="handleHeader"
-        @menuChange="handleMenu"
-        :pageSize="pageSize"
-        @currentChange="handleChange"
-        @selectData="selectData"
-    >
-      <template #table-top></template>
-      <template #table-custom="{ row, prop, index }">
-        <!-- 由于使用了 dicData，不再需要自定义模板 -->
-      </template>
-    </CustomTable>
-
+      <!-- 平台数据统计卡片 -->
+      <el-card class="dashboard-top-echart">
+        <ECharts :height="chartHeight(0.2)" :option="cardChart" :hideSearch="true"/>
+      </el-card>
+      <!-- 社交媒体账号统计表格 -->
+      <CustomTable
+          :data="tableData"
+          :option="option"
+          @search="handleSearch"
+          v-model:page-num="pageNum"
+          @refresh="getData"
+          :total="total"
+          @headerchange="handleHeader"
+          @menuChange="handleMenu"
+          :pageSize="pageSize"
+          @currentChange="handleChange"
+          @selectData="selectData"
+      >
+        <template #table-top></template>
+        <template #table-custom="{ row, prop, index }">
+          <!-- 由于使用了 dicData，不再需要自定义模板 -->
+        </template>
+      </CustomTable>
+    </template>
+    <template v-else>
+      <el-card style="height: calc(100vh - 90px);">
+        <el-row :gutter="10">
+          <el-col :xs="24" :sm="12">
+            <div class="img-box">
+              <img src="@/assets/images/1111@6x.png" alt="" class="full-width">
+            </div>
+          </el-col>
+          <el-col :xs="24" :sm="1"></el-col>
+          <el-col :xs="24" :sm="11">
+            <div class="text-left vertical-center">
+              <h2>欢迎进入</h2>
+              <h2>管理系统</h2>
+              <p>开启您的使用之旅吧~</p>
+            </div>
+          </el-col>
+        </el-row>
+      </el-card>
+    </template>
 
   </div>
 </template>
@@ -41,6 +61,7 @@ import {groupUserApi} from "@/api/group-user.js";
 import Watermark from "@/components/Watermark/index.vue";
 import {socialMediaAccountSelector} from "@/api/social-media-account.js";
 import ECharts from '@/components/Echarts'
+import usePermissionStore from "@/store/modules/permission.js";
 
 
 // 表格数据
@@ -62,6 +83,21 @@ const accountListDict = ref([])
 // 平台统计数据
 const platformStats = ref([])
 const platformLoading = ref(false)
+
+
+const checkPermission = (target) => {
+  let routes = usePermissionStore().routes
+  console.log(routes)
+  if (routes && routes.length > 0) {
+    for (let route of routes) {
+      let result = route.children?.some(i => i.path === target);
+      if (result) {
+        return true;
+      }
+    }
+  }
+  return false
+}
 
 // 获取字典数据
 const getDict = async () => {
@@ -104,7 +140,7 @@ const cardChart = ref({})
 
 const chartHeight = (percent = 1) => {
   // percent: 0 ～ 1 之间的小数，例如 0.6 表示 60%
-  return (window.innerHeight ) * percent;
+  return (window.innerHeight) * percent;
 };
 
 // 表格配置项
@@ -436,139 +472,28 @@ init()
 .dashboard-container {
 }
 
-.dashboard-top-echart{
+.dashboard-top-echart {
   margin: 0 5px;
 }
 
-.platform-cards {
-  padding-left: 10px;
+.img-box {
+  padding: 50px;
+
+  .text-left {
+    text-align: left;
+  }
+}
+
+.vertical-center {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   justify-content: center;
-  gap: 20px;
+  height: 100%;
 }
 
-.card {
-  background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-  padding: 8px;
-  transition: all 0.3s ease;
-  width: 250px; /* 设置固定宽度 */
-}
-
-.card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.15);
-}
-
-.card-header {
-  border-bottom: 1px solid #f0f0f0;
-  padding-bottom: 15px;
-  margin-bottom: 15px;
-}
-
-.platform-name {
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
-}
-
-.card-body {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.stat-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.stat-label {
-  font-size: 14px;
-  color: #666;
-}
-
-.stat-value {
-  font-size: 18px;
-  font-weight: 600;
-  color: #409eff;
-}
-
-.table-container {
-  background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-  padding: 20px;
-}
-
-/* 加载状态样式 */
-.card-skeleton {
-  background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-  padding: 20px;
-  width: 250px; /* 设置固定宽度 */
-}
-
-.card-header-skeleton {
-  width: 60%;
-  height: 24px;
-  margin-bottom: 15px;
-  border-radius: 4px;
-}
-
-.card-body-skeleton {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.stat-item-skeleton {
+.full-width {
   width: 100%;
-  height: 20px;
-  border-radius: 4px;
-}
-
-/* 空数据样式 */
-.empty-cards {
-  width: 100%;
-  padding: 40px 0;
-  text-align: center;
-}
-
-/* 移动端适配 */
-@media (max-width: 768px) {
-  .dashboard-container {
-    padding: 10px;
-  }
-
-  .platform-cards {
-    gap: 15px;
-  }
-
-  .card {
-    padding: 15px;
-    width: calc(50% - 8px); /* 在移动端显示两列 */
-  }
-
-  .platform-name {
-    font-size: 16px;
-  }
-
-  .stat-value {
-    font-size: 16px;
-  }
-
-  .table-container {
-    padding: 10px;
-  }
-
-  .card-skeleton {
-    padding: 15px;
-    width: calc(50% - 8px); /* 在移动端显示两列 */
-  }
+  height: 100%;
+  object-fit: contain;
 }
 </style>

@@ -1,0 +1,150 @@
+# Tomcat
+server:
+  port: 9212
+
+# Spring
+spring:
+  web:
+    resources:
+      static-locations:
+        - classpath:/META-INF/resources/
+        - classpath:/resources/
+        - classpath:/static/
+        - classpath:/public/
+        - file:/opt/resources/
+        - file:/opt/resources/dist/
+  application:
+    # 应用名称
+    name: shop
+  profiles:
+    # 环境配置
+    active: dev
+  cloud:
+    nacos:
+      discovery:
+        # 服务注册地址
+        server-addr: ${nacos.url}
+        group: ${discovery.nacos.group}
+      config:
+        # 配置中心地址
+        server-addr: ${nacos.url}
+        group: ${nacos.group}
+        # 配置文件格式
+        file-extension: yml
+        # 共享配置
+        shared-configs:
+          - data-id: application-${spring.profiles.active}.${spring.cloud.nacos.config.file-extension}
+            group: ${nacos.group}
+
+
+
+
+
+
+
+
+# mybatis配置
+mybatis:
+  # 搜索指定包别名
+  typeAliasesPackage: com.chargehub.shop
+  # 配置mapper的扫描，找到所有的mapper.xml映射文件
+  mapperLocations: classpath:mapper/shop/*.xml
+
+
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  type-aliases-package: "com.chargehub.shop"
+
+# swagger配置
+swagger:
+  title: shop模块接口文档
+  license: Powered By vchaoxi
+
+
+
+
+
+# 本地文件上传
+file:
+  domain: http://127.0.0.1:9024
+  path: D:/ruoyi/uploadPath
+  prefix: /statics
+
+# FastDFS配置
+fdfs:
+  domain: http://8.129.231.12
+  soTimeout: 3000
+  connectTimeout: 2000
+  trackerList: 8.129.231.12:22122
+
+# Minio配置
+minio:
+  url: http://8.129.231.12:9000
+  accessKey: minioadmin
+  secretKey: minioadmin
+  bucketName: test
+
+
+
+
+security:
+  # 验证码
+  captcha:
+    enabled: true
+    type: math
+
+
+vei:
+  payment:
+    wechat:
+      enabled: true
+
+#微信相关配置
+wechat:
+  # 微信开放平台相关配置
+  open:
+    appId: wxc8a423c3be9c4dd3
+    secret: aaf7eea647e34ff5ac34ba9e902a0692
+    token: E9ZGzgjP0S
+    aesKey: W5FQK42yJAewSCFPyWroy6spMXwDsoaXi8KzYUEaie2
+    apiUrl: https://api.weixin.qq.com/
+  #微信公众号相关配置
+  mp:
+    configs:
+      - appId: wx63c0381ec035dd60
+        secret: 960de258d2cea958b9b588328c9620e8
+        token: fV5cvIMGXGvIZLIH13DQ9pzPJBMcRkig
+        aesKey: 7RhIBaAv9dJDpHVRoRbIVZOQmJmBohskELzq9QHmULY
+  #微信小程序相关配置
+  ma:
+    configs:
+      - appId: wxb33b804dbe8d870b
+        secret: 6670c5f13cc8c3cfa41f08dea32ff08a
+        token: token
+        aesKey: aesKey
+        msgDataFormat: JSON
+
+
+
+
+
+#新主体小程序
+alipay:
+  serverUrl: https://openapi.alipay.com/gateway.do
+  appId: 2021004173638349
+  privateKey: MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCUjHwwKJ0M9dNJSdbeq/95+1eqZxBuJs2lBBXXjW/o5pcmdtR9DLVTNZCevrtBRXGxjh0Ds6INZqEp8uMEtydp9/CJdl8Qv/k2KrVjlQGjdyuNM8Nw/aPkVJO8sntSmic0JBpFbOC5nBnPVJtjpRXEYQVGl3UUQ6sm6neg6VFjzCPF4tSl2sC/vvNdi1+326b9KAQx8aW8vvAUcsBhsO8JbILp4dywI2BlrFrNixk79wOKMNsmnulw2xqVxl8siPMIlmE+zvImBvX6TE2hq2LkliHs97CxHGgcJScF2mVEM8CvTbFhMPpQgKgwK5jxYGA/+EcuX9MYE+C783ZPsTlXAgMBAAECggEAX61Yc6BE/0r6ClM/zO3VP9juLvfw8jGV9Hn8I3iaotSaeBDDbcOYqn5upoBMlY7H2seg0niJoL4AgcdKBwh8n1ktmSwfsOck+YlqiTg49PNVnr2/XPBQ9kivWzNOEPbu1zuFnD+zQnlTemGRMA3tRi4DOuNkamfnPcp4wLBmVrLxTudirz/Ze2aWKke4LhwatZDsRO7LMswjGbLAbRe4/YsDL0HUfr29mNk2zHetMOa/Gw5En/Cdw0u+bG9BdL+vIOyIOGA7WsYAJuYgX0OoX+vPG22TqyABssBgcgPc5U7EenPYxZXVEQ7wQ6hVivpXGR6EADdOCO3lnkWfNCMcyQKBgQDbMMMlLS7dreUtqTDGY403sQQfyjTd/9QNNV2A00bDYIJIVPLU2uhdlG/T5c6luy8jvR4+T6WCn741f4dUTSiHwyZzgYFlgHE2rdd4Z3+daFUBYyk9h7uHiFBZsmp6vCQtwdD+IEYCzxSrDyqWoPE+tUykx2aFHEhmzMtzJ1WKUwKBgQCtfsI98OuiqpqGgqp7NnQwZUfpcJqOUbbxLFMmjurNxowitY5Xat16YwKouWw0R8dC+rz3ySg/aiFICeHT3wML7F2ydPc2hV9wDQkPcMpFMykie9EiziRaF7iqmL/jAQr79L6ikRi0D1ZgyBc9w+bnWPERt3avp7/p3VSajELcbQKBgQDOiOcIi8eiWG4flVIBTeLN/D1PmyAvoxTzkTpW3j3KcZCxiWH7EX5sVyb8Ool6fqOPgG8T9caWC+GV1WH2HHI5YrhDlF8R/nIvPKVQre2Aq8OVeBNvCAu7TMWxjz1oAwnwF7XPDygJE4l9GeBeaK6JERp0FfPTL3BFdWmrSv/+QwKBgGqhSJK3OqucPSLEtjDKE/kWlm8D9QnZcR2jB2vgVLGqAMDoYxaZKIwqxByc8cLkBrTE1FVaPbFT8iaLZE9Kdl3ipOekebf5muGMMXBa+wYy3mpCPRQuLCtu/uFixjSnlG+sSWoy0UMBVi5fa+FbQNQZVvhzkK9+4zXCAViHMiS1AoGAWBl31mbFyOYhutR0iNLbpK23IdrDNDnogZT6ucL//W7o490tKAD1lfbwirL/i9SGehESPyr1eyAKp9n/qMnAKaLDB4c0vjeSV3SeuL7kXVaawCgZrWVRhpDckEoepsGNZ/RZ7G7l1Ht2PhOP/lx03+fRxooNd+2OMdXbyKVNF7s=
+  alipayPublicKey: MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAhLrCWJAOEuDlT4kCQInSdcnu5xh138D5Dyov5oggl8b7p/4zZFleaH52L0M20K9M7U0OK8bPfye2OkhspXaLohmMP7O8CdPRJ4Xk2vavbsel9vfgiGX/H/bTfq/0xwIk5GLd/4MY82a5O6jrcdA6kdDQFb2ijSIyL1+s+dvZ2TdKkwNdagYzWXNriKYx2RYyHnKFuZNVRX81jfutckgvPTDGhrHbKomwq+tCu7xQCqaUOye5eFy+E3NZqopSnpCyFvTSFO2aSCu4LiL6ycKYFGdYGcdlQiYe1mCpj9YNyIx/+0COG3pfZetk9XTRUdZlX7X2Z82ZSs7M7ZIjQ1CN/wIDAQAB
+  decryptKey: TVJhU11fhxH5pAhC3ZGD1w==
+  signType: RSA2
+  charset: UTF-8
+  format: json
+
+
+
+
+
+z9:
+  crud:
+    debug: true
+

@@ -14,5 +14,6 @@
     <module>social-media-analytics-thirdparty</module>
     <module>social-media-analytics-analytics</module>
     <module>social-media-analytics-log</module>
+    <module>social-media-analytics-shop</module>
   </modules>
 </project>
